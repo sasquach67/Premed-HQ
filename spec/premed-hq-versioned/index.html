@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premed HQ — Andy's Command Center</title>
+  <meta name="description" content="Personal all-in-one premed → med school application dashboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Chart.js for hour/score trend charts (lightweight, CDN, per brief §6) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css?v=20260623" />
+</head>
+<body>
+  <!-- ===== App shell: grouped sidebar (MedCoach pattern) + main view ===== -->
+  <div id="app" class="app">
+    <!-- Mobile top bar -->
+    <header class="topbar">
+      <button id="navToggle" class="icon-btn" aria-label="Toggle navigation">☰</button>
+      <span class="topbar-title">Premed HQ</span>
+      <button id="quickAddBtn" class="icon-btn" aria-label="Quick add" title="Quick add">＋</button>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">🐏</span>
+        <div class="brand-text">
+          <strong>Premed HQ</strong>
+          <small>Tar Heel edition</small>
+        </div>
+      </div>
+      <nav id="nav" class="nav"><!-- groups injected by app.js --></nav>
+      <div class="sidebar-foot">
+        <button class="link-btn" data-route="settings">⚙️ Settings &amp; Backup</button>
+        <div id="backupStatus" class="backup-status">Loading…</div>
+      </div>
+    </aside>
+
+    <!-- Main scrollable view -->
+    <main id="main" class="main"><!-- routed view injected here --></main>
+  </div>
+
+  <!-- Modal host -->
+  <div id="modalHost" class="modal-host" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <button class="modal-x" data-close="1" aria-label="Close">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast host -->
+  <div id="toastHost" class="toast-host"></div>
+
+  <!-- Scripts: load order matters (seed → store → ui → pillars → app) -->
+  <script src="js/seed.js?v=20260623"></script>
+  <script src="js/store.js?v=20260623"></script>
+  <script src="js/ui.js?v=20260623"></script>
+  <script src="js/pillars.js?v=20260623"></script>
+  <script src="js/app.js?v=20260623"></script>
+</body>
+</html>
