@@ -1,0 +1,383 @@
+/* ============================================================
+   Premed HQ — design system
+   Warm, Ghibli-adjacent paper + a single subtle Carolina-blue
+   accent. Tailwind v4 (tokens here, no tailwind.config needed).
+   ============================================================ */
+/* Warm, storybook type system: Baloo 2 (rounded display) + Nunito (rounded humanist body). */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.9rem;
+
+  /* Warm "paper" base (cream, like a hand-drawn sketchbook) + soft ink */
+  --background: #f7efe1;
+  --foreground: #3a3530;
+  --card: #fffaf0;
+  --card-foreground: #3a3530;
+  --popover: #fffaf0;
+  --popover-foreground: #3a3530;
+
+  /* Carolina blue accent (single, subtle) */
+  --primary: #3f93cf;
+  --primary-foreground: #ffffff;
+  --secondary: #e6f2fb;
+  --secondary-foreground: #1f4e6b;
+  --accent: #e6f2fb;
+  --accent-foreground: #1f4e6b;
+
+  --muted: #efe6d4;
+  --muted-foreground: #7a7064;
+
+  /* soft Ghibli field-green (sampled from the rice-paddy banner) — secondary accent */
+  --leaf: #79a957;
+  --leaf-soft: #e9f1dd;
+
+  /* Warm terracotta instead of a harsh red */
+  --destructive: #e26d5c;
+  --destructive-foreground: #ffffff;
+  --success: #5fb49c;
+  --warning: #e0a458;
+
+  --border: #e9e2d5;
+  --input: #e6dfd1;
+  --ring: #7bafd4;
+
+  /* Category colors — progress segments, rings, charts */
+  --cat-gpa: #4b9cd3;
+  --cat-mcat: #8c7bd4;
+  --cat-shadow: #e0a458;
+  --cat-volunteer: #5fb49c;
+  --cat-activities: #e08b9b;
+  --cat-clinical: #6fae6e;
+  --cat-research: #c98ac9;
+  --cat-letters: #d59b6a;
+
+  /* Sidebar — slightly warmer panel for separation */
+  --sidebar: #f4eee3;
+  --sidebar-foreground: #3a4250;
+  --sidebar-primary: #4b9cd3;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7f1fa;
+  --sidebar-accent-foreground: #1f4e6b;
+  --sidebar-border: #e3dac9;
+  --sidebar-ring: #7bafd4;
+}
+
+:root[data-visual-theme='doraemon'] {
+  --background: #f4fbff;
+  --foreground: #27313a;
+  --card: #ffffff;
+  --card-foreground: #27313a;
+  --popover: #ffffff;
+  --popover-foreground: #27313a;
+
+  --primary: #1e9bd7;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f6ff;
+  --secondary-foreground: #124a68;
+  --accent: #fff4b8;
+  --accent-foreground: #5c4500;
+
+  --muted: #e9f1f6;
+  --muted-foreground: #637381;
+  --leaf: #2fbf71;
+  --leaf-soft: #e8f8ef;
+
+  --destructive: #e94b5f;
+  --destructive-foreground: #ffffff;
+  --success: #2fbf71;
+  --warning: #f5bf2f;
+
+  --border: #d8e8f2;
+  --input: #d8e8f2;
+  --ring: #1e9bd7;
+
+  --sidebar: #eef8ff;
+  --sidebar-foreground: #24313a;
+  --sidebar-primary: #1e9bd7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dff1ff;
+  --sidebar-accent-foreground: #124a68;
+  --sidebar-border: #cfe6f5;
+  --sidebar-ring: #1e9bd7;
+}
+
+.dark {
+  /* cozy warm charcoal, not cold slate */
+  --background: #211e1a;
+  --foreground: #ece3d4;
+  --card: #2b2722;
+  --card-foreground: #ece3d4;
+  --popover: #2b2722;
+  --popover-foreground: #ece3d4;
+
+  --primary: #6fb3de;
+  --primary-foreground: #14110d;
+  --secondary: #33302a;
+  --secondary-foreground: #cfe4f3;
+  --accent: #33302a;
+  --accent-foreground: #cfe4f3;
+
+  --muted: #322e28;
+  --muted-foreground: #a89c8c;
+
+  --leaf: #88bb63;
+  --leaf-soft: #2f352a;
+
+  --destructive: #e8806f;
+  --destructive-foreground: #1b2027;
+  --success: #6fc0a8;
+  --warning: #e7b06a;
+
+  --border: #3c352d;
+  --input: #3c352d;
+  --ring: #6fb3de;
+
+  --sidebar: #1c1916;
+  --sidebar-foreground: #c9bdac;
+  --sidebar-primary: #6fb3de;
+  --sidebar-primary-foreground: #14110d;
+  --sidebar-accent: #33302a;
+  --sidebar-accent-foreground: #cfe4f3;
+  --sidebar-border: #36302a;
+  --sidebar-ring: #6fb3de;
+}
+
+.dark[data-visual-theme='doraemon'] {
+  --background: #101b24;
+  --foreground: #ecf8ff;
+  --card: #152636;
+  --card-foreground: #ecf8ff;
+  --popover: #152636;
+  --popover-foreground: #ecf8ff;
+
+  --primary: #49b9ef;
+  --primary-foreground: #07131b;
+  --secondary: #18354a;
+  --secondary-foreground: #cceeff;
+  --accent: #4a3910;
+  --accent-foreground: #ffe189;
+
+  --muted: #1d3344;
+  --muted-foreground: #9eb4c1;
+  --leaf: #43d486;
+  --leaf-soft: #173928;
+
+  --destructive: #ff6377;
+  --destructive-foreground: #19070a;
+  --success: #43d486;
+  --warning: #ffd35b;
+
+  --border: #24465e;
+  --input: #24465e;
+  --ring: #49b9ef;
+
+  --sidebar: #0d1720;
+  --sidebar-foreground: #c7ddeb;
+  --sidebar-primary: #49b9ef;
+  --sidebar-primary-foreground: #07131b;
+  --sidebar-accent: #18354a;
+  --sidebar-accent-foreground: #cceeff;
+  --sidebar-border: #20394d;
+  --sidebar-ring: #49b9ef;
+}
+
+/* Map CSS variables → Tailwind utilities (bg-card, text-primary, etc.) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-cat-gpa: var(--cat-gpa);
+  --color-cat-mcat: var(--cat-mcat);
+  --color-cat-shadow: var(--cat-shadow);
+  --color-cat-volunteer: var(--cat-volunteer);
+  --color-cat-activities: var(--cat-activities);
+  --color-cat-clinical: var(--cat-clinical);
+  --color-cat-research: var(--cat-research);
+  --color-cat-letters: var(--cat-letters);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-display: 'Baloo 2', 'Nunito', system-ui, sans-serif;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pop-in: pop-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-fade-up: fade-up 0.4s ease both;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* soft wash sampled from the rice-field banner (green fields, cerulean sky,
+       warm cloud light) so the app never reads as sterile white */
+    background-image:
+      radial-gradient(900px 640px at 108% -12%, rgba(121, 169, 87, 0.16), transparent 60%),
+      radial-gradient(840px 600px at -12% 4%, rgba(95, 170, 206, 0.13), transparent 58%),
+      radial-gradient(760px 640px at 50% 122%, rgba(224, 178, 96, 0.10), transparent 55%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 28%, transparent);
+  }
+  /* slim, soft scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+    border-radius: 9999px;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  /* soft card lift used across the app */
+  .card-soft {
+    box-shadow:
+      0 1px 2px rgba(58, 53, 48, 0.05),
+      0 6px 16px -8px rgba(58, 53, 48, 0.14);
+  }
+  /* Ghibli header banner — placeholder gradient until real art is dropped in */
+  .page-banner {
+    background-image:
+      linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--card) 92%, transparent) 100%),
+      radial-gradient(120% 140% at 20% -20%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 60%),
+      linear-gradient(120deg, color-mix(in srgb, var(--leaf) 30%, var(--secondary)) 0%, var(--secondary) 55%, color-mix(in srgb, var(--warning) 22%, var(--card)) 100%);
+    background-size: cover;
+    background-position: center;
+  }
+  .hero-mascot-ground {
+    box-shadow:
+      inset 0 -18px 32px color-mix(in srgb, var(--leaf) 11%, transparent),
+      0 16px 34px -26px rgba(58, 53, 48, 0.4);
+  }
+  .roadmap-timeline {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    overflow-x: auto;
+    list-style: none;
+    padding: 0.25rem 0.25rem 0.875rem;
+  }
+  .roadmap-node {
+    position: relative;
+    min-width: 9rem;
+  }
+  .roadmap-node:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 1.275rem;
+    right: calc(100% + 0.125rem);
+    width: 0.75rem;
+    height: 2px;
+    background: var(--border);
+  }
+  .roadmap-dot {
+    display: block;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-bottom: 0.45rem;
+    border: 2px solid var(--border);
+    border-radius: 9999px;
+    background: var(--card);
+  }
+  .roadmap-node.done::before,
+  .roadmap-node.current::before {
+    background: color-mix(in srgb, var(--primary) 58%, var(--border));
+  }
+  .roadmap-node.done .roadmap-dot {
+    background: var(--success);
+    border-color: var(--success);
+  }
+  .roadmap-node.current .roadmap-dot {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+  @media (max-width: 900px) {
+    .roadmap-timeline {
+      grid-template-columns: 1fr;
+      overflow-x: visible;
+      gap: 0.4rem;
+    }
+    .roadmap-node {
+      min-width: 0;
+      padding-left: 1.2rem;
+    }
+    .roadmap-node:not(:first-child)::before {
+      top: -0.55rem;
+      right: auto;
+      left: 0.375rem;
+      width: 2px;
+      height: 0.95rem;
+    }
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.92) translateY(6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
