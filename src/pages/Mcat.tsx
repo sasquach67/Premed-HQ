@@ -1,271 +1,437 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip, ReferenceLine,
-} from 'recharts'
-import {
-  CalendarRange, Target, Plus, Trash2, BookOpen, ClipboardList, AlertCircle, FolderOpen, Filter, Play,
+  AlertCircle, BarChart3, BookOpen, Brain, CalendarDays, CalendarRange, CheckCircle2, ClipboardList,
+  Clock3, Filter, Flame, LibraryBig, MessageCircle, Plus, Search, Sparkles, Target,
+  Trash2, TrendingUp, UploadCloud,
 } from 'lucide-react'
+import {
+  Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis,
+} from 'recharts'
 import { useStore } from '@/store/store'
 import { ROUTE_MAP } from '@/app/routes'
 import { bestMcat } from '@/lib/selectors'
-import { daysUntil, pickDaily } from '@/lib/date'
+import { pickDaily } from '@/lib/date'
 import { uid } from '@/lib/id'
 import { MCAT_QOTD } from '@/data/mcatQotd'
 import { PageHeader } from '@/components/common/PageHeader'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
-import { Collapsible } from '@/components/common/Collapsible'
-import { ResourceGrid } from '@/components/common/ResourceGrid'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
+type SectionKey = 'bb' | 'cp' | 'cars' | 'ps'
+type ContentType = 'guide' | 'hack-sheet' | 'pathway' | 'game'
+
+const SECTION_META: Record<SectionKey, { label: string; short: string; color: string; soft: string }> = {
+  bb: { label: 'Bio/Biochem', short: 'Bio', color: '#76b86c', soft: 'bg-leaf/15 text-leaf' },
+  cp: { label: 'Chem/Phys', short: 'Chem', color: '#e4a24f', soft: 'bg-amber/20 text-amber-foreground' },
+  cars: { label: 'CARS', short: 'CARS', color: '#62b7ee', soft: 'bg-primary/15 text-primary' },
+  ps: { label: 'Psych/Soc', short: 'Psych', color: '#ef86b4', soft: 'bg-rose/15 text-rose-foreground' },
+}
+
+const PLAN_DAYS = [
+  {
+    day: 'Mon', date: 'Jul 6', phase: 'Foundation', hours: 3.0,
+    sessions: [
+      { section: 'bb' as SectionKey, time: '9:00', task: 'Anki', detail: 'MileDown · 200 due cards' },
+      { section: 'cp' as SectionKey, time: '2:00', task: 'Content block', detail: 'Gen Chem equilibrium review' },
+    ],
+  },
+  {
+    day: 'Tue', date: 'Jul 7', phase: 'Foundation', hours: 2.5,
+    sessions: [
+      { section: 'cars' as SectionKey, time: '10:00', task: 'CARS set', detail: '3 passages · review tone traps' },
+      { section: 'bb' as SectionKey, time: '7:00', task: 'Pathway map', detail: 'Glycolysis + regulation sheet' },
+    ],
+  },
+  {
+    day: 'Wed', date: 'Jul 8', phase: 'Practice', hours: 3.5,
+    sessions: [
+      { section: 'cp' as SectionKey, time: '9:30', task: '100 AAMC questions', detail: 'Chem/Phys mixed discrete + passage' },
+      { section: 'bb' as SectionKey, time: '4:00', task: 'Review mistakes', detail: '25 from your error log' },
+    ],
+  },
+  {
+    day: 'Thu', date: 'Jul 9', phase: 'Practice', hours: 2.0,
+    sessions: [
+      { section: 'ps' as SectionKey, time: '11:00', task: 'Psych/Soc doc', detail: 'Motivation + learning terms' },
+      { section: 'cars' as SectionKey, time: '8:00', task: 'Timed set', detail: '2 passages · no pausing' },
+    ],
+  },
+  { day: 'Fri', date: 'Jul 10', phase: 'Rest', hours: 0, sessions: [] },
+  {
+    day: 'Sat', date: 'Jul 11', phase: 'Full length', hours: 7.5,
+    sessions: [
+      { section: 'cars' as SectionKey, time: '8:00', task: 'AAMC FL block', detail: 'Full length + light same-day notes' },
+    ],
+  },
+  {
+    day: 'Sun', date: 'Jul 12', phase: 'Polish', hours: 3.0,
+    sessions: [
+      { section: 'bb' as SectionKey, time: '1:00', task: 'FL review', detail: 'Bio/Biochem misses + make fixes' },
+      { section: 'ps' as SectionKey, time: '5:00', task: 'Recall drill', detail: 'Missed vocab + examples' },
+    ],
+  },
+  { day: 'Exam', date: 'Test day', phase: 'Exam day', hours: 0, sessions: [] },
+]
+
+const CONTENT_ITEMS = [
+  { title: 'Amino acids one-page sheet', type: 'hack-sheet' as ContentType, section: 'bb' as SectionKey, mins: 18, sections: 5, featured: true },
+  { title: 'CARS author tone traps', type: 'hack-sheet' as ContentType, section: 'cars' as SectionKey, mins: 16, sections: 4, featured: true },
+  { title: 'Electrochem quick circuit', type: 'guide' as ContentType, section: 'cp' as SectionKey, mins: 28, sections: 7 },
+  { title: 'Glycolysis pathway ladder', type: 'pathway' as ContentType, section: 'bb' as SectionKey, mins: 32, sections: 8 },
+  { title: 'Operant vs classical conditioning', type: 'guide' as ContentType, section: 'ps' as SectionKey, mins: 24, sections: 6 },
+  { title: 'Physics equation match game', type: 'game' as ContentType, section: 'cp' as SectionKey, mins: 12, sections: 3 },
+  { title: 'Sociology theorists map', type: 'guide' as ContentType, section: 'ps' as SectionKey, mins: 22, sections: 5 },
+  { title: 'Passage timing game', type: 'game' as ContentType, section: 'cars' as SectionKey, mins: 15, sections: 4 },
+]
+
+const HEATMAP = Array.from({ length: 70 }, (_, i) => ((i * 7 + 3) % 5))
+
 export function Mcat() {
   const route = ROUTE_MAP.mcat
   const mcat = useStore((s) => s.mcat)
   const update = useStore((s) => s.update)
-  const days = daysUntil(mcat.targetDate)
   const best = bestMcat(mcat)
   const goal = mcat.goalScore ?? 515
+  const currentScore = best ?? 480
+  const projectedScore = Math.min(goal, best ? best + 18 : 500)
+  const readiness = Math.max(18, Math.min(92, Math.round(((currentScore - 472) / (goal - 472 || 1)) * 100)))
+  const projectedReadiness = Math.max(readiness + 8, Math.min(96, Math.round(((projectedScore - 472) / (goal - 472 || 1)) * 100)))
   const qotd = pickDaily(MCAT_QOTD, 13) ?? MCAT_QOTD[0]
+  const days = daysUntilNumber(mcat.targetDate)
+  const openTasks = Math.max(12, mcat.schedule.filter((s) => !s.done).length + mcat.errorLog.filter((e) => !e.resolved).length)
+  const debtHours = Math.max(21, Math.round(openTasks * 1.75))
 
   const chartData = useMemo(
-    () => mcat.attempts.filter((a) => a.total).map((a, i) => ({ name: a.source || `#${i + 1}`, score: a.total })),
-    [mcat.attempts]
+    () => {
+      const attempts = mcat.attempts.filter((a) => a.total)
+      if (attempts.length) return attempts.map((a, i) => ({ name: a.source || `#${i + 1}`, score: a.total }))
+      return [
+        { name: 'Diagnostic', score: 480 },
+        { name: 'Week 2', score: 486 },
+        { name: 'Projected', score: projectedScore },
+      ]
+    },
+    [mcat.attempts, projectedScore]
   )
-  const phases = useMemo(() => {
-    const map = new Map<string, typeof mcat.schedule>()
-    for (const it of mcat.schedule) { const arr = map.get(it.phase) ?? []; arr.push(it); map.set(it.phase, arr) }
-    return [...map.entries()]
-  }, [mcat.schedule])
+
+  const sectionReadiness = useMemo(() => buildSectionReadiness(mcat.attempts), [mcat.attempts])
 
   return (
     <div>
       <PageHeader title={route.label} />
 
-      {/* slim meta strip (replaces the 4 big squares) — editable date/goal + live countdown */}
       <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm card-soft">
         <span className="flex items-center gap-1.5"><CalendarRange className="size-4 text-primary" /> Sit date
           <Input type="date" defaultValue={mcat.targetDate} onBlur={(e) => update((d) => { d.mcat.targetDate = e.target.value })} className="h-7 w-36" />
         </span>
-        <span className="font-bold text-primary">{days != null ? `${days} days out` : '—'}</span>
+        <span className="font-bold text-primary">{days != null ? `${days} days out` : 'Set a date'}</span>
         <span className="flex items-center gap-1.5">Goal
           <Input type="number" min={472} max={528} defaultValue={goal} onBlur={(e) => update((d) => { d.mcat.goalScore = Number(e.target.value) || 515 })} className="h-7 w-20" />
         </span>
         <span className="text-muted-foreground">Best so far <b className="text-foreground">{best ?? '—'}</b></span>
       </div>
 
-      <McatCommandCenter qotd={qotd} />
-
-      <Tabs defaultValue="schedule">
+      <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="schedule"><CalendarRange className="size-4" /> Schedule</TabsTrigger>
-          <TabsTrigger value="scores"><Target className="size-4" /> Score Tracker</TabsTrigger>
-          <TabsTrigger value="errors"><AlertCircle className="size-4" /> Error Log</TabsTrigger>
-          <TabsTrigger value="resources"><FolderOpen className="size-4" /> Resources</TabsTrigger>
+          <TabsTrigger value="dashboard"><Target className="size-4" /> Dashboard</TabsTrigger>
+          <TabsTrigger value="plan"><CalendarDays className="size-4" /> Plan</TabsTrigger>
+          <TabsTrigger value="content"><LibraryBig className="size-4" /> Content</TabsTrigger>
+          <TabsTrigger value="mistakes"><AlertCircle className="size-4" /> Mistakes</TabsTrigger>
+          <TabsTrigger value="stats"><BarChart3 className="size-4" /> Stats</TabsTrigger>
+          <TabsTrigger value="advisor"><MessageCircle className="size-4" /> Advisor</TabsTrigger>
         </TabsList>
 
-        {/* Schedule */}
-        <TabsContent value="schedule" className="space-y-3">
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => update((d) => { d.mcat.schedule.push({ id: uid(), phase: 'Content Review', focus: '', done: false, order: d.mcat.schedule.length }) })}>
-              <Plus className="size-4" /> Add task
-            </Button>
-          </div>
-          {phases.map(([phase, items]) => {
-            const done = items.filter((i) => i.done).length
-            const icon = phase === 'Content Review' ? BookOpen : phase === 'Practice' ? ClipboardList : Target
-            const Icon = icon
-            return (
-              <Collapsible key={phase} defaultOpen title={<span className="flex items-center gap-2"><Icon className="size-4 text-primary" /> {phase}</span>} badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{done}/{items.length}</span>}>
-                <ul className="space-y-1">
-                  {items.map((it) => (
-                    <li key={it.id} className="group flex items-center gap-2.5 py-1">
-                      <Checkbox checked={it.done} onCheckedChange={(v) => update((d) => { const x = d.mcat.schedule.find((s) => s.id === it.id); if (x) x.done = Boolean(v) })} />
-                      <input
-                        defaultValue={it.focus}
-                        onBlur={(e) => update((d) => { const x = d.mcat.schedule.find((s) => s.id === it.id); if (x) x.focus = e.target.value })}
-                        className={`flex-1 bg-transparent text-sm outline-none ${it.done ? 'text-muted-foreground line-through' : ''}`}
-                      />
-                      <button onClick={() => update((d) => { d.mcat.schedule = d.mcat.schedule.filter((s) => s.id !== it.id) })} className="text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"><Trash2 className="size-3.5" /></button>
-                    </li>
-                  ))}
-                </ul>
-              </Collapsible>
-            )
-          })}
+        <TabsContent value="dashboard">
+          <McatDashboard
+            currentScore={currentScore}
+            projectedScore={projectedScore}
+            goal={goal}
+            readiness={readiness}
+            projectedReadiness={projectedReadiness}
+            days={days}
+            openTasks={openTasks}
+            debtHours={debtHours}
+            sectionReadiness={sectionReadiness}
+            qotd={qotd}
+          />
         </TabsContent>
 
-        {/* Score tracker */}
-        <TabsContent value="scores" className="space-y-4">
-          {chartData.length > 1 && (
-            <Card>
-              <CardHeader><CardTitle>Score trend</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-                    <YAxis domain={[472, 528]} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-                    <RTooltip />
-                    <ReferenceLine y={goal} stroke="var(--cat-mcat)" strokeDasharray="4 4" label={{ value: `goal ${goal}`, fontSize: 10, fill: 'var(--cat-mcat)' }} />
-                    <Line type="monotone" dataKey="score" stroke="var(--cat-mcat)" strokeWidth={2.5} dot={{ r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => update((d) => { d.mcat.attempts.push({ id: uid(), kind: 'aamc-fl', source: '', order: d.mcat.attempts.length }) })}><Plus className="size-4" /> Add score</Button>
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-border bg-card card-soft">
-            <table className="w-full min-w-[680px] text-sm">
-              <thead><tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                {['Source', 'Type', 'Date', 'Total', 'C/P', 'CARS', 'B/B', 'P/S', ''].map((h) => <th key={h} className="px-3 py-2.5 font-semibold">{h}</th>)}
-              </tr></thead>
-              <tbody>
-                {mcat.attempts.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">No scores logged yet. Add AAMC FLs and practice exams to track your trend.</td></tr>}
-                {mcat.attempts.map((a) => (
-                  <tr key={a.id} className="border-b border-border/70 last:border-0">
-                    <td className="px-3 py-1.5"><input defaultValue={a.source} placeholder="AAMC FL1" onBlur={(e) => update((d) => { const x = d.mcat.attempts.find((s) => s.id === a.id); if (x) x.source = e.target.value })} className="w-28 bg-transparent outline-none" /></td>
-                    <td className="px-3 py-1.5">
-                      <select defaultValue={a.kind} onChange={(e) => update((d) => { const x = d.mcat.attempts.find((s) => s.id === a.id); if (x) x.kind = e.target.value as typeof a.kind })} className="bg-transparent text-sm outline-none">
-                        <option value="official">official</option><option value="aamc-fl">AAMC FL</option><option value="practice">practice</option>
-                      </select>
-                    </td>
-                    <td className="px-3 py-1.5"><input type="date" defaultValue={a.date} onBlur={(e) => update((d) => { const x = d.mcat.attempts.find((s) => s.id === a.id); if (x) x.date = e.target.value })} className="bg-transparent outline-none" /></td>
-                    {(['total', 'cp', 'cars', 'bb', 'ps'] as const).map((k) => (
-                      <td key={k} className="px-3 py-1.5"><input type="number" defaultValue={a[k] ?? ''} onBlur={(e) => update((d) => { const x = d.mcat.attempts.find((s) => s.id === a.id); if (x) x[k] = Number(e.target.value) || undefined })} className="w-14 bg-transparent text-right outline-none" /></td>
-                    ))}
-                    <td className="px-2 text-right"><button onClick={() => update((d) => { d.mcat.attempts = d.mcat.attempts.filter((s) => s.id !== a.id) })} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <TabsContent value="plan">
+          <McatPlan currentScore={currentScore} projectedScore={projectedScore} goal={goal} />
         </TabsContent>
 
-        {/* Error log */}
-        <TabsContent value="errors"><ErrorLog /></TabsContent>
+        <TabsContent value="content">
+          <McatContent />
+        </TabsContent>
 
-        <TabsContent value="resources">
-          <ResourceGrid pillar="mcat" />
+        <TabsContent value="mistakes">
+          <MistakeMap />
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <McatStats
+            currentScore={currentScore}
+            projectedScore={projectedScore}
+            goal={goal}
+            readiness={readiness}
+            projectedReadiness={projectedReadiness}
+            sectionReadiness={sectionReadiness}
+            chartData={chartData}
+          />
+        </TabsContent>
+
+        <TabsContent value="advisor">
+          <McatAdvisor />
         </TabsContent>
       </Tabs>
     </div>
   )
 }
 
-function McatCommandCenter({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
-  const mcat = useStore((s) => s.mcat)
-  const schedule = mcat.schedule
-  const done = schedule.filter((s) => s.done).length
-  const openMisses = mcat.errorLog.filter((e) => !e.resolved).length
-  const phase = schedule.find((s) => !s.done)?.phase ?? 'Foundation'
-  const nextItems = schedule.filter((s) => !s.done).slice(0, 3)
+function McatDashboard({
+  currentScore, projectedScore, goal, readiness, projectedReadiness, days, openTasks, debtHours, sectionReadiness, qotd,
+}: {
+  currentScore: number
+  projectedScore: number
+  goal: number
+  readiness: number
+  projectedReadiness: number
+  days: number | null
+  openTasks: number
+  debtHours: number
+  sectionReadiness: ReturnType<typeof buildSectionReadiness>
+  qotd: (typeof MCAT_QOTD)[number]
+}) {
+  const today = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
 
   return (
-    <div className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_.95fr]">
-      <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/10 via-card to-leaf/10">
-        <CardContent className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_13rem]">
-          <div className="space-y-3">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
+      <div className="space-y-4">
+        <section className="rounded-2xl border border-border bg-[linear-gradient(135deg,#211d18,#2a251f_55%,#17231b)] p-5 text-white shadow-sm">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-wide text-primary">{phase} phase</p>
-              <h2 className="mt-1 font-display text-3xl font-extrabold">Start a focused MCAT block</h2>
-              <p className="mt-1 text-sm font-semibold text-muted-foreground">Ninety minutes, one timer, missed questions captured straight into the review bank.</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/60">{today}</p>
+              <h2 className="mt-1 font-display text-3xl font-extrabold">MCAT readiness, Andy</h2>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <McatSessionSetupDialog
-                triggerClassName="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-leaf px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-leaf/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background active:scale-[0.98]"
-                trigger={<><Play className="size-4 fill-current" /> Start session</>}
-              />
-              <Button asChild variant="outline"><Link to="/mcat?tab=errors">Review misses</Link></Button>
-            </div>
+            <span className="rounded-full border border-leaf/40 bg-leaf/15 px-3 py-1 text-xs font-extrabold text-leaf">Just getting started</span>
           </div>
-          <div className="grid gap-2">
-            <div className="rounded-2xl bg-card/80 p-3 ring-1 ring-border/70">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Plan</p>
-              <p className="mt-1 text-xl font-extrabold">{done}/{schedule.length || 1}</p>
-            </div>
-            <div className="rounded-2xl bg-card/80 p-3 ring-1 ring-border/70">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Missed bank</p>
-              <p className="mt-1 text-xl font-extrabold">{openMisses}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Today’s MCAT workspace</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="rounded-2xl bg-muted/40 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-primary">QOTD · {qotd.section}</p>
-              <span className="text-xs font-bold text-muted-foreground">waiting</span>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm font-semibold">{qotd.question}</p>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Next study items</p>
-            <div className="space-y-1.5">
-              {nextItems.length === 0 && <p className="text-sm text-muted-foreground">No planned MCAT items yet.</p>}
-              {nextItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-2 rounded-xl bg-muted/35 px-3 py-2">
-                  <span className="min-w-0 truncate text-sm font-bold">{item.focus || item.phase}</span>
-                  <span className="shrink-0 text-xs font-bold text-muted-foreground">{item.phase}</span>
+          <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+            <ReadinessRing value={readiness} />
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
+                <p className="text-sm font-bold text-white/65">Projected {projectedReadiness}% by exam day</p>
+                <p className="mt-1 text-2xl font-extrabold text-leaf">+{projectedReadiness - readiness} readiness points</p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <ScoreTile label="Score now" value={currentScore} />
+                  <ScoreTile label="Projected" value={projectedScore} />
+                  <ScoreTile label="Gap" value={`${Math.max(0, goal - projectedScore)} pts`} />
                 </div>
-              ))}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sectionReadiness.map((section) => (
+                  <MiniBar key={section.key} label={SECTION_META[section.key].label} value={section.now} projected={section.projected} color={SECTION_META[section.key].color} />
+                ))}
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.05fr_.95fr]">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="size-4 text-primary" /> Today’s study queue</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {PLAN_DAYS[0].sessions.map((session) => (
+                <StudyQueueRow key={`${session.section}-${session.task}`} session={session} />
+              ))}
+              <div className="rounded-xl border border-dashed border-border px-3 py-2 text-sm font-semibold text-muted-foreground">Quick add — type a study task and press Enter...</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Brain className="size-4 text-primary" /> QOTD + Missed bank</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-2xl bg-muted/45 p-3">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-primary">{qotd.section}</p>
+                <p className="mt-1 line-clamp-3 text-sm font-semibold">{qotd.question}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-2xl bg-muted/35 p-3"><b>0</b><br /><span className="text-muted-foreground">review due</span></div>
+                <div className="rounded-2xl bg-muted/35 p-3"><b>streak 4</b><br /><span className="text-muted-foreground">keep it alive</span></div>
+              </div>
+              <McatSessionSetupDialog
+                triggerClassName="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-leaf px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:bg-leaf/90"
+                trigger={<><Sparkles className="size-4" /> Start focus session</>}
+              />
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+
+      <aside className="space-y-3">
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 size-5 text-destructive" />
+              <div>
+                <p className="font-display text-lg font-extrabold">You need to catch up!</p>
+                <p className="text-sm font-semibold text-muted-foreground">{openTasks} unfinished tasks · ~{debtHours}h</p>
+              </div>
+            </div>
+            <Button size="sm" className="mt-3 w-full">Rebuild catch-up plan</Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-leaf/30 bg-leaf/10">
+          <CardContent className="p-4">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-leaf">Smart nudge</p>
+            <p className="mt-1 font-bold">Focus on Bio & Biochem, your lowest section.</p>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-3">
+          <MetricTile icon={Clock3} label="Countdown" value={days != null ? `${days}d` : '—'} />
+          <MetricTile icon={Flame} label="Streak" value="4d" />
+          <MetricTile icon={BookOpen} label="Hours" value="18h" />
+          <MetricTile icon={CheckCircle2} label="Mastered" value="32" />
+        </div>
+
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Study consistency</CardTitle></CardHeader>
+          <CardContent><Heatmap /></CardContent>
+        </Card>
+      </aside>
     </div>
   )
 }
 
-const ERR_SECTIONS = ['Bio/Biochem', 'Chem/Phys', 'Psych/Soc', 'CARS']
-const SECTION_TONE: Record<string, string> = {
-  'Bio/Biochem': 'var(--cat-clinical)', 'Chem/Phys': 'var(--cat-gpa)',
-  'Psych/Soc': 'var(--cat-activities)', CARS: 'var(--cat-research)',
+function McatPlan({ currentScore, projectedScore, goal }: { currentScore: number; projectedScore: number; goal: number }) {
+  const [rebuilt, setRebuilt] = useState(false)
+  return (
+    <div className="space-y-4">
+      <Card className="border-primary/25 bg-primary/8">
+        <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-wide text-primary">Adaptive plan</p>
+            <h2 className="font-display text-2xl font-extrabold">Projected {projectedScore} · {Math.max(0, goal - projectedScore)} pts to go</h2>
+            <p className="text-sm font-semibold text-muted-foreground">Current baseline {currentScore}. The plan shifts toward debt, weak topics, and upcoming full lengths.</p>
+          </div>
+          <Button onClick={() => setRebuilt(true)}><TrendingUp className="size-4" /> Rebuild my plan to close the gap</Button>
+        </CardContent>
+      </Card>
+      {rebuilt && <div className="rounded-xl border border-leaf/30 bg-leaf/10 px-4 py-2 text-sm font-semibold text-leaf">Plan rebuilt locally: Bio/Biochem review and error-log sessions were moved earlier this week.</div>}
+
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card p-3 card-soft">
+        <div className="grid min-w-[980px] grid-cols-8 gap-3">
+          {PLAN_DAYS.map((day) => <PlanDay key={`${day.day}-${day.date}`} day={day} />)}
+        </div>
+      </div>
+    </div>
+  )
 }
 
-/** Error log = structured, filterable cards per missed question (F4) — not a
- *  table of textboxes. Filter by section, quick-add, resolve, delete. */
-function ErrorLog() {
+function McatContent() {
+  const [query, setQuery] = useState('')
+  const [type, setType] = useState<ContentType | 'all'>('all')
+  const [section, setSection] = useState<SectionKey | 'all'>('all')
+  const items = CONTENT_ITEMS.filter((item) =>
+    (type === 'all' || item.type === type) &&
+    (section === 'all' || item.section === section) &&
+    item.title.toLowerCase().includes(query.toLowerCase())
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 card-soft">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search guides, hack sheets, pathways..." className="pl-9" />
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-bold">
+            {['39 guides', '12 hack sheets', '12 pathways', '37 games'].map((pill) => <span key={pill} className="rounded-full bg-muted px-3 py-1">{pill}</span>)}
+          </div>
+        </div>
+        <FilterRow value={type} options={['all', 'guide', 'hack-sheet', 'pathway', 'game']} onChange={(v) => setType(v as ContentType | 'all')} />
+        <FilterRow value={section} options={['all', 'bb', 'cp', 'cars', 'ps']} labeler={(v) => v === 'all' ? 'All sections' : SECTION_META[v as SectionKey].label} onChange={(v) => setSection(v as SectionKey | 'all')} />
+      </div>
+
+      <section>
+        <h3 className="mb-2 font-display text-xl font-extrabold">Featured handwritten sheets</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          {CONTENT_ITEMS.filter((i) => i.featured).map((item) => <ContentCard key={item.title} item={item} featured />)}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-2 font-display text-xl font-extrabold">Study library</h3>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => <ContentCard key={item.title} item={item} />)}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function MistakeMap() {
   const errorLog = useStore((s) => s.mcat.errorLog)
   const update = useStore((s) => s.update)
   const [filter, setFilter] = useState<string>('All')
   const [hideResolved, setHideResolved] = useState(false)
+  const [lastUpload, setLastUpload] = useState<string>('')
 
-  const patch = (id: string, p: Partial<(typeof errorLog)[number]>) =>
-    update((d) => { const x = d.mcat.errorLog.find((e) => e.id === id); if (x) Object.assign(x, p) })
-
-  const shown = errorLog.filter((e) =>
-    (filter === 'All' || e.section === filter) && (!hideResolved || !e.resolved)
-  )
+  const shown = errorLog.filter((e) => (filter === 'All' || e.section === filter) && (!hideResolved || !e.resolved))
   const counts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const e of errorLog) m[e.section] = (m[e.section] ?? 0) + 1
     return m
   }, [errorLog])
 
-  function add() {
+  function patch(id: string, p: Partial<(typeof errorLog)[number]>) {
+    update((d) => { const x = d.mcat.errorLog.find((e) => e.id === id); if (x) Object.assign(x, p) })
+  }
+
+  function add(sectionName = filter === 'All' ? 'Bio/Biochem' : filter, source = '') {
     update((d) => d.mcat.errorLog.unshift({
-      id: uid(), section: filter === 'All' ? 'Bio/Biochem' : filter,
-      topic: '', whyMissed: '', fix: '', source: '', resolved: false, order: 0,
+      id: uid(), date: new Date().toISOString().slice(0, 10), section: sectionName,
+      topic: '', whyMissed: '', fix: '', source, resolved: false, order: 0,
     }))
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const file = e.dataTransfer.files?.[0]
+    if (!file) return
+    setLastUpload(file.name)
+    add('Bio/Biochem', `Screenshot upload · ${file.name}`)
   }
 
   return (
     <div className="space-y-4">
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+        className="rounded-2xl border border-dashed border-primary/50 bg-primary/8 p-6 text-center card-soft"
+      >
+        <UploadCloud className="mx-auto size-8 text-primary" />
+        <h2 className="mt-2 font-display text-2xl font-extrabold">Mistake map</h2>
+        <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
+          Drop a missed-question screenshot here. For now it creates a local review card for tagging; later this boundary can plug into OCR/AI filing.
+        </p>
+        {lastUpload && <p className="mt-2 text-xs font-bold text-primary">Queued from {lastUpload}</p>}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <Filter className="mr-0.5 size-4 text-muted-foreground" />
-          {['All', ...ERR_SECTIONS].map((s) => (
+          {['All', ...Object.values(SECTION_META).map((s) => s.label)].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -282,12 +448,12 @@ function ErrorLog() {
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <Checkbox checked={hideResolved} onCheckedChange={(v) => setHideResolved(Boolean(v))} /> Hide resolved
           </label>
-          <Button size="sm" onClick={add}><Plus className="size-4" /> Log a miss</Button>
+          <Button size="sm" onClick={() => add()}><Plus className="size-4" /> Log a miss</Button>
         </div>
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState icon={AlertCircle} title="No misses logged here" hint="Log every question you miss — section, topic, why you missed it, and the fix. Reviewing this log is the highest-yield habit in MCAT prep." action={<Button size="sm" onClick={add}><Plus className="size-4" /> Log a miss</Button>} />
+        <EmptyState icon={AlertCircle} title="No misses logged here" hint="Every missed question becomes plan fuel: topic ranking, review sessions, and weak-section nudges." action={<Button size="sm" onClick={() => add()}><Plus className="size-4" /> Log a miss</Button>} />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {shown.map((er) => (
@@ -297,9 +463,9 @@ function ErrorLog() {
                   value={er.section}
                   onChange={(e) => patch(er.id, { section: e.target.value })}
                   className="rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground outline-none"
-                  style={{ background: SECTION_TONE[er.section] ?? 'var(--primary)' }}
+                  style={{ background: sectionColorByLabel(er.section) }}
                 >
-                  {ERR_SECTIONS.map((s) => <option key={s} value={s} className="bg-card text-foreground">{s}</option>)}
+                  {Object.values(SECTION_META).map((s) => <option key={s.label} value={s.label} className="bg-card text-foreground">{s.label}</option>)}
                 </select>
                 <Input defaultValue={er.topic} placeholder="Topic (e.g. amino acid pKa)" onBlur={(e) => patch(er.id, { topic: e.target.value })} className="h-7 flex-1 border-0 px-1 text-sm font-bold shadow-none focus-visible:ring-0" />
                 <label className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
@@ -320,6 +486,289 @@ function ErrorLog() {
   )
 }
 
+function McatStats({
+  currentScore, projectedScore, goal, readiness, projectedReadiness, sectionReadiness, chartData,
+}: {
+  currentScore: number
+  projectedScore: number
+  goal: number
+  readiness: number
+  projectedReadiness: number
+  sectionReadiness: ReturnType<typeof buildSectionReadiness>
+  chartData: { name: string; score?: number }[]
+}) {
+  const errorLog = useStore((s) => s.mcat.errorLog)
+  const topicCounts = rankTopics(errorLog)
+  return (
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-5 card-soft">
+        <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <ReadinessRing value={Math.round((projectedScore / 528) * 100)} label={`${projectedScore}/528`} sublabel="projected score" />
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-wide text-primary">You are here</p>
+              <h2 className="font-display text-3xl font-extrabold">Diagnostic → goal trajectory</h2>
+              <p className="text-sm font-semibold text-muted-foreground">Current {currentScore} · projected {projectedScore} · goal {goal}</p>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <YAxis domain={[472, 528]} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <RTooltip />
+                <ReferenceLine y={goal} stroke="var(--cat-mcat)" strokeDasharray="4 4" label={{ value: `goal ${goal}`, fontSize: 10, fill: 'var(--cat-mcat)' }} />
+                <Line type="monotone" dataKey="score" stroke="var(--cat-mcat)" strokeWidth={2.5} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <MetricTile icon={Target} label="Ready now" value={`${readiness}%`} />
+        <MetricTile icon={TrendingUp} label="Projected" value={`${projectedReadiness}%`} />
+        <MetricTile icon={Flame} label="Streak" value="4d" />
+        <MetricTile icon={BookOpen} label="This week" value="18h" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
+        <Card>
+          <CardHeader><CardTitle>Readiness by section</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {sectionReadiness.map((section) => (
+              <MiniBar key={section.key} label={SECTION_META[section.key].label} value={section.now} projected={section.projected} color={SECTION_META[section.key].color} />
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Most missed topics</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {topicCounts.length === 0 && <p className="text-sm text-muted-foreground">No misses yet. Log misses to build the ranking.</p>}
+            {topicCounts.map((topic, i) => (
+              <div key={topic.topic} className="flex items-center justify-between rounded-xl bg-muted/35 px-3 py-2 text-sm">
+                <span className="font-bold">{i + 1}. {topic.topic}</span>
+                <span className="font-extrabold text-destructive">{topic.count}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Consistency heatmap</CardTitle></CardHeader>
+        <CardContent><Heatmap /></CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function McatAdvisor() {
+  const [messages, setMessages] = useState([
+    { role: 'assistant', text: 'Tell me what changed, and I’ll translate it into plan adjustments you can actually follow.' },
+  ])
+  const replies = ['I am falling behind', 'Make next week lighter', 'I have an exam this week']
+
+  function quickReply(text: string) {
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text },
+      { role: 'assistant', text: advisorResponse(text) },
+    ])
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><MessageCircle className="size-4 text-primary" /> MCAT advisor</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            {messages.map((message, i) => (
+              <div key={`${message.role}-${i}`} className={cn('max-w-[85%] rounded-2xl px-3 py-2 text-sm font-semibold', message.role === 'assistant' ? 'bg-muted text-foreground' : 'ml-auto bg-primary text-primary-foreground')}>
+                {message.text}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {replies.map((reply) => <Button key={reply} variant="outline" size="sm" onClick={() => quickReply(reply)}>{reply}</Button>)}
+          </div>
+          <Textarea placeholder="Ask for a lighter week, a catch-up plan, or a section focus..." className="min-h-24" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>What this can change</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm font-semibold text-muted-foreground">
+          <p>• Rebalance hour budgets</p>
+          <p>• Move weak-section sessions earlier</p>
+          <p>• Protect rest days after full lengths</p>
+          <p>• Turn missed-question trends into review blocks</p>
+          <p className="pt-2 text-xs">Local scaffold only for now. Future backend can persist generated plan changes.</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function ReadinessRing({ value, label = `${value}%`, sublabel = 'ready' }: { value: number; label?: string; sublabel?: string }) {
+  return (
+    <div className="mx-auto grid aspect-square w-full max-w-[15rem] place-items-center rounded-full p-4" style={{ background: `conic-gradient(var(--primary) ${value * 3.6}deg, rgba(255,255,255,.14) 0deg)` }}>
+      <div className="grid size-full place-items-center rounded-full bg-[#211d18] text-center text-white shadow-inner">
+        <div>
+          <p className="font-display text-4xl font-extrabold">{label}</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">{sublabel}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ScoreTile({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-xl bg-black/20 p-3">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-white/50">{label}</p>
+      <p className="mt-1 text-xl font-extrabold text-white">{value}</p>
+    </div>
+  )
+}
+
+function MetricTile({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <Icon className="mb-2 size-4 text-primary" />
+        <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="mt-1 font-display text-2xl font-extrabold">{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function MiniBar({ label, value, projected, color }: { label: string; value: number; projected: number; color: string }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs font-bold">
+        <span>{label}</span>
+        <span className="text-muted-foreground">{value}% → {projected}%</span>
+      </div>
+      <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+        <div className="absolute inset-y-0 left-0 rounded-full opacity-35" style={{ width: `${projected}%`, backgroundColor: color }} />
+        <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  )
+}
+
+function Heatmap() {
+  return (
+    <div className="grid grid-flow-col grid-rows-7 gap-1">
+      {HEATMAP.map((value, i) => (
+        <span
+          key={i}
+          className="size-3 rounded-[3px]"
+          style={{ backgroundColor: value === 0 ? 'var(--muted)' : `color-mix(in srgb, var(--primary) ${25 + value * 15}%, var(--muted))` }}
+          title={`${value} study blocks`}
+        />
+      ))}
+    </div>
+  )
+}
+
+function StudyQueueRow({ session }: { session: (typeof PLAN_DAYS)[number]['sessions'][number] }) {
+  const meta = SECTION_META[session.section]
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl bg-muted/35 px-3 py-2">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.short}</span>
+          <p className="truncate font-bold">{session.task}</p>
+        </div>
+        <p className="mt-1 text-xs font-semibold text-muted-foreground">{session.detail}</p>
+      </div>
+      <span className="shrink-0 text-xs font-extrabold text-primary">{session.time}</span>
+    </div>
+  )
+}
+
+function PlanDay({ day }: { day: (typeof PLAN_DAYS)[number] }) {
+  const phaseTone = day.phase === 'Foundation' ? 'border-leaf/50 bg-leaf/10' :
+    day.phase === 'Practice' ? 'border-primary/50 bg-primary/10' :
+      day.phase === 'Polish' ? 'border-amber/50 bg-amber/10' :
+        day.phase === 'Full length' ? 'border-rose/50 bg-rose/10' :
+          day.phase === 'Exam day' ? 'border-foreground bg-foreground text-background' :
+            'border-border bg-muted/35'
+
+  return (
+    <div className={cn('min-h-[22rem] rounded-2xl border p-3', phaseTone)}>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <p className="font-display text-lg font-extrabold">{day.day}</p>
+          <p className="text-xs font-bold opacity-65">{day.date}</p>
+        </div>
+        <span className="rounded-full bg-card/80 px-2 py-1 text-[10px] font-extrabold text-foreground">{day.hours ? `${day.hours}h` : day.phase}</span>
+      </div>
+      <p className="mb-3 text-[10px] font-extrabold uppercase tracking-wide opacity-65">{day.phase}</p>
+      {day.phase === 'Rest' && <div className="grid h-40 place-items-center rounded-xl border border-dashed border-border text-center text-sm font-bold text-muted-foreground">Rest day<br />Protect recovery</div>}
+      {day.phase === 'Exam day' && <div className="grid h-40 place-items-center rounded-xl bg-background/10 text-center text-sm font-bold">Exam-day card<br />Sleep, breakfast, arrive early.</div>}
+      <div className="space-y-2">
+        {day.sessions.map((session) => {
+          const meta = SECTION_META[session.section]
+          return (
+            <div key={`${day.day}-${session.time}-${session.task}`} className="rounded-xl bg-card/85 p-2 text-foreground ring-1 ring-border/70">
+              <div className="flex items-center justify-between gap-2">
+                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.short}</span>
+                <span className="text-[10px] font-bold text-muted-foreground">{session.time}</span>
+              </div>
+              <p className="mt-2 text-sm font-extrabold">{session.task}</p>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">{session.detail}</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function FilterRow({
+  value, options, onChange, labeler,
+}: {
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+  labeler?: (value: string) => string
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => (
+        <button
+          key={option}
+          onClick={() => onChange(option)}
+          className={cn(
+            'rounded-full border px-3 py-1 text-xs font-extrabold capitalize transition',
+            value === option ? 'border-transparent bg-primary text-primary-foreground' : 'border-border bg-card hover:bg-muted'
+          )}
+        >
+          {labeler ? labeler(option) : option.replace('-', ' ')}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ContentCard({ item, featured = false }: { item: (typeof CONTENT_ITEMS)[number]; featured?: boolean }) {
+  const meta = SECTION_META[item.section]
+  return (
+    <article className={cn('rounded-2xl border border-border bg-card p-4 card-soft', featured && 'border-primary/35 bg-primary/8')}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.label}</span>
+          <h4 className="mt-3 font-display text-xl font-extrabold">{item.title}</h4>
+        </div>
+        <BookOpen className="size-5 text-muted-foreground" />
+      </div>
+      <p className="mt-4 text-xs font-bold text-muted-foreground">~{item.mins} min · {item.sections} sections · {item.type.replace('-', ' ')}</p>
+    </article>
+  )
+}
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
@@ -327,4 +776,49 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </div>
   )
+}
+
+function daysUntilNumber(date?: string) {
+  if (!date) return null
+  const target = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(target.getTime())) return null
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.ceil((target.getTime() - today.getTime()) / 86_400_000)
+}
+
+function buildSectionReadiness(attempts: ReturnType<typeof useStore.getState>['mcat']['attempts']) {
+  const latest = [...attempts].reverse().find((a) => a.cp || a.cars || a.bb || a.ps)
+  const fallback: Record<SectionKey, number> = { bb: 30, cp: 39, cars: 45, ps: 42 }
+  return (Object.keys(SECTION_META) as SectionKey[]).map((key) => {
+    const raw = latest?.[key]
+    const now = raw ? Math.max(10, Math.min(95, Math.round(((raw - 118) / 14) * 100))) : fallback[key]
+    return { key, now, projected: Math.min(96, now + (key === 'bb' ? 23 : 14)) }
+  })
+}
+
+function sectionColorByLabel(label: string) {
+  return Object.values(SECTION_META).find((s) => s.label === label)?.color ?? 'var(--primary)'
+}
+
+function rankTopics(errorLog: ReturnType<typeof useStore.getState>['mcat']['errorLog']) {
+  const counts = new Map<string, number>()
+  for (const miss of errorLog) {
+    const topic = miss.topic?.trim()
+    if (topic) counts.set(topic, (counts.get(topic) ?? 0) + 1)
+  }
+  if (counts.size === 0) {
+    return [
+      { topic: 'Cell signaling', count: 3 },
+      { topic: 'Electrochemistry', count: 2 },
+      { topic: 'CARS tone shifts', count: 2 },
+    ]
+  }
+  return [...counts.entries()].map(([topic, count]) => ({ topic, count })).sort((a, b) => b.count - a.count).slice(0, 6)
+}
+
+function advisorResponse(prompt: string) {
+  if (prompt.includes('falling')) return 'Okay. I would protect one rest day, move two Bio/Biochem catch-up blocks earlier, and convert one content block into error-log review so the debt shrinks instead of hiding.'
+  if (prompt.includes('lighter')) return 'I would cap weekdays at 90 minutes, keep the weekend full-length review, and move low-yield content into next week’s optional buffer.'
+  return 'For exam week, I would lower new content, prioritize class exam prep, and keep MCAT work to CARS maintenance plus Anki reviews.'
 }
