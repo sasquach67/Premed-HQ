@@ -1,0 +1,117 @@
+import { useCallback, useMemo, useState } from 'react'
+import { useStore } from '@/store/store'
+import type { NormalizedScheduleEvent } from '@/lib/types'
+import {
+  connectCalendar,
+  connectCalendarSilent,
+  disconnectCalendar,
+  fetchPrimaryCalendarLabel,
+  fetchPrimaryDayEvents,
+  isCalendarConnected,
+} from '@/lib/googleCalendar'
+
+export type CalendarSyncStatus = 'idle' | 'connecting' | 'syncing' | 'connected' | 'error'
+
+export function useCalendarSync() {
+  const calendar = useStore((s) => s.settings.calendar)
+  const backupClientId = useStore((s) => s.settings.backup.googleClientId)
+  const update = useStore((s) => s.update)
+  const [status, setStatus] = useState<CalendarSyncStatus>('idle')
+  const [error, setError] = useState('')
+
+  const envClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || ''
+  const envApiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined) || ''
+
+  const clientId = useMemo(
+    () => calendar.googleClientId || envClientId || backupClientId || '',
+    [backupClientId, calendar.googleClientId, envClientId]
+  )
+  const apiKey = calendar.googleApiKey || envApiKey
+  const connected = calendar.enabled && isCalendarConnected()
+
+  const saveEvents = useCallback((events: NormalizedScheduleEvent[], connectedAccount?: string) => {
+    update((d) => {
+      d.settings.calendar.enabled = true
+      d.settings.calendar.cachedEvents = events
+      d.settings.calendar.lastSyncedAt = Date.now()
+      d.settings.calendar.lastError = undefined
+      if (connectedAccount) d.settings.calendar.connectedAccount = connectedAccount
+      if (!d.settings.calendar.googleClientId && clientId && clientId !== backupClientId) d.settings.calendar.googleClientId = clientId
+      if (!d.settings.calendar.googleApiKey && apiKey) d.settings.calendar.googleApiKey = apiKey
+    })
+  }, [apiKey, backupClientId, clientId, update])
+
+  const refresh = useCallback(async (date = new Date()) => {
+    setStatus('syncing')
+    setError('')
+    try {
+      if (!isCalendarConnected()) throw new Error('Reconnect Google Calendar to refresh today’s events.')
+      const [events, label] = await Promise.all([
+        fetchPrimaryDayEvents(date),
+        fetchPrimaryCalendarLabel().catch(() => undefined),
+      ])
+      saveEvents(events, label)
+      setStatus('connected')
+      return events
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Calendar refresh failed.'
+      setError(msg)
+      setStatus('error')
+      update((d) => { d.settings.calendar.lastError = msg })
+      throw e
+    }
+  }, [saveEvents, update])
+
+  const connect = useCallback(async (date = new Date()) => {
+    setStatus('connecting')
+    setError('')
+    try {
+      await connectCalendar(clientId)
+      const events = await refresh(date)
+      return events
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Calendar connection failed.'
+      setError(msg)
+      setStatus('error')
+      update((d) => { d.settings.calendar.lastError = msg })
+      throw e
+    }
+  }, [clientId, refresh, update])
+
+  const connectSilent = useCallback(async (date = new Date()) => {
+    if (!clientId) return null
+    try {
+      await connectCalendarSilent(clientId)
+      return refresh(date)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Reconnect Google Calendar.'
+      update((d) => { d.settings.calendar.lastError = msg })
+      return null
+    }
+  }, [clientId, refresh, update])
+
+  const disconnect = useCallback(() => {
+    disconnectCalendar()
+    setStatus('idle')
+    setError('')
+    update((d) => {
+      d.settings.calendar.enabled = false
+      d.settings.calendar.connectedAccount = undefined
+      d.settings.calendar.lastError = undefined
+    })
+  }, [update])
+
+  return {
+    calendar,
+    clientId,
+    apiKey,
+    connected,
+    configured: Boolean(clientId),
+    status,
+    error: error || calendar.lastError || '',
+    connect,
+    connectSilent,
+    refresh,
+    disconnect,
+  }
+}
