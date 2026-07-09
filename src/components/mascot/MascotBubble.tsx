@@ -17,8 +17,8 @@ const MOODS: RamMood[] = ['happy', 'wink', 'cheer']
 /** The ram in a speech bubble: serves one tip a day, shuffles on demand,
  *  can be dismissed, and its tip pool is editable. Decorative + human. */
 export function MascotBubble({
-  tips, ramSize = 84, side = 'left', floating = false, stacked = false,
-}: { tips: TipEntry[]; ramSize?: number; side?: 'left' | 'right'; floating?: boolean; stacked?: boolean }) {
+  tips, ramSize = 84, side = 'left', floating = false, stacked = false, compact = false,
+}: { tips: TipEntry[]; ramSize?: number; side?: 'left' | 'right'; floating?: boolean; stacked?: boolean; compact?: boolean }) {
   const dailyIndex = useMemo(() => {
     if (!tips.length) return 0
     const picked = pickDaily(tips, 7)
@@ -52,13 +52,14 @@ export function MascotBubble({
       {open && (
         <div
           className={cn(
-            'relative animate-pop-in rounded-2xl border border-border bg-card px-3.5 py-2.5 text-sm card-soft',
-            stacked ? 'w-full' : 'max-w-[15rem]',
+            'relative animate-pop-in border border-border bg-card card-soft',
+            compact ? 'rounded-xl px-3 py-2 text-xs' : 'rounded-2xl px-3.5 py-2.5 text-sm',
+            stacked ? 'w-full' : compact ? 'max-w-[13rem]' : 'max-w-[15rem]',
             floating && 'shadow-lg'
           )}
         >
           <p className="leading-snug text-foreground">{tip.text}</p>
-          <div className="mt-1.5 flex items-center justify-between gap-2">
+          <div className={cn('flex items-center justify-between gap-2', compact ? 'mt-1' : 'mt-1.5')}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {tip.source ?? 'tip'}
             </span>

@@ -33,10 +33,10 @@ export function AppShell() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex h-svh overflow-hidden">
-        {/* desktop sidebar — the aside reserves a gutter; the nav overlays on hover */}
+        {/* desktop sidebar — the aside reserves the real layout gutter; hover preview overlays smoothly */}
         <aside
-          className="relative hidden shrink-0 transition-[width] duration-200 lg:block"
-          style={{ width: collapsed ? '4.25rem' : '16rem' }}
+          className="relative hidden shrink-0 transition-[width] duration-500 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none lg:block"
+          style={{ width: collapsed ? '4.75rem' : '16rem' }}
         >
           <Sidebar collapsible />
         </aside>

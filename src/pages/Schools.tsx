@@ -13,15 +13,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 const COLUMNS: ColumnDef[] = [
-  { key: 'name', header: 'School', type: 'text', width: '200px', placeholder: 'School name' },
+  { key: 'name', header: 'School', type: 'text', width: '170px', placeholder: 'School name', wrap: true },
   { key: 'state', header: 'St', type: 'text', width: '56px' },
-  { key: 'type', header: 'Type', type: 'select', width: '90px', options: ['MD', 'DO', 'Other'] },
-  { key: 'category', header: 'Tier', type: 'select', width: '120px', options: ['reach', 'target', 'safety', 'undecided'] },
-  { key: 'status', header: 'Status', type: 'select', width: '140px', options: ['researching', 'will-apply', 'applied', 'secondary', 'interview', 'accepted', 'waitlist', 'rejected'] },
-  { key: 'medianGpa', header: 'Med GPA', type: 'number', width: '90px', align: 'right' },
-  { key: 'medianMcat', header: 'Med MCAT', type: 'number', width: '96px', align: 'right' },
-  { key: 'msarUrl', header: 'MSAR', type: 'link', width: '110px' },
-  { key: 'notes', header: 'Mission / notes', type: 'longtext', placeholder: 'Why it fits…' },
+  { key: 'type', header: 'Type', type: 'select', width: '82px', options: ['MD', 'DO', 'Other'] },
+  { key: 'category', header: 'Tier', type: 'select', width: '108px', options: ['reach', 'target', 'safety', 'undecided'] },
+  { key: 'status', header: 'Status', type: 'select', width: '128px', options: ['researching', 'will-apply', 'applied', 'secondary', 'interview', 'accepted', 'waitlist', 'rejected'] },
+  { key: 'medianGpa', header: 'Med GPA', type: 'number', width: '82px', align: 'right' },
+  { key: 'medianMcat', header: 'Med MCAT', type: 'number', width: '88px', align: 'right' },
+  { key: 'msarUrl', header: 'MSAR', type: 'link', width: '150px' },
+  { key: 'notes', header: 'Mission / notes', type: 'longtext', width: '280px', placeholder: 'Why it fits…', wrap: true },
 ]
 
 export function Schools() {

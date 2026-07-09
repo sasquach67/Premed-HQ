@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Archive as ArchiveIcon, Cloud, Download, Upload, RotateCcw, Check, AlertCircle,
-  Palette, ExternalLink, CheckCircle2, Trash2,
+  Archive as ArchiveIcon, Cloud, CloudOff, Download, Upload, RotateCcw, Check, AlertCircle,
+  Palette, ExternalLink, CheckCircle2, Trash2, CalendarClock, RefreshCw, Unplug, Wifi, ShieldCheck,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { useBackup } from '@/store/useBackup'
+import { useCalendarSync } from '@/hooks/useCalendarSync'
 import { ROUTE_MAP } from '@/app/routes'
 import { exportJson, readJsonFile, looksLikeAppData } from '@/lib/dataIo'
 import { fmtDate, fmtTimeAgo } from '@/lib/date'
@@ -14,6 +15,7 @@ import type { AppData } from '@/lib/types'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +34,12 @@ export function Settings() {
   const [params] = useSearchParams()
   const [msg, setMsg] = useState('')
   const archiveRequested = params.get('tab') === 'archive'
+  const origin = window.location.origin
+  const isFileOrigin = window.location.protocol === 'file:'
+  const isLocalOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  const isHostedOrigin = window.location.protocol === 'https:' && !isLocalOrigin
+  const originOk = !isFileOrigin && (window.location.protocol === 'https:' || isLocalOrigin)
+  const backupReady = backup.enabled && backup.configured && backup.connected && Boolean(backup.lastBackupAt)
 
   useEffect(() => {
     if (archiveRequested) archiveRef.current?.scrollIntoView({ block: 'start' })
@@ -76,14 +84,49 @@ export function Settings() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Cloud className="size-4 text-primary" /> Google Drive backup</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+        <Card className={cn(backupReady ? 'border-success/40' : 'border-warning/40')}>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-2"><Cloud className="size-4 text-primary" /> Google Drive backup</span>
+              <Badge variant={backupReady ? 'success' : backup.enabled ? 'warning' : 'muted'}>
+                {backupReady ? 'Configured' : backup.enabled ? 'Needs reconnect' : 'Not configured'}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2 text-sm">
+              <BackupCheck
+                ok={originOk}
+                label={isHostedOrigin ? 'Hosted origin' : isLocalOrigin ? 'Local test origin' : 'Origin'}
+                detail={isFileOrigin ? 'Drive backup cannot run from file://. Deploy or run a dev server.' : origin}
+              />
+              <BackupCheck
+                ok={backup.configured}
+                label="OAuth Client ID"
+                detail={backup.configured ? `Loaded from ${backup.clientIdSource === 'env' ? 'VITE_GOOGLE_CLIENT_ID' : 'Settings'}` : 'Add a Web application Client ID.'}
+              />
+              <BackupCheck
+                ok={backup.enabled && backup.connected}
+                label="Drive session"
+                detail={backup.enabled ? (backup.connected ? 'Connected for this browser session.' : 'Saved, but reconnect needed after reload or token expiry.') : 'Click Connect Drive after adding the Client ID.'}
+              />
+              <BackupCheck
+                ok={Boolean(backup.lastBackupAt)}
+                label="Latest backup"
+                detail={backup.lastBackupAt ? `Backed up ${fmtTimeAgo(backup.lastBackupAt)}.` : 'No Drive backup has been written yet.'}
+              />
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
+              Add this exact origin in Google Cloud → OAuth client → Authorized JavaScript origins:
+              <code className="mt-1 block select-all rounded-md bg-card px-2 py-1 font-mono text-foreground">{origin}</code>
+            </div>
+
             <div className="space-y-1.5">
               <Label>Google OAuth Client ID</Label>
               <Input
-                defaultValue={settings.backup.googleClientId}
-                placeholder="xxxxxx.apps.googleusercontent.com"
+                defaultValue={settings.backup.googleClientId || (backup.clientIdSource === 'env' ? backup.clientId : '')}
+                placeholder="xxxxxx.apps.googleusercontent.com or VITE_GOOGLE_CLIENT_ID"
                 onBlur={(e) => update((d) => { d.settings.backup.googleClientId = e.target.value.trim() })}
               />
               <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
@@ -93,9 +136,9 @@ export function Settings() {
             <div className="flex flex-wrap items-center gap-2">
               {backup.enabled
                 ? <Button variant="outline" onClick={backup.disconnect}>Disconnect</Button>
-                : <Button onClick={backup.connect}><Cloud className="size-4" /> Connect Drive</Button>}
-              <Button variant="outline" onClick={backup.backupNow} disabled={!backup.enabled}>Back up now</Button>
-              <Button variant="ghost" onClick={restoreFromDrive} disabled={!backup.enabled}>Restore</Button>
+                : <Button onClick={backup.connect} disabled={!backup.configured}><Cloud className="size-4" /> Connect Drive</Button>}
+              <Button variant="outline" onClick={backup.backupNow} disabled={!backup.configured}>Back up now</Button>
+              <Button variant="ghost" onClick={restoreFromDrive} disabled={!backup.configured}>Restore</Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {backup.lastBackupAt ? <>Last backed up {fmtTimeAgo(backup.lastBackupAt)}.</> : 'Not backed up to Drive yet.'}
@@ -103,6 +146,8 @@ export function Settings() {
             </p>
           </CardContent>
         </Card>
+
+        <CalendarIntegrationSection onMessage={setMsg} />
 
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="size-4 text-primary" /> Preferences</CardTitle></CardHeader>
@@ -164,6 +209,149 @@ export function Settings() {
           <ArchiveSettingsSection highlight={archiveRequested} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function BackupCheck({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
+  const Icon = ok ? ShieldCheck : CloudOff
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-border bg-card/50 px-3 py-2">
+      <Icon className={cn('mt-0.5 size-4 shrink-0', ok ? 'text-success' : 'text-warning')} />
+      <div className="min-w-0">
+        <p className="font-bold">{label}</p>
+        <p className="break-words text-xs text-muted-foreground">{detail}</p>
+      </div>
+    </div>
+  )
+}
+
+function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) => void }) {
+  const sync = useCalendarSync()
+  const update = useStore((s) => s.update)
+  const calendar = sync.calendar
+
+  async function connect() {
+    try {
+      await sync.connect()
+      onMessage('Google Calendar connected read-only.')
+    } catch (e) {
+      onMessage(e instanceof Error ? e.message : 'Calendar connection failed.')
+    }
+  }
+
+  async function refresh() {
+    try {
+      await sync.refresh()
+      onMessage('Calendar refreshed.')
+    } catch (e) {
+      onMessage(e instanceof Error ? e.message : 'Calendar refresh failed.')
+    }
+  }
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><CalendarClock className="size-4 text-primary" /> Google Calendar schedule</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        <section className="space-y-3">
+          <div className="rounded-xl border border-border bg-muted/25 px-3 py-2 text-sm">
+            <p className="font-bold">{sync.connected ? `Connected${calendar.connectedAccount ? ` · ${calendar.connectedAccount}` : ''}` : calendar.enabled ? 'Reconnect needed' : 'Not connected'}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Premed HQ requests read-only Calendar access only. It cannot edit events.</p>
+            {calendar.lastSyncedAt && <p className="mt-1 text-xs text-muted-foreground">Last synced {fmtTimeAgo(calendar.lastSyncedAt)}.</p>}
+            {(sync.error || calendar.lastError) && <p className="mt-1 flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" /> {sync.error || calendar.lastError}</p>}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="block text-sm font-bold">
+              OAuth Client ID
+              <Input
+                defaultValue={calendar.googleClientId}
+                placeholder="VITE_GOOGLE_CLIENT_ID or paste client ID"
+                onBlur={(e) => update((d) => { d.settings.calendar.googleClientId = e.target.value.trim() })}
+              />
+            </label>
+            <label className="block text-sm font-bold">
+              API key
+              <Input
+                defaultValue={calendar.googleApiKey}
+                placeholder="Optional VITE_GOOGLE_API_KEY"
+                onBlur={(e) => update((d) => { d.settings.calendar.googleApiKey = e.target.value.trim() })}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {sync.connected
+              ? <Button variant="outline" onClick={sync.disconnect}><Unplug className="size-4" /> Disconnect</Button>
+              : <Button onClick={connect} disabled={!sync.configured || sync.status === 'connecting'}><Wifi className="size-4" /> Connect Google Calendar</Button>}
+            <Button variant="outline" onClick={refresh} disabled={!sync.connected || sync.status === 'syncing'}>
+              <RefreshCw className={cn('size-4', sync.status === 'syncing' && 'animate-spin')} /> Refresh
+            </Button>
+            <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-2 text-xs font-semibold text-primary hover:underline">
+              OAuth setup <ExternalLink className="size-3" />
+            </a>
+          </div>
+
+          {!sync.configured && <p className="text-xs text-muted-foreground">Authorized JavaScript origin for local setup: <code className="font-mono">http://localhost:5180</code>. The current dev preview can still show mock schedule data.</p>}
+        </section>
+
+        <section className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm font-bold">
+              Timeline start
+              <Input
+                type="time"
+                defaultValue={calendar.timelineStart}
+                onBlur={(e) => update((d) => { d.settings.calendar.timelineStart = e.target.value || '06:00' })}
+              />
+            </label>
+            <label className="block text-sm font-bold">
+              Timeline end
+              <Input
+                type="time"
+                defaultValue={calendar.timelineEnd}
+                onBlur={(e) => update((d) => { d.settings.calendar.timelineEnd = e.target.value || '23:00' })}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Label className="normal-case">Time format</Label>
+            <div className="flex gap-1 rounded-lg bg-muted p-1">
+              {(['12h', '24h'] as const).map((format) => (
+                <button
+                  key={format}
+                  onClick={() => update((d) => { d.settings.calendar.timeFormat = format })}
+                  className={cn('rounded-md px-3 py-1 text-xs font-semibold uppercase', calendar.timeFormat === format ? 'bg-card shadow-sm' : 'text-muted-foreground')}
+                >
+                  {format}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <ToggleRow label="Locations" checked={calendar.showLocations} onChange={(v) => update((d) => { d.settings.calendar.showLocations = v })} />
+            <ToggleRow label="All-day" checked={calendar.showAllDayEvents} onChange={(v) => update((d) => { d.settings.calendar.showAllDayEvents = v })} />
+            <ToggleRow label="Mock preview" checked={calendar.useMockPreview} onChange={(v) => update((d) => { d.settings.calendar.useMockPreview = v })} />
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
+            Selected calendar: <b className="text-foreground">Primary</b>. Additional visible calendars can be added later without changing the hero renderer.
+          </div>
+        </section>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2">
+      <span className="text-sm font-bold">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }

@@ -26,6 +26,8 @@ function contentSignature(): string {
 export function useBackup() {
   const backup = useStore((s) => s.settings.backup)
   const update = useStore((s) => s.update)
+  const envClientId = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim()
+  const clientId = backup.googleClientId || envClientId
   const [status, setStatus] = useState<BackupStatus>('idle')
   const [error, setError] = useState<string>('')
   const lastSig = useRef<string>('')
@@ -56,7 +58,7 @@ export function useBackup() {
     setStatus('connecting')
     setError('')
     try {
-      await drive.connect(backup.googleClientId)
+      await drive.connect(clientId)
       update((d) => { d.settings.backup.enabled = true })
       await push()
     } catch (e) {
@@ -64,7 +66,7 @@ export function useBackup() {
       setError(msg)
       setStatus('error')
     }
-  }, [backup.googleClientId, push, update])
+  }, [clientId, push, update])
 
   const disconnect = useCallback(() => {
     drive.disconnect()
@@ -72,27 +74,33 @@ export function useBackup() {
     setStatus('idle')
   }, [update])
 
+  const backupNow = useCallback(async () => {
+    if (!drive.isConnected()) await drive.connect(clientId)
+    await push()
+  }, [clientId, push])
+
   const restore = useCallback(async () => {
+    if (!drive.isConnected()) await drive.connect(clientId)
     const data = await drive.downloadBackup()
     return data // caller decides whether to replaceAll
-  }, [])
+  }, [clientId])
 
   // ---- daily-on-open check: silently re-auth + push if >=24h stale ----
   useEffect(() => {
     if (dailyChecked.current) return
     dailyChecked.current = true
-    if (!backup.enabled || !backup.googleClientId) return
+    if (!backup.enabled || !clientId) return
     const stale = !backup.lastBackupAt || Date.now() - backup.lastBackupAt >= DAY_MS
     if (!stale) return
     ;(async () => {
       try {
-        await drive.connectSilent(backup.googleClientId)
+        await drive.connectSilent(clientId)
         await push()
       } catch {
         setStatus('offline') // needs a manual reconnect
       }
     })()
-  }, [backup.enabled, backup.googleClientId, backup.lastBackupAt, push])
+  }, [backup.enabled, backup.lastBackupAt, clientId, push])
 
   // ---- debounced auto-backup while open ----
   useEffect(() => {
@@ -115,10 +123,12 @@ export function useBackup() {
     enabled: backup.enabled,
     connected: drive.isConnected(),
     lastBackupAt: backup.lastBackupAt,
-    clientId: backup.googleClientId,
+    clientId,
+    clientIdSource: backup.googleClientId ? 'settings' : envClientId ? 'env' : 'missing',
+    configured: Boolean(clientId),
     connect,
     disconnect,
-    backupNow: push,
+    backupNow,
     restore,
   }
 }

@@ -111,6 +111,7 @@ function AvatarUpload({ value, name, onChange }: { value?: string; name: string;
 function AutoCv() {
   const profile = useStore((s) => s.profile)
   const experiences = useStore((s) => s.experiences)
+  const update = useStore((s) => s.update)
 
   const byCat = useMemo(() => {
     const map = new Map<ExperienceCategory, typeof experiences>()
@@ -119,43 +120,56 @@ function AutoCv() {
   }, [experiences])
 
   return (
-    <Card>
-      <CardContent className="prose-sm mx-auto max-w-3xl space-y-6 py-8">
-        <header className="border-b border-border pb-4 text-center">
-          <h2 className="font-display text-3xl font-bold">{profile.name}</h2>
-          <p className="text-sm text-muted-foreground">{profile.major} · {profile.track} · {profile.school} · {profile.classYear}</p>
-        </header>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader><CardTitle>Edit CV header</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(['name', 'major', 'track', 'school', 'classYear', 'matriculationTarget', 'applicationCycle'] as (keyof ProfileT)[]).map((key) => (
+            <div key={key} className="space-y-1.5">
+              <Label>{key.replace(/([A-Z])/g, ' $1')}</Label>
+              <Input value={String(profile[key] ?? '')} onChange={(e) => update((d) => { (d.profile[key] as string) = e.target.value })} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="prose-sm mx-auto max-w-3xl space-y-6 py-8">
+          <header className="border-b border-border pb-4 text-center">
+            <h2 className="font-display text-3xl font-bold">{profile.name}</h2>
+            <p className="text-sm text-muted-foreground">{profile.major} · {profile.track} · {profile.school} · {profile.classYear}</p>
+          </header>
 
-        <section>
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary"><GraduationCap className="size-4" /> Education</h3>
-          <p className="text-sm font-semibold">{profile.school} — {profile.major}</p>
-          <p className="text-sm text-muted-foreground">Expected {profile.classYear}</p>
-        </section>
-
-        {[...byCat.entries()].map(([cat, items]) => (
-          <section key={cat}>
-            <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-primary">{CATEGORY_LABEL[cat]}</h3>
-            <ul className="space-y-2">
-              {items.map((e) => (
-                <li key={e.id} className="text-sm">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-semibold">{e.role || 'Role'}{e.org ? `, ${e.org}` : ''}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{e.startDate ? fmtDate(e.startDate) : ''}{e.hours ? ` · ${e.hours}h` : ''}</span>
-                  </div>
-                  {e.description && <p className="text-muted-foreground">{e.description}</p>}
-                </li>
-              ))}
-            </ul>
+          <section>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary"><GraduationCap className="size-4" /> Education</h3>
+            <p className="text-sm font-semibold">{profile.school} — {profile.major}</p>
+            <p className="text-sm text-muted-foreground">Expected {profile.classYear}</p>
           </section>
-        ))}
 
-        {experiences.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
-            Log roles in the experience pillars and they’ll appear here automatically, formatted as a CV.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+          {[...byCat.entries()].map(([cat, items]) => (
+            <section key={cat}>
+              <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-primary">{CATEGORY_LABEL[cat]}</h3>
+              <ul className="space-y-2">
+                {items.map((e) => (
+                  <li key={e.id} className="text-sm">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-semibold">{e.role || 'Role'}{e.org ? `, ${e.org}` : ''}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{e.startDate ? fmtDate(e.startDate) : ''}{e.hours ? ` · ${e.hours}h` : ''}</span>
+                    </div>
+                    {e.description && <p className="text-muted-foreground">{e.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+
+          {experiences.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+              Log roles in the experience pillars and they’ll appear here automatically, formatted as a CV.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

@@ -39,6 +39,9 @@ export interface Course {
 }
 
 /** Degree-requirement checklist item (UNC Tar Heel Tracker). */
+export type RequirementSourceType = 'official' | 'planner-inspired' | 'user-note' | 'premed-advice'
+export type RequirementVerificationStatus = 'verified' | 'needs-verification'
+
 export interface RequirementItem {
   id: ID
   group: string           // "Major: Additional Requirements", "First-Year Foundations", "Med Prerequisites"...
@@ -47,6 +50,11 @@ export interface RequirementItem {
   /** course code(s) that satisfy this requirement */
   satisfiedBy?: string[]
   done: boolean
+  sourceType?: RequirementSourceType
+  sourceLabel?: string
+  sourceUrl?: string
+  lastVerified?: string
+  verificationStatus?: RequirementVerificationStatus
   order: number
 }
 
@@ -73,9 +81,230 @@ export interface ExperienceEntry {
   order: number
 }
 
-export type TaskType =
-  | 'Assignment' | 'Exam' | 'Quiz' | 'Lab' | 'Reading'
-  | 'Application' | 'Meeting' | 'Advising' | 'Personal' | 'Other'
+export type AcademicTagColor =
+  | 'gray' | 'brown' | 'orange' | 'yellow' | 'green'
+  | 'blue' | 'purple' | 'pink' | 'red'
+
+export interface AcademicCourseOption {
+  id: ID
+  name: string
+  title?: string
+  color: AcademicTagColor
+  icon?: string
+  archived?: boolean
+}
+
+export interface AcademicTypeOption {
+  id: ID
+  name: string
+  color: AcademicTagColor
+  archived?: boolean
+}
+
+export type ClassStatus = 'active' | 'archived'
+export type TopicStatus = 'not-started' | 'seen' | 'notes-made' | 'cards-made' | 'reviewing' | 'mastered' | 'weak' | 'ready'
+export type TopicConfidence = 1 | 2 | 3
+export type ClassNoteType = 'lecture' | 'reading' | 'lab' | 'study-guide' | 'exam-review' | 'question-log' | 'other'
+export type ClassNoteSyncStatus = 'local-only' | 'sync-ready' | 'synced' | 'error'
+export type ClassAssignmentType = 'homework' | 'quiz' | 'exam' | 'project' | 'reading' | 'lab' | 'discussion' | 'other'
+export type ClassAssignmentStatus = 'not-started' | 'in-progress' | 'submitted' | 'graded' | 'dropped'
+export type ClassFileType = 'syllabus' | 'lecture-slides' | 'reading' | 'study-guide' | 'rubric' | 'past-exam' | 'lab-handout' | 'link' | 'other'
+export type ClassContactRole = 'professor' | 'TA' | 'advisor' | 'study-partner' | 'tutor' | 'peer' | 'other'
+export type WeakAreaSource = 'manual' | 'flashcard' | 'quiz' | 'exam' | 'practice' | 'practice-exam' | 'assignment' | 'ai' | 'other'
+export type WeakAreaReason = 'conceptual' | 'memorization' | 'careless' | 'misread' | 'timing' | 'application' | 'other'
+export type WeakAreaStatus = 'active' | 'improving' | 'resolved'
+export type PracticeExamDifficulty = 'easy' | 'medium' | 'hard' | 'mixed'
+export type PracticeQuestionType = 'multiple-choice' | 'short-answer' | 'free-response'
+export type PracticeExamStatus = 'draft' | 'in-progress' | 'submitted' | 'reviewed'
+
+export interface ClassCenterClass {
+  id: ID
+  courseCode: string
+  courseTitle: string
+  nickname?: string
+  semester: string
+  instructor?: string
+  meetingDays?: string
+  meetingTime?: string
+  location?: string
+  color: AcademicTagColor
+  icon: string
+  background?: string
+  status: ClassStatus
+  currentTopicId?: ID
+  syllabusUrl?: string
+  canvasUrl?: string
+  driveFolderUrl?: string
+  goodNotesUrl?: string
+  ankiDeckName?: string
+  notesDocUrl?: string
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface ClassTopic {
+  id: ID
+  classId: ID
+  title: string
+  unit?: string
+  status: TopicStatus
+  confidence: TopicConfidence
+  lastReviewedAt?: number
+  nextReviewAt?: number
+  sourceNoteIds: ID[]
+  linkedNoteIds?: ID[]
+  linkedAssignmentIds?: ID[]
+  linkedFileIds?: ID[]
+  createdAt?: number
+  updatedAt?: number
+  order: number
+}
+
+export interface ClassNote {
+  id: ID
+  classId: ID
+  title: string
+  type: ClassNoteType
+  date?: string
+  unit?: string
+  topicIds: ID[]
+  content: string
+  externalDocUrl?: string
+  googleDocId?: string
+  syncStatus: ClassNoteSyncStatus
+  linkedFileIds: ID[]
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface ClassAssignment {
+  id: ID
+  classId: ID
+  title: string
+  type: ClassAssignmentType
+  dueDate?: string
+  status: ClassAssignmentStatus
+  linkedTopicIds: ID[]
+  linkedFileIds: ID[]
+  notes?: string
+  coveredTopicIds?: ID[]
+  studyPlan?: string
+  reflection?: string
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface ClassFileResource {
+  id: ID
+  classId: ID
+  title: string
+  type: ClassFileType
+  url?: string
+  fileName?: string
+  mimeType?: string
+  notes?: string
+  linkedTopicIds: ID[]
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface ClassContact {
+  id: ID
+  classId: ID
+  name: string
+  role: ClassContactRole
+  email?: string
+  officeHours?: string
+  location?: string
+  nickname?: string
+  notes?: string
+  lastContactedAt?: number
+  followUpTaskId?: ID
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface ClassWeakArea {
+  id: ID
+  classId: ID
+  topicId?: ID
+  label: string
+  source: WeakAreaSource
+  reason: WeakAreaReason
+  severity: TopicConfidence
+  notes?: string
+  relatedNoteId?: ID
+  relatedAssignmentId?: ID
+  relatedPracticeQuestionId?: ID
+  createdAt: number
+  lastPracticedAt?: number
+  status: WeakAreaStatus
+  order: number
+}
+
+export interface PracticeExam {
+  id: ID
+  classId: ID
+  title: string
+  topicIds: ID[]
+  sourceNoteIds: ID[]
+  sourceFileIds: ID[]
+  difficulty: PracticeExamDifficulty
+  questionCount: number
+  questionTypes: PracticeQuestionType[]
+  status: PracticeExamStatus
+  score?: number
+  totalAutoGradable?: number
+  startedAt?: number
+  submittedAt?: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface PracticeQuestion {
+  id: ID
+  examId: ID
+  classId: ID
+  topicIds: ID[]
+  type: PracticeQuestionType
+  prompt: string
+  choices?: string[]
+  correctAnswer?: string
+  explanation?: string
+  userAnswer?: string
+  isCorrect?: boolean
+  flagged?: boolean
+  selfGrade?: 'correct' | 'partial' | 'missed'
+  weakReason?: WeakAreaReason
+  order: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface ClassCenterData {
+  classes: ClassCenterClass[]
+  topics: ClassTopic[]
+  notes: ClassNote[]
+  assignments: ClassAssignment[]
+  files: ClassFileResource[]
+  contacts: ClassContact[]
+  weakAreas: ClassWeakArea[]
+  practiceExams: PracticeExam[]
+  practiceQuestions: PracticeQuestion[]
+}
+
+export interface AcademicTagSettings {
+  courseOptions: AcademicCourseOption[]
+  assignmentTypeOptions: AcademicTypeOption[]
+  classCenter: ClassCenterData
+}
+
+export type TaskType = string
 
 export type TaskProgress = 'Not started' | 'Working on' | 'Finished'
 export type KanbanColumn = 'todo' | 'doing' | 'done'
@@ -84,7 +313,9 @@ export type KanbanColumn = 'todo' | 'doing' | 'done'
 export interface TaskItem {
   id: ID
   title: string
+  courseId?: ID
   course?: string
+  typeId?: ID
   type: TaskType
   deadline?: string       // ISO date
   progress: TaskProgress
@@ -167,6 +398,7 @@ export interface McatErrorLog {
   topic: string
   whyMissed: string
   fix: string
+  source?: string       // where it came from (AAMC FL2, UWorld, …)
   resolved: boolean
   order: number
 }
@@ -266,13 +498,24 @@ export interface NotePage {
 }
 
 /** An extracurricular organization (club / sport / org) — NOT an hour log. */
+export interface OrgReflection {
+  id: ID
+  date: string
+  title: string
+  body: string
+}
+
 export interface Org {
   id: ID
   name: string
   type: string            // Club, Sport, Greek life, Volunteer org, Professional, Cultural...
   role: string            // Member, Officer, President, Captain...
   status: 'interested' | 'member' | 'leader' | 'inactive'
-  reflection: string      // experiences / write-ups (feeds essays)
+  /** @deprecated Legacy single reflection; migrated into reflections[]. */
+  reflection?: string
+  reflections: OrgReflection[]
+  joinedAt?: string       // ISO month, e.g. 2026-08
+  nextGoal?: string
   opportunities: string   // events, positions, things to pursue
   meetingInfo: string     // calendar / events / when-where
   link: string
@@ -310,10 +553,40 @@ export interface BackupMeta {
   lastError?: string
 }
 
+export interface NormalizedScheduleEvent {
+  id: ID
+  title: string
+  start: string
+  end?: string
+  allDay?: boolean
+  location?: string
+  meetingUrl?: string
+  calendarId?: string
+  color?: string
+  status?: 'confirmed' | 'tentative' | 'cancelled'
+}
+
+export interface CalendarSettings {
+  enabled: boolean
+  googleClientId: string
+  googleApiKey: string
+  connectedAccount?: string
+  lastSyncedAt?: number
+  lastError?: string
+  cachedEvents: NormalizedScheduleEvent[]
+  timelineStart: string
+  timelineEnd: string
+  timeFormat: '12h' | '24h'
+  showLocations: boolean
+  showAllDayEvents: boolean
+  useMockPreview: boolean
+}
+
 export interface Settings {
   theme: 'light' | 'dark' | 'system'
   visualTheme: 'ghibli' | 'doraemon'
   backup: BackupMeta
+  calendar: CalendarSettings
   quotesApi: boolean      // pull daily quote live vs local bank
   sidebarCollapsed: boolean
   studentBannerDismissed: boolean
@@ -341,6 +614,7 @@ export interface AppData {
   profile: Profile
   goals: Goals
   courses: Course[]
+  academics: AcademicTagSettings
   requirements: RequirementItem[]
   experiences: ExperienceEntry[]
   tasks: TaskItem[]

@@ -8,7 +8,9 @@ import { uid } from '@/lib/id'
 import type {
   AppData, Course, RequirementItem, TaskItem, StoryEntry, ResourceLink,
   TipEntry, AdvisingQuestion, McatScheduleItem, InterviewQA, FocusTarget,
-  QuarterlyGoal, SchoolEntry,
+  QuarterlyGoal, SchoolEntry, AcademicTagColor, AcademicTagSettings,
+  ClassAssignment, ClassCenterClass, ClassContact, ClassFileResource, ClassNote,
+  ClassTopic, ClassWeakArea, RequirementSourceType, RequirementVerificationStatus,
 } from '@/lib/types'
 
 /** attach incrementing `order` + a fresh `id` to seed rows */
@@ -75,40 +77,359 @@ function cAP(term: string, code: string, title: string, credits: number, bcpm: b
   return { term, code, title, credits, grade: '', bcpm, status: 'completed', inResidence: false, satisfies: ['Satisfied by incoming credit'] }
 }
 
-// ---- Tar Heel Tracker: degree + major + med requirements ----
+const TAG_COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'pink', 'yellow', 'red', 'gray']
+
+function slug(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tag'
+}
+
+function typeId(name: string) {
+  return `type-${slug(name)}`
+}
+
+const academics: AcademicTagSettings = {
+  courseOptions: courses.map((course, index) => ({
+    id: `course-${slug(course.code || course.title || course.id)}`,
+    name: course.code || course.title || 'Course',
+    title: course.title,
+    color: TAG_COLORS[index % TAG_COLORS.length],
+    archived: false,
+  })),
+  assignmentTypeOptions: [
+    'Important Date', 'Presentation', 'Quiz', 'Test', 'Exam', 'Assignment',
+    'Group Work', 'Lab', 'Application', 'Meeting', 'Advising', 'Personal',
+  ].map((name, index) => ({
+    id: typeId(name),
+    name,
+    color: TAG_COLORS[(index + 2) % TAG_COLORS.length],
+    archived: false,
+  })),
+  classCenter: createClassCenterSeed(),
+}
+
+function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
+  const now = Date.parse('2026-06-27T12:00:00.000Z')
+  const classRows: ClassCenterClass[] = [
+    {
+      id: 'class-biol-103',
+      courseCode: 'BIOL 103',
+      courseTitle: 'How Cells Function',
+      nickname: 'Cells',
+      semester: 'Fall 2026',
+      instructor: 'Prof. Ott',
+      meetingDays: 'MWF',
+      meetingTime: '10:10 AM-11:00 AM',
+      location: 'Genome Sciences 100',
+      color: 'green',
+      icon: '🧬',
+      background: 'cell-biology',
+      status: 'active',
+      currentTopicId: 'topic-biol-103-cell-signaling',
+      syllabusUrl: '',
+      canvasUrl: '',
+      driveFolderUrl: '',
+      goodNotesUrl: '',
+      ankiDeckName: 'BIOL 103',
+      notesDocUrl: '',
+      createdAt: now,
+      updatedAt: now,
+      order: 0,
+    },
+    {
+      id: 'class-psyc-101',
+      courseCode: 'PSYC 101',
+      courseTitle: 'General Psychology',
+      nickname: 'Psych',
+      semester: 'Fall 2026',
+      instructor: '',
+      meetingDays: 'Tue/Thu',
+      meetingTime: '11:00 AM-12:15 PM',
+      location: '',
+      color: 'purple',
+      icon: '🧠',
+      background: 'psychology',
+      status: 'active',
+      currentTopicId: 'topic-psyc-101-learning',
+      ankiDeckName: 'PSYC 101',
+      createdAt: now,
+      updatedAt: now,
+      order: 1,
+    },
+    {
+      id: 'class-chem-241',
+      courseCode: 'CHEM 241',
+      courseTitle: 'Modern Analytical Methods',
+      nickname: 'Analytical',
+      semester: 'Spring 2027',
+      instructor: '',
+      meetingDays: 'MWF',
+      meetingTime: '',
+      location: '',
+      color: 'blue',
+      icon: '⚗️',
+      background: 'lab',
+      status: 'active',
+      currentTopicId: 'topic-chem-241-equilibrium',
+      ankiDeckName: 'CHEM 241',
+      createdAt: now,
+      updatedAt: now,
+      order: 2,
+    },
+  ]
+  const topics: ClassTopic[] = [
+    topic('topic-biol-103-intro', 'class-biol-103', 'Intro to course', 'Unit 1', 'ready', 3, 0),
+    topic('topic-biol-103-cell-structure', 'class-biol-103', 'Cell structure', 'Unit 1', 'notes-made', 3, 1),
+    topic('topic-biol-103-membrane', 'class-biol-103', 'Membrane transport', 'Unit 1', 'reviewing', 3, 2),
+    topic('topic-biol-103-cell-signaling', 'class-biol-103', 'Cell signaling', 'Unit 2', 'weak', 2, 3),
+    topic('topic-psyc-101-learning', 'class-psyc-101', 'Learning and conditioning', 'Foundations', 'reviewing', 3, 0),
+    topic('topic-psyc-101-memory', 'class-psyc-101', 'Memory systems', 'Foundations', 'not-started', 2, 1),
+    topic('topic-chem-241-equilibrium', 'class-chem-241', 'Chemical equilibrium', 'Methods', 'seen', 3, 0),
+    topic('topic-chem-241-spectroscopy', 'class-chem-241', 'Spectroscopy basics', 'Methods', 'not-started', 2, 1),
+  ]
+  const notes: ClassNote[] = [
+    {
+      id: 'note-biol-103-lecture-1',
+      classId: 'class-biol-103',
+      title: 'Lecture 1 — What cells do',
+      type: 'lecture',
+      date: '2026-08-24',
+      unit: 'Unit 1',
+      topicIds: ['topic-biol-103-intro', 'topic-biol-103-cell-structure'],
+      content: 'Starter note: define the recurring cell biology themes and mark what needs a second pass.',
+      externalDocUrl: '',
+      syncStatus: 'sync-ready',
+      linkedFileIds: [],
+      createdAt: now,
+      updatedAt: now,
+      order: 0,
+    },
+  ]
+  const assignments: ClassAssignment[] = [
+    {
+      id: 'assignment-biol-103-exam-1',
+      classId: 'class-biol-103',
+      title: 'Exam 1',
+      type: 'exam',
+      dueDate: '2026-09-18',
+      status: 'not-started',
+      linkedTopicIds: ['topic-biol-103-cell-structure', 'topic-biol-103-membrane', 'topic-biol-103-cell-signaling'],
+      linkedFileIds: [],
+      notes: 'Build a topic checklist once the syllabus drops.',
+      coveredTopicIds: ['topic-biol-103-cell-structure', 'topic-biol-103-membrane', 'topic-biol-103-cell-signaling'],
+      studyPlan: 'Make lecture notes, then convert weak concepts into active recall prompts.',
+      reflection: '',
+      createdAt: now,
+      updatedAt: now,
+      order: 0,
+    },
+    {
+      id: 'assignment-psyc-101-reading-1',
+      classId: 'class-psyc-101',
+      title: 'Learning chapter reading',
+      type: 'reading',
+      dueDate: '2026-09-04',
+      status: 'not-started',
+      linkedTopicIds: ['topic-psyc-101-learning'],
+      linkedFileIds: [],
+      notes: '',
+      createdAt: now,
+      updatedAt: now,
+      order: 1,
+    },
+  ]
+  const files: ClassFileResource[] = [
+    {
+      id: 'file-biol-103-syllabus',
+      classId: 'class-biol-103',
+      title: 'Syllabus',
+      type: 'syllabus',
+      url: '',
+      fileName: '',
+      mimeType: '',
+      notes: 'Add the official syllabus link once available.',
+      linkedTopicIds: [],
+      createdAt: now,
+      updatedAt: now,
+      order: 0,
+    },
+  ]
+  const contacts: ClassContact[] = [
+    {
+      id: 'contact-biol-103-prof',
+      classId: 'class-biol-103',
+      name: 'Prof. Ott',
+      role: 'professor',
+      email: '',
+      officeHours: 'Add after syllabus',
+      location: '',
+      nickname: '',
+      notes: 'Potential science faculty relationship if office hours become consistent.',
+      createdAt: now,
+      updatedAt: now,
+      order: 0,
+    },
+  ]
+  const weakAreas: ClassWeakArea[] = [
+    {
+      id: 'weak-biol-103-cell-signaling',
+      classId: 'class-biol-103',
+      topicId: 'topic-biol-103-cell-signaling',
+      label: 'Cell signaling',
+      source: 'manual',
+      reason: 'conceptual',
+      severity: 3,
+      notes: 'Needs a clean pathway map plus practice questions.',
+      createdAt: now,
+      status: 'active',
+      order: 0,
+    },
+  ]
+  return { classes: classRows, topics, notes, assignments, files, contacts, weakAreas, practiceExams: [], practiceQuestions: [] }
+}
+
+function topic(
+  id: string,
+  classId: string,
+  title: string,
+  unit: string,
+  status: ClassTopic['status'],
+  confidence: ClassTopic['confidence'],
+  order: number,
+): ClassTopic {
+  const now = Date.now()
+  return { id, classId, title, unit, status, confidence, sourceNoteIds: [], linkedNoteIds: [], linkedAssignmentIds: [], linkedFileIds: [], createdAt: now, updatedAt: now, order }
+}
+
+// ---- Tar Heel Tracker (from the official 2026–27 UNC catalog) ----
+// Groups mirror the four degree layers: incoming credit · IDEAs in Action gen-ed
+// · Neuroscience B.S. major · pre-med additions · university graduation rules.
+const G_AP = 'Incoming AP / transfer credit'
+const G_FYF = 'IDEAs in Action — First-Year Foundations'
+const G_FOCUS = 'IDEAs in Action — Focus Capacities'
+const G_REFLECT = 'IDEAs in Action — Reflection & Integration'
+const G_ADDL = 'IDEAs in Action — Additional (Fall 2025+)'
+const G_CORE = 'Neuroscience B.S. — Core'
+const G_MAJOR = 'Neuroscience B.S. — Additional Requirements (C or better)'
+const G_MED = 'Pre-Med additions (UNC HPA)'
+const G_GRAD = 'University graduation rules'
+const UNC_CATALOG_SOURCE = 'https://catalog.unc.edu/undergraduate/programs-study/neuroscience-major-bs/'
+const IDEAS_SOURCE = 'https://catalog.unc.edu/undergraduate/ideas-in-action/'
+const UNC_GRAD_SOURCE = 'https://catalog.unc.edu/policies-procedures/degree-requirements/'
+const UNC_HPA_SOURCE = 'https://hpa.unc.edu/'
+const VERIFIED_DATE = '2026-06-27'
+
 const requirements: RequirementItem[] = seq<Omit<RequirementItem, 'id' | 'order'>>([
-  r('Satisfied by incoming credit', 'Gen Chem I + II w/ labs (CHEM 101/101L, 102/102L)', true, ['CHEM 101', 'CHEM 102']),
-  r('Satisfied by incoming credit', 'Bio I w/ lab (BIOL 101/101L)', true, ['BIOL 101']),
-  r('Satisfied by incoming credit', 'Calculus I + II (MATH 231/232)', true, ['MATH 231', 'MATH 232']),
-  r('Satisfied by incoming credit', 'Statistics core (STOR 155)', true, ['STOR 155'], 'Verify med schools accept AP stat — else PSYC 210 in residence'),
-  r('Satisfied by incoming credit', 'Physics I + II (PHYS 114/115) — fully complete', true, ['PHYS 114', 'PHYS 115']),
-  r('Satisfied by incoming credit', 'NSCI 175 core + Global Language (SPAN 203)', true, ['NSCI 175', 'SPAN 203']),
+  // Incoming AP / transfer credit (what UNC awarded → see where it applies below)
+  r(G_AP, 'AP Chemistry 5 → CHEM 101/101L + 102/102L', true, ['CHEM 101', 'CHEM 102']),
+  r(G_AP, 'AP Biology 3 → BIOL 101 + 101L', true, ['BIOL 101']),
+  r(G_AP, 'AP Calculus BC → MATH 231 + MATH 232', true, ['MATH 231', 'MATH 232']),
+  r(G_AP, 'AP Physics C (Mech + E&M) → PHYS 114 + PHYS 115', true, ['PHYS 114', 'PHYS 115']),
+  r(G_AP, 'AP Statistics 4 → STOR 155', true, ['STOR 155']),
+  r(G_AP, 'Transfer: SPAN 203 (Global Language) + NSCI 175 (core)', true, ['SPAN 203', 'NSCI 175']),
 
-  r('Major — Additional Requirements (C or better)', 'BIOL 103 How Cells Function', false, ['BIOL 103']),
-  r('Major — Additional Requirements (C or better)', 'BIOL 220 Molecular Genetics', false, ['BIOL 220']),
-  r('Major — Additional Requirements (C or better)', 'CHEM 241 + 241L', false, ['CHEM 241', 'CHEM 241L']),
-  r('Major — Additional Requirements (C or better)', 'CHEM 261 (no lab)', false, ['CHEM 261']),
-  r('Major — Additional Requirements (C or better)', 'CHEM 262 + 262L', false, ['CHEM 262', 'CHEM 262L']),
-  r('Major — Additional Requirements (C or better)', 'COMP 110 or 116', false, ['COMP 116']),
-  r('Major — Additional Requirements (C or better)', 'PSYC 101', false, ['PSYC 101']),
+  // First-Year Foundations (complete in year 1; mostly at UNC)
+  r(G_FYF, 'IDST 101 College Thriving (1 cr)', false, ['IDST 101']),
+  r(G_FYF, 'IDST 111L Data Literacy Lab (1 cr)', false, ['IDST 111L']),
+  r(G_FYF, 'One First-Year Seminar / FY-Launch (3–4 cr)', false, ['NURS 50']),
+  r(G_FYF, 'ENGL 105 Composition & Rhetoric (3 cr)', false, ['ENGL 105'], 'Cannot be met by exam credit — must take at UNC.'),
+  r(G_FYF, 'Global Language through level 3', true, ['SPAN 203'], 'Met via SPAN 203.'),
 
-  r('Major — Core', 'Research-methods lab (NSCI 27*)', false, ['NSCI 27x']),
-  r('Major — Core', 'Two of NSCI 221 / 222 / 225', false, ['NSCI 221', 'NSCI 222']),
-  r('Major — Core', '6 hrs Knowledge Electives', false),
-  r('Major — Core', '6 hrs Math/Methods/Stats (MMS) Electives', false),
+  // Focus Capacities — one course in each of 9 areas + an Empirical Investigation Lab
+  r(G_FOCUS, 'Aesthetic & Interpretive Analysis', false),
+  r(G_FOCUS, 'Creative Expression, Practice & Production', false),
+  r(G_FOCUS, 'Engagement with the Human Past', false),
+  r(G_FOCUS, 'Ethical & Civic Values', false),
+  r(G_FOCUS, 'Global Understanding & Engagement', false),
+  r(G_FOCUS, 'Natural Scientific Investigation', false),
+  r(G_FOCUS, 'Power & Society', false),
+  r(G_FOCUS, 'Quantitative Reasoning', false),
+  r(G_FOCUS, 'Ways of Knowing', false),
+  r(G_FOCUS, 'Empirical Investigation Lab (1 cr)', false, undefined, 'Up to 5 capacities + the lab may be met by approved by-exam credit.'),
 
-  r('Med Prerequisites (UNC HPA)', 'CHEM 430 Biochemistry', false, ['CHEM 430'], 'Last content domino — gates MCAT date'),
-  r('Med Prerequisites (UNC HPA)', '1 sem Psychology (PSYC 101)', false, ['PSYC 101']),
-  r('Med Prerequisites (UNC HPA)', '1 sem Sociology (SOCI 101)', false, ['SOCI 101']),
-  r('Med Prerequisites (UNC HPA)', 'BIOL 252/252L (HPA recommended)', false, ['BIOL 252']),
+  // Reflection & Integration
+  r(G_REFLECT, 'Research & Discovery', false),
+  r(G_REFLECT, 'High-Impact Experience (or a 2nd Research & Discovery)', false),
+  r(G_REFLECT, 'Communication Beyond Carolina', false),
+  r(G_REFLECT, 'Interdisciplinary', false),
+  r(G_REFLECT, 'Lifetime Fitness (LFIT)', false),
+  r(G_REFLECT, 'Campus Life Experience (8 approved events)', false),
 
-  r('Graduation', 'First-Year Foundations (ENGL 105, NURS 50 sem, IDST 101, IDST 111L)', false),
-  r('Graduation', 'IDEAs-in-Action Focus Capacities', false),
-  r('Graduation', 'LFIT (lifetime fitness)', false),
-  r('Graduation', '120 total credit hours', false),
+  // Additional gen-ed (Fall 2025+ cohorts)
+  r(G_ADDL, 'Foundations of American Democracy', false),
+  r(G_ADDL, 'Disciplinary Distribution: Fine Arts & Humanities', false),
+  r(G_ADDL, 'Disciplinary Distribution: Natural Sciences & Math', false),
+  r(G_ADDL, 'Disciplinary Distribution: Social Sciences & Global', false),
+
+  // Neuroscience B.S. — Core (major total 78–79 hrs)
+  r(G_CORE, 'NSCI 175 Introduction to Neuroscience (C or better)', true, ['NSCI 175'], 'Met via transfer credit.'),
+  r(G_CORE, 'Statistics: PSYC 210 / STOR 120 / STOR 155', true, ['STOR 155'], 'STOR 155 (AP) satisfies the major; plan PSYC 210 in residence for med schools.'),
+  r(G_CORE, 'Research-methods lab: NSCI 27* (prioritized over PSYC 270)', false, ['NSCI 27x']),
+  r(G_CORE, 'Select two: NSCI 221 / 222 / 225', false, ['NSCI 221', 'NSCI 222']),
+  r(G_CORE, 'Knowledge Electives — 6 cr', false, ['CHEM 430', 'BIOL 240'], 'Premed-friendly options: CHEM 430 (biochem, double-duty), BIOL 240, BIOL 433, PSYC 245, EXSS 175.'),
+  r(G_CORE, 'Math/Methods/Stats (MMS) Electives — 6 cr', false, ['PSYC 210'], 'Options: PSYC 210, MATH 233/347, STOR 215/320, COMP 283 …'),
+
+  // Neuroscience B.S. — Additional Requirements (every one needs a C or better)
+  r(G_MAJOR, 'BIOL 101 + 101L', true, ['BIOL 101'], 'AP ✓'),
+  r(G_MAJOR, 'BIOL 103 How Cells Function', false, ['BIOL 103']),
+  r(G_MAJOR, 'BIOL 220 Molecular Genetics', false, ['BIOL 220']),
+  r(G_MAJOR, 'CHEM 101 + 101L', true, ['CHEM 101'], 'AP ✓'),
+  r(G_MAJOR, 'CHEM 102 + 102L', true, ['CHEM 102'], 'AP ✓'),
+  r(G_MAJOR, 'CHEM 241 + 241L', false, ['CHEM 241', 'CHEM 241L']),
+  r(G_MAJOR, 'CHEM 261 (no lab)', false, ['CHEM 261']),
+  r(G_MAJOR, 'CHEM 262 + 262L', false, ['CHEM 262', 'CHEM 262L']),
+  r(G_MAJOR, 'COMP 110 or 116', false, ['COMP 116']),
+  r(G_MAJOR, 'MATH 231 + 232', true, ['MATH 231', 'MATH 232'], 'AP ✓'),
+  r(G_MAJOR, 'PHYS 114 or 118', true, ['PHYS 114'], 'AP ✓'),
+  r(G_MAJOR, 'PHYS 115 or 119', true, ['PHYS 115'], 'AP ✓'),
+  r(G_MAJOR, 'PSYC 101 General Psychology', false, ['PSYC 101']),
+
+  // Pre-med additions (UNC HPA "common prerequisites")
+  r(G_MED, 'CHEM 430 Biochemistry', false, ['CHEM 430'], 'Last MCAT content domino; also counts as a Knowledge Elective (double-duty).'),
+  r(G_MED, '1 sem Sociology — SOCI 101', false, ['SOCI 101']),
+  r(G_MED, '1 sem Psychology — PSYC 101', false, ['PSYC 101']),
+  r(G_MED, 'BIOL 252 + 252L (HPA recommended)', false, ['BIOL 252']),
+  r(G_MED, 'Take key prereqs in residence', false, undefined, 'Most med schools want C+ in prereqs and may not accept AP — esp. retake stats as PSYC 210.'),
+
+  // University graduation rules
+  r(G_GRAD, '120 total credit hours', false),
+  r(G_GRAD, '2.000 minimum cumulative UNC GPA', false),
+  r(G_GRAD, '≥ 45 credit hours earned at UNC (residency)', false),
+  r(G_GRAD, '≥ half of major core (courses + hours) at UNC · 2.0 in major core', false),
+  r(G_GRAD, 'Neuroscience B.S. major: 78–79 hrs total', false),
 ])
+function requirementSource(group: string, label: string): Pick<RequirementItem, 'sourceType' | 'sourceLabel' | 'sourceUrl' | 'lastVerified' | 'verificationStatus'> {
+  if (group === G_MED) {
+    return {
+      sourceType: 'premed-advice',
+      sourceLabel: 'UNC HPA / premed planning note',
+      sourceUrl: UNC_HPA_SOURCE,
+      lastVerified: VERIFIED_DATE,
+      verificationStatus: 'needs-verification',
+    }
+  }
+  if (group === G_AP) {
+    return {
+      sourceType: 'user-note',
+      sourceLabel: 'Andy AP/transfer credit note',
+      sourceUrl: UNC_CATALOG_SOURCE,
+      lastVerified: VERIFIED_DATE,
+      verificationStatus: 'needs-verification',
+    }
+  }
+  const isIdeas = [G_FYF, G_FOCUS, G_REFLECT, G_ADDL].includes(group)
+  const isMajor = [G_CORE, G_MAJOR].includes(group)
+  const uncertain = /Knowledge Electives|Math\/Methods\/Stats|Options:|prioritized|Select two/i.test(label)
+  return {
+    sourceType: 'official' as RequirementSourceType,
+    sourceLabel: isIdeas ? 'UNC Catalog — IDEAs in Action' : isMajor ? 'UNC Catalog — Neuroscience B.S.' : 'UNC Catalog',
+    sourceUrl: isIdeas ? IDEAS_SOURCE : isMajor ? UNC_CATALOG_SOURCE : UNC_GRAD_SOURCE,
+    lastVerified: VERIFIED_DATE,
+    verificationStatus: (uncertain ? 'needs-verification' : 'verified') as RequirementVerificationStatus,
+  }
+}
+
 function r(group: string, label: string, done: boolean, satisfiedBy?: string[], note?: string): Omit<RequirementItem, 'id' | 'order'> {
-  return { group, label, done, satisfiedBy, note }
+  return { group, label, done, satisfiedBy, note, ...requirementSource(group, label) }
 }
 
 // ---- Timeline / Tasks: near-term registration + 2029 application cycle milestones ----
@@ -128,10 +449,10 @@ const tasks: TaskItem[] = seq<Omit<TaskItem, 'id' | 'order'>>([
   tm('Matriculate — Fall 2030 (no gap year)', '2030-08-20', 'The finish line for this plan.'),
 ])
 function t(title: string, type: TaskItem['type'], deadline: string | undefined, milestone: boolean, notes?: string): Omit<TaskItem, 'id' | 'order'> {
-  return { title, type, deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone }
+  return { title, type, typeId: typeId(type), deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone }
 }
 function tm(title: string, deadline: string, notes?: string): Omit<TaskItem, 'id' | 'order'> {
-  return { title, type: 'Application', deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone: true }
+  return { title, type: 'Application', typeId: typeId('Application'), deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone: true }
 }
 
 // ---- Story Bank reflection prompts (§13.4) ----
@@ -305,6 +626,7 @@ export function createSeedData(): AppData {
       activities: 15, mcatTarget: 515, gpaTarget: 3.85,
     },
     courses,
+    academics,
     requirements,
     experiences: [],
     tasks,
@@ -335,6 +657,18 @@ export function createSeedData(): AppData {
       theme: 'system',
       visualTheme: 'ghibli',
       backup: { enabled: false, googleClientId: '' },
+      calendar: {
+        enabled: false,
+        googleClientId: '',
+        googleApiKey: '',
+        cachedEvents: [],
+        timelineStart: '06:00',
+        timelineEnd: '23:00',
+        timeFormat: '12h',
+        showLocations: true,
+        showAllDayEvents: true,
+        useMockPreview: true,
+      },
       quotesApi: true,
       sidebarCollapsed: false,
       studentBannerDismissed: false,
