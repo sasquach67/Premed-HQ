@@ -7,6 +7,7 @@ import { AlertsStrip } from './AlertsStrip'
 import { useStore } from '@/store/store'
 import { useTheme } from '@/store/useTheme'
 import { useBackup } from '@/store/useBackup'
+import { useCloudSync } from '@/store/useCloudSync'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 export function AppShell() {
@@ -15,6 +16,7 @@ export function AppShell() {
   const update = useStore((s) => s.update)
   useTheme()
   useBackup() // wires daily-on-open check + debounced auto-backup
+  useCloudSync() // wires Supabase login + cross-device cloud sync (no-op until configured/signed in)
 
   // ⌘B / Ctrl+B or "[" toggles the sidebar (⌘S is reserved by the browser).
   useEffect(() => {

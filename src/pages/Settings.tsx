@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { useBackup } from '@/store/useBackup'
+import { useCloudSync } from '@/store/useCloudSync'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
 import { ROUTE_MAP } from '@/app/routes'
 import { exportJson, readJsonFile, looksLikeAppData } from '@/lib/dataIo'
@@ -147,6 +148,8 @@ export function Settings() {
           </CardContent>
         </Card>
 
+        <CloudSyncSection onMessage={setMsg} />
+
         <CalendarIntegrationSection onMessage={setMsg} />
 
         <Card>
@@ -223,6 +226,83 @@ function BackupCheck({ ok, label, detail }: { ok: boolean; label: string; detail
         <p className="break-words text-xs text-muted-foreground">{detail}</p>
       </div>
     </div>
+  )
+}
+
+function CloudSyncSection({ onMessage }: { onMessage: (msg: string) => void }) {
+  const cloud = useCloudSync()
+  const [email, setEmail] = useState('')
+
+  if (!cloud.configured) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Cloud className="size-4 text-primary" /> Cloud sync &amp; login
+            <Badge variant="muted">Not configured</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Set <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_URL</code> and{' '}
+            <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code> (see <code className="rounded bg-muted px-1 py-0.5">.env.example</code>) to enable login and cross-device sync.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const busy = cloud.status === 'signing-in' || cloud.status === 'syncing'
+
+  async function sendLink() {
+    if (!email.trim()) { onMessage('Enter your email first.'); return }
+    const ok = await cloud.signIn(email)
+    if (ok) onMessage(`Magic sign-in link sent to ${email.trim()}. Open it in this browser.`)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <Cloud className="size-4 text-primary" /> Cloud sync &amp; login
+          <Badge variant={cloud.user ? 'success' : 'muted'}>{cloud.user ? 'Signed in' : 'Signed out'}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {cloud.user ? (
+          <>
+            <div className="flex items-start gap-3 rounded-lg border bg-card/70 p-3">
+              <ShieldCheck className="mt-0.5 size-4 text-success" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold break-words">{cloud.user.email}</p>
+                <p className="text-xs text-muted-foreground">
+                  {cloud.status === 'syncing' ? 'Syncing…'
+                    : cloud.lastSyncAt ? `Synced ${fmtTimeAgo(cloud.lastSyncAt)}.`
+                    : 'Connected — first sync pending.'}
+                  {cloud.error && <span className="ml-1 inline-flex items-center gap-1 text-destructive"><AlertCircle className="size-3" /> {cloud.error}</span>}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => void cloud.pullNow()} disabled={busy}><Download className="size-4" /> Pull from cloud</Button>
+              <Button size="sm" variant="outline" onClick={() => void cloud.pushNow()} disabled={busy}><Upload className="size-4" /> Push now</Button>
+              <Button size="sm" variant="ghost" onClick={() => void cloud.signOut()} className="ml-auto">Sign out</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Sign in with a one-time email link to sync this dashboard across your devices. No password.</p>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-48 flex-1 space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void sendLink() }} />
+              </div>
+              <Button onClick={() => void sendLink()} disabled={busy}><Cloud className="size-4" /> Send magic link</Button>
+            </div>
+            {cloud.error && <p className="inline-flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" /> {cloud.error}</p>}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
