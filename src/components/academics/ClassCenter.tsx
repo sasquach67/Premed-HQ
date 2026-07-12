@@ -1,10 +1,10 @@
 import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  Archive, ArrowLeft, Atom, BarChart3, BookOpen, Brain, Calculator,
-  CheckCircle2, Circle, Dna, Edit3, FlaskConical, FolderOpen, Leaf, Link2, Mail, Microscope,
+  Archive, ArrowLeft, Atom, BarChart3, BookOpen, Brain, Calculator, CalendarDays,
+  CheckCircle2, Circle, Clock3, Dna, Edit3, FlaskConical, FolderOpen, Leaf, Link2, Mail, MapPin, Microscope,
   MoreHorizontal, NotebookText, PenLine, Plus, Search, Stethoscope, Target,
-  ListChecks,
+  ListChecks, UserRound,
   Trash2, Upload, Users, type LucideIcon,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
@@ -410,7 +410,7 @@ function ClassCard({
   const nextText = stats.nextDeadline?.title
     ? `${stats.nextDeadline.title}${stats.nextDeadline.dueDate ? ` · ${daysUntil(stats.nextDeadline.dueDate)}` : ''}`
     : topic?.title ?? 'Choose a topic'
-  const compactMeta = [row.instructor || 'Instructor TBD', row.semester, compactMeeting(row)].filter(Boolean).join(' · ')
+  const meetingText = [row.meetingDays, shortMeetingTime(row.meetingTime)].filter(Boolean).join(' · ')
   return (
     <Card
       draggable
@@ -427,12 +427,12 @@ function ClassCard({
     >
       <span className={cn('absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b', COLOR_STYLES[row.color])} aria-hidden="true" />
       <CardContent className="space-y-3 p-4 pl-5">
-        <div className="flex items-start justify-between gap-3">
-          <Link to={`/academics/classes/${row.id}`} className="flex min-w-0 items-start gap-3">
-            <ClassIcon icon={row.icon} className="size-10 rounded-2xl bg-muted text-muted-foreground" />
+        <div className="flex items-start justify-between gap-2">
+          <Link to={`/academics/classes/${row.id}`} className="flex min-w-0 items-start gap-2.5">
+            <ClassIcon icon={row.icon} className="size-9 rounded-xl bg-muted text-muted-foreground" />
             <span className="min-w-0">
-              <span className="block font-display text-xl font-bold leading-tight text-foreground group-hover:text-primary">{row.courseCode || row.nickname}</span>
-              <span className="line-clamp-1 text-sm font-semibold text-muted-foreground">{row.courseTitle || row.nickname}</span>
+              <span className="block text-base font-extrabold leading-tight text-foreground group-hover:text-primary">{row.courseCode || row.nickname}</span>
+              <span className="line-clamp-1 text-sm font-medium text-muted-foreground">{row.courseTitle || row.nickname}</span>
             </span>
           </Link>
           <DropdownMenu>
@@ -449,7 +449,12 @@ function ClassCard({
           </DropdownMenu>
         </div>
         <div className="space-y-2 text-sm text-muted-foreground">
-          <p className="line-clamp-1 font-bold">{compactMeta || 'Details not set'}</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <ClassMetaChip icon={UserRound} label={row.instructor || 'Instructor TBD'} />
+            <ClassMetaChip icon={CalendarDays} label={row.semester || 'Term TBD'} />
+            <ClassMetaChip icon={Clock3} label={meetingText || 'Time TBD'} />
+            <ClassMetaChip icon={MapPin} label={row.location || 'Room TBD'} />
+          </div>
           <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-extrabold text-foreground">
             <span className="shrink-0 uppercase text-primary">Up next</span>
             <span className="min-w-0 truncate text-muted-foreground">{nextText}</span>
@@ -469,6 +474,15 @@ function ClassCard({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function ClassMetaChip({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-[11px] font-bold text-muted-foreground">
+      <Icon className="size-3 shrink-0 text-primary/75" aria-hidden="true" />
+      <span className="truncate">{label}</span>
+    </span>
   )
 }
 
@@ -611,7 +625,7 @@ function ClassWorkspace({
               </TabsList>
             </div>
             <div className="mt-3 hidden border-t border-border/70 px-2 pt-3 text-xs font-bold text-muted-foreground lg:flex lg:items-center lg:gap-2">
-              <img src="/art/mascot.gif" alt="" className="size-8 object-contain [image-rendering:pixelated]" />
+              <img src={`${import.meta.env.BASE_URL}art/mascot.gif`} alt="" className="size-8 object-contain [image-rendering:pixelated]" />
               <span>{assignmentCount || noteCount ? `${assignmentCount || noteCount} class item${(assignmentCount || noteCount) === 1 ? '' : 's'} active` : 'Class workspace'}</span>
             </div>
           </aside>
@@ -707,7 +721,7 @@ function OverviewTab({
         <Card className="border-leaf/30 bg-leaf/8">
           <CardContent className="space-y-2 p-4">
             <h3 className="flex items-center gap-2 font-display text-lg font-bold">
-              <img src="/art/mascot.gif" alt="" className="size-8 object-contain [image-rendering:pixelated]" />
+              <img src={`${import.meta.env.BASE_URL}art/mascot.gif`} alt="" className="size-8 object-contain [image-rendering:pixelated]" />
               Do this next
             </h3>
             {(actionRows.length ? actionRows : [{ label: 'Pick one topic and make notes for it', meta: 'Open', onClick: undefined }]).map((item) => (
@@ -1687,6 +1701,14 @@ function classLabel(classId: string, data: ClassCenterData) {
 
 function compactMeeting(row: ClassCenterClass) {
   return [row.meetingDays, row.meetingTime, row.location].filter(Boolean).join(' · ')
+}
+
+function shortMeetingTime(value?: string) {
+  if (!value) return ''
+  return value
+    .replace(/\s+/g, ' ')
+    .replace(/:00(?=\s*[AP]M)/g, '')
+    .replace(/\s*-\s*/g, '-')
 }
 
 function daysUntil(date: string) {

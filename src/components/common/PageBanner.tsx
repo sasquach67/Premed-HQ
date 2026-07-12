@@ -18,7 +18,7 @@ export function PageBanner({
 }) {
   const visualTheme = useStore((s) => s.settings.visualTheme)
   const candidates = useMemo(
-    () => [image, visualTheme === 'doraemon' ? '/art/banner-default-doraemon.jpg' : undefined, '/art/banner-default.jpg', homeBanner(visualTheme), homeBanner('ghibli')].filter(Boolean) as string[],
+    () => [image, visualTheme === 'doraemon' ? `${import.meta.env.BASE_URL}art/banner-default-doraemon.jpg` : undefined, `${import.meta.env.BASE_URL}art/banner-default.jpg`, homeBanner(visualTheme), homeBanner('ghibli')].filter(Boolean) as string[],
     [image, visualTheme]
   )
   const [idx, setIdx] = useState(0)

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Premed HQ — MCAT Mistake Map (mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ---- tokens lifted from the real app (index.css) ---- */
+  :root{
+    --bg:#f7efe1; --fg:#3a3530; --card:#fffaf0; --muted:#efe6d4; --muted-fg:#7a7064;
+    --primary:#3f93cf; --primary-fg:#fff; --secondary:#e6f2fb; --border:#e9e2d5;
+    --leaf:#79a957; --destructive:#e26d5c; --warning:#e0a458; --success:#5fb49c;
+    --radius:0.9rem;
+    /* section colors match SECTION_META */
+    --bb:#76b86c; --cp:#e4a24f; --cars:#62b7ee; --ps:#ef86b4;
+    --shadow:0 1px 2px rgba(58,53,48,.06),0 8px 24px -12px rgba(58,53,48,.18);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .display{font-family:'Baloo 2',cursive}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 64px}
+
+  /* ---- tab strip (context only) ---- */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:var(--muted-fg);
+    padding:8px 13px;border-radius:999px;background:transparent}
+  .tab.active{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .tab .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5}
+
+  /* ---- top drop / log bar ---- */
+  .logbar{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:18px}
+  @media(max-width:820px){.logbar{grid-template-columns:1fr}}
+  .drop{border:1.5px dashed color-mix(in srgb,var(--primary) 55%,transparent);
+    background:color-mix(in srgb,var(--primary) 7%,var(--card));
+    border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;gap:14px}
+  .drop .ic{width:42px;height:42px;border-radius:12px;background:var(--secondary);color:var(--primary);
+    display:grid;place-items:center;flex:0 0 auto}
+  .drop h3{margin:0 0 2px;font-size:15px;font-weight:800}
+  .drop p{margin:0;font-size:12.5px;color:var(--muted-fg);font-weight:600;line-height:1.35}
+  .quicklog{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+  .quicklog .row{display:flex;gap:8px;align-items:center}
+  .combo{flex:1;position:relative}
+  .combo input{width:100%;border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 30px;
+    font:inherit;font-size:13px;font-weight:600;background:var(--bg)}
+  .combo .mag{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted-fg);font-size:13px}
+  .btn{border:0;border-radius:10px;padding:8px 13px;font:inherit;font-weight:800;font-size:13px;
+    background:var(--primary);color:var(--primary-fg);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn.ghost{background:var(--card);color:var(--fg);border:1px solid var(--border)}
+  .menu{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;box-shadow:var(--shadow);padding:6px;z-index:20;display:none}
+  .menu.open{display:block}
+  .menu .grp{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-fg);padding:7px 9px 3px}
+  .menu .opt{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+  .menu .opt:hover{background:var(--muted)}
+  .menu .opt .path{color:var(--muted-fg);font-weight:600;font-size:11px}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#fff}
+
+  /* ---- main split: map + inspector ---- */
+  .split{display:grid;grid-template-columns:1fr 340px;gap:16px}
+  @media(max-width:940px){.split{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .maphead{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+  .maphead h2{margin:0;font-size:17px;font-weight:800}
+  .maphead .sub{font-size:11.5px;color:var(--muted-fg);font-weight:700}
+  .seg{display:flex;background:var(--muted);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-weight:800;font-size:11.5px;color:var(--muted-fg);
+    padding:5px 11px;border-radius:999px;cursor:pointer}
+  .seg button.on{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+
+  .mapstage{position:relative;padding:6px}
+  svg .lbl{font:700 10.5px Nunito;fill:var(--fg)}
+  svg .lbl.sm{font-size:9px;fill:var(--muted-fg)}
+  svg .node{cursor:pointer;transition:transform .12s}
+  svg .node:hover{filter:brightness(1.05)}
+  svg .center-lbl{font:800 13px 'Baloo 2';fill:var(--fg)}
+  svg .sec-lbl{font:800 12px 'Baloo 2'}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px 14px;font-size:11px;color:var(--muted-fg);font-weight:700}
+  .legend .k{display:flex;align-items:center;gap:6px}
+  .legend .sw{width:11px;height:11px;border-radius:50%}
+  .legend .ramp{display:inline-block;width:74px;height:9px;border-radius:5px;
+    background:linear-gradient(90deg,#e9e2d5,var(--warning),var(--destructive))}
+
+  /* ---- inspector ---- */
+  .insp{padding:0}
+  .insp .empty{padding:34px 20px;text-align:center;color:var(--muted-fg)}
+  .insp .empty .big{font-size:30px}
+  .insp .hd{padding:15px 16px 12px;border-bottom:1px solid var(--border)}
+  .insp .crumb{font-size:11px;font-weight:700;color:var(--muted-fg);margin-bottom:7px}
+  .insp .crumb b{color:var(--fg)}
+  .insp h3{margin:0;font-size:18px;font-weight:800;line-height:1.15}
+  .insp .stat{display:flex;gap:8px;margin-top:11px}
+  .insp .stat .box{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+  .insp .stat .n{font-size:19px;font-weight:800;font-family:'Baloo 2'}
+  .insp .stat .t{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg)}
+  .insp .sec{padding:13px 16px;border-bottom:1px solid var(--border)}
+  .insp .sec h4{margin:0 0 9px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-fg)}
+  .res{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;
+    text-decoration:none;color:inherit;background:var(--card)}
+  .res:hover{border-color:color-mix(in srgb,var(--primary) 45%,var(--border))}
+  .res .ri{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto;font-size:14px}
+  .res .rt{font-size:13px;font-weight:800;line-height:1.15}
+  .res .rm{font-size:11px;color:var(--muted-fg);font-weight:600}
+  .miss{padding:9px 10px;border:1px solid var(--border);border-left:3px solid var(--destructive);border-radius:8px;margin-bottom:7px}
+  .miss .q{font-size:12.5px;font-weight:700}
+  .miss .m{font-size:11px;color:var(--muted-fg);font-weight:600;margin-top:2px}
+  .miss.done{border-left-color:var(--success);opacity:.7}
+  .drill{margin:13px 16px;display:block;width:calc(100% - 32px);text-align:center}
+
+  /* ---- rollup strip ---- */
+  .rollup{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+  @media(max-width:820px){.rollup{grid-template-columns:repeat(2,1fr)}}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:13px 15px}
+  .metric .t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg)}
+  .metric .n{font-size:26px;font-weight:800;font-family:'Baloo 2';margin-top:3px}
+  .metric .d{font-size:11px;font-weight:700;color:var(--muted-fg)}
+  .metric .spine{height:5px;border-radius:3px;background:var(--muted);margin-top:9px;overflow:hidden}
+  .metric .spine i{display:block;height:100%;border-radius:3px}
+  .caption{font-size:11px;color:var(--muted-fg);font-weight:700;text-align:center;margin-top:22px}
+  .note{max-width:1180px;margin:10px auto 0;padding:0 24px;font-size:12px;color:var(--muted-fg)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- tab context -->
+  <div class="tabs">
+    <div class="tab"><span class="dot"></span>Dashboard</div>
+    <div class="tab"><span class="dot"></span>Plan</div>
+    <div class="tab"><span class="dot"></span>Content</div>
+    <div class="tab active"><span class="dot"></span>Mistakes</div>
+    <div class="tab"><span class="dot"></span>Stats</div>
+    <div class="tab"><span class="dot"></span>Advisor</div>
+  </div>
+
+  <!-- log bar -->
+  <div class="logbar">
+    <div class="drop">
+      <div class="ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="m8 17 4 4 4-4"/><path d="M20 16.7A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.2"/></svg>
+      </div>
+      <div>
+        <h3 class="display">Drop a missed-question screenshot</h3>
+        <p>It reads the question, guesses the AAMC topic, and files it on your map. You confirm the topic in one click.</p>
+      </div>
+    </div>
+    <div class="quicklog">
+      <div style="font-size:12px;font-weight:800;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.04em">Log a miss by topic</div>
+      <div class="row">
+        <div class="combo">
+          <span class="mag">⌕</span>
+          <input id="topicSearch" placeholder="Search AAMC topics… e.g. amino acid pKa" autocomplete="off" />
+          <div class="menu" id="topicMenu">
+            <div class="grp">Bio / Biochem</div>
+            <div class="opt" data-node="pka"><span class="pill" style="background:var(--bb)">1A</span> Amino acid pKa &amp; titration <span class="path">· FC1 › 1A</span></div>
+            <div class="opt" data-node="enzyme"><span class="pill" style="background:var(--bb)">1A</span> Enzyme kinetics (Km/Vmax) <span class="path">· FC1 › 1A</span></div>
+            <div class="grp">Chem / Phys</div>
+            <div class="opt" data-node="fluids"><span class="pill" style="background:var(--cp)">4B</span> Fluids — Bernoulli / continuity <span class="path">· FC4 › 4B</span></div>
+            <div class="grp">Psych / Soc</div>
+            <div class="opt" data-node="cond"><span class="pill" style="background:var(--ps)">7A</span> Operant vs classical conditioning <span class="path">· FC7 › 7A</span></div>
+          </div>
+        </div>
+        <button class="btn">＋ Log</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted-fg);font-weight:600">Typing files the miss against a known topic — that's what powers the map and the resource matches.</div>
+    </div>
+  </div>
+
+  <!-- split: mind map + inspector -->
+  <div class="split">
+    <div class="panel">
+      <div class="maphead">
+        <div>
+          <h2 class="display">Your mistake map</h2>
+          <div class="sub">47 misses across 12 topics · bigger + redder = weaker</div>
+        </div>
+        <div class="seg">
+          <button class="on">Mind map</button>
+          <button>List</button>
+        </div>
+      </div>
+
+      <div class="mapstage">
+        <!-- radial mind map. Node radius & red-tint encode miss count. -->
+        <svg id="mapsvg" viewBox="0 0 720 470" width="100%" role="img" aria-label="AAMC topic mind map of your mistakes">
+          <!-- edges -->
+          <g stroke="#e0d7c6" stroke-width="1.6" fill="none">
+            <!-- BB branch (top-left) -->
+            <path d="M360 235 L215 120"/><path d="M215 120 L120 78"/><path d="M215 120 L120 150"/>
+            <!-- CP branch (top-right) -->
+            <path d="M360 235 L505 120"/><path d="M505 120 L600 78"/><path d="M505 120 L610 150"/>
+            <!-- CARS branch (bottom-right) -->
+            <path d="M360 235 L505 350"/><path d="M505 350 L610 320"/><path d="M505 350 L600 392"/>
+            <!-- PS branch (bottom-left) -->
+            <path d="M360 235 L215 350"/><path d="M215 350 L120 320"/><path d="M215 350 L120 392"/>
+          </g>
+
+          <!-- section hubs -->
+          <g class="node"><circle cx="215" cy="120" r="26" fill="var(--bb)"/><text class="sec-lbl" x="215" y="124" text-anchor="middle" fill="#fff">Bio</text></g>
+          <g class="node"><circle cx="505" cy="120" r="24" fill="var(--cp)"/><text class="sec-lbl" x="505" y="124" text-anchor="middle" fill="#fff">Chem</text></g>
+          <g class="node"><circle cx="505" cy="350" r="18" fill="var(--cars)" opacity=".8"/><text class="sec-lbl" x="505" y="354" text-anchor="middle" fill="#fff" font-size="10">CARS</text></g>
+          <g class="node"><circle cx="215" cy="350" r="22" fill="var(--ps)"/><text class="sec-lbl" x="215" y="354" text-anchor="middle" fill="#fff">Psych</text></g>
+
+          <!-- leaf topics: r scales with misses; halo = severity -->
+          <!-- BB leaves -->
+          <g class="node" data-node="pka">
+            <circle cx="120" cy="78" r="22" fill="var(--bb)"/><circle cx="120" cy="78" r="22" fill="var(--destructive)" opacity=".42"/>
+            <text class="lbl" x="120" y="82" text-anchor="middle" fill="#fff" font-size="11">9</text>
+            <text class="lbl sm" x="120" y="112" text-anchor="middle">Amino acid pKa</text>
+          </g>
+          <g class="node" data-node="enzyme">
+            <circle cx="120" cy="150" r="15" fill="var(--bb)"/><circle cx="120" cy="150" r="15" fill="var(--destructive)" opacity=".18"/>
+            <text class="lbl" x="120" y="154" text-anchor="middle" fill="#fff" font-size="10">4</text>
+            <text class="lbl sm" x="120" y="176" text-anchor="middle">Enzyme kinetics</text>
+          </g>
+          <!-- CP leaves -->
+          <g class="node" data-node="fluids">
+            <circle cx="600" cy="78" r="25" fill="var(--cp)"/><circle cx="600" cy="78" r="25" fill="var(--destructive)" opacity=".5"/>
+            <text class="lbl" x="600" y="82" text-anchor="middle" fill="#fff" font-size="12">11</text>
+            <text class="lbl sm" x="600" y="115" text-anchor="middle">Fluids · Bernoulli</text>
+          </g>
+          <g class="node" data-node="circuits">
+            <circle cx="610" cy="150" r="14" fill="var(--cp)"/><circle cx="610" cy="150" r="14" fill="var(--destructive)" opacity=".15"/>
+            <text class="lbl" x="610" y="154" text-anchor="middle" fill="#fff" font-size="10">3</text>
+            <text class="lbl sm" x="610" y="176" text-anchor="middle">Circuits</text>
+          </g>
+          <!-- CARS leaves -->
+          <g class="node" data-node="tone">
+            <circle cx="610" cy="320" r="13" fill="var(--cars)"/><circle cx="610" cy="320" r="13" fill="var(--destructive)" opacity=".12"/>
+            <text class="lbl" x="610" y="324" text-anchor="middle" fill="#fff" font-size="10">3</text>
+            <text class="lbl sm" x="610" y="344" text-anchor="middle">Tone / attitude</text>
+          </g>
+          <g class="node" data-node="main-idea">
+            <circle cx="600" cy="392" r="11" fill="var(--cars)"/>
+            <text class="lbl" x="600" y="396" text-anchor="middle" fill="#fff" font-size="9">2</text>
+            <text class="lbl sm" x="600" y="412" text-anchor="middle">Main idea</text>
+          </g>
+          <!-- PS leaves -->
+          <g class="node" data-node="cond">
+            <circle cx="120" cy="320" r="19" fill="var(--ps)"/><circle cx="120" cy="320" r="19" fill="var(--destructive)" opacity=".3"/>
+            <text class="lbl" x="120" y="324" text-anchor="middle" fill="#fff" font-size="11">6</text>
+            <text class="lbl sm" x="120" y="350" text-anchor="middle">Conditioning</text>
+          </g>
+          <g class="node" data-node="theories">
+            <circle cx="120" cy="392" r="12" fill="var(--ps)"/>
+            <text class="lbl" x="120" y="396" text-anchor="middle" fill="#fff" font-size="9">2</text>
+            <text class="lbl sm" x="120" y="414" text-anchor="middle">Emotion theories</text>
+          </g>
+
+          <!-- center -->
+          <g class="node"><circle cx="360" cy="235" r="34" fill="var(--card)" stroke="var(--primary)" stroke-width="2.5"/>
+            <text class="center-lbl" x="360" y="231" text-anchor="middle">YOU</text>
+            <text class="lbl sm" x="360" y="247" text-anchor="middle">47 misses</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="k"><span class="sw" style="background:var(--bb)"></span>Bio/Biochem</div>
+        <div class="k"><span class="sw" style="background:var(--cp)"></span>Chem/Phys</div>
+        <div class="k"><span class="sw" style="background:var(--cars)"></span>CARS</div>
+        <div class="k"><span class="sw" style="background:var(--ps)"></span>Psych/Soc</div>
+        <div class="k"><span class="ramp"></span>fewer → more misses</div>
+      </div>
+    </div>
+
+    <!-- inspector -->
+    <div class="panel insp" id="insp">
+      <div class="empty" id="inspEmpty">
+        <div class="big">🎯</div>
+        <div style="font-weight:800;color:var(--fg);margin-top:6px">Pick a topic on the map</div>
+        <div style="font-size:12.5px;margin-top:4px">Click any node to see your misses there and the exact resources that fix it.</div>
+      </div>
+      <div id="inspBody" style="display:none">
+        <div class="hd">
+          <div class="crumb" id="crumb">Chem/Phys › FC4 › <b>4B Fluids</b></div>
+          <h3 class="display" id="ititle">Fluids — Bernoulli / continuity</h3>
+          <div class="stat">
+            <div class="box"><div class="n" id="imiss">11</div><div class="t">Misses</div></div>
+            <div class="box"><div class="n" id="idone">2</div><div class="t">Resolved</div></div>
+            <div class="box"><div class="n" style="color:var(--destructive)">Weak</div><div class="t">Status</div></div>
+          </div>
+        </div>
+        <div class="sec">
+          <h4>Fix it with these</h4>
+          <a class="res" href="#"><span class="ri" style="background:#eaf5e6;color:var(--leaf)">📖</span><span><span class="rt">Fluids &amp; Hydrostatics — guide</span><span class="rm">~28 min · 7 sections · cheat sheet</span></span></a>
+          <a class="res" href="#"><span class="ri" style="background:var(--secondary);color:var(--primary)">✎</span><span><span class="rt">Equation hack sheet — Fluids</span><span class="rm">Bernoulli, continuity, Poiseuille</span></span></a>
+          <a class="res" href="#"><span class="ri" style="background:#f3ecff;color:#8c7bd4">▤</span><span><span class="rt">Anki — MileDown · Fluids tag</span><span class="rm">18 cards linked to this topic</span></span></a>
+        </div>
+        <div class="sec">
+          <h4>Your misses here</h4>
+          <div class="miss"><div class="q">Confused static vs dynamic pressure in a venturi</div><div class="m">AAMC FL2 · Jul 6 — “content gap”</div></div>
+          <div class="miss"><div class="q">Wrong direction on continuity (A₁v₁=A₂v₂)</div><div class="m">UWorld · Jul 4 — “misread”</div></div>
+          <div class="miss done"><div class="q">Forgot ρgh term in pressure at depth</div><div class="m">AAMC FL1 · Jun 29 — resolved ✓</div></div>
+        </div>
+        <button class="btn drill">Build a 15-card drill from these →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- rollups -->
+  <div class="rollup">
+    <div class="metric"><div class="t">Weakest section</div><div class="n" style="color:var(--cp)">Chem/Phys</div><div class="d">17 misses · 36%</div>
+      <div class="spine"><i style="width:36%;background:var(--cp)"></i></div></div>
+    <div class="metric"><div class="t">Top weak topic</div><div class="n" style="font-size:19px">Fluids</div><div class="d">11 misses · unresolved</div>
+      <div class="spine"><i style="width:82%;background:var(--destructive)"></i></div></div>
+    <div class="metric"><div class="t">Resolved</div><div class="n">13<span style="font-size:14px;color:var(--muted-fg)"> / 47</span></div><div class="d">28% cleared</div>
+      <div class="spine"><i style="width:28%;background:var(--success)"></i></div></div>
+    <div class="metric"><div class="t">Review queue</div><div class="n">9</div><div class="d">feeds “review your mistakes” sessions</div>
+      <div class="spine"><i style="width:60%;background:var(--warning)"></i></div></div>
+  </div>
+
+  <div class="caption">Mockup · direction not pixel-law · data is illustrative. Node size &amp; red-tint encode miss count; branches are the 4 AAMC sections.</div>
+</div>
+
+<div class="note">Click a node (try <b>Fluids</b>, <b>Amino acid pKa</b>, or <b>Conditioning</b>) to see the inspector switch. Focus the search box to preview the topic combobox.</div>
+
+<script>
+  // ---- illustrative topic data (real build pulls from the AAMC outline seed) ----
+  const DATA = {
+    pka:{crumb:'Bio/Biochem › FC1 › <b>1A Amino acids</b>',title:'Amino acid pKa & titration',miss:9,done:1,status:'Weak',
+      res:[['📖','Amino Acids & Proteins — guide','~30 min · 7 sections','#eaf5e6','var(--leaf)'],
+           ['✎','Hack sheet — pKa & buffers','Henderson–Hasselbalch, pI','var(--secondary)','var(--primary)']],
+      misses:[['Picked wrong charge at pH 7 for His','AAMC FL2 · Jul 5 — content gap',0],
+              ['Miscounted pI of a diprotic side chain','UWorld · Jul 1 — content gap',0]]},
+    fluids:{crumb:'Chem/Phys › FC4 › <b>4B Fluids</b>',title:'Fluids — Bernoulli / continuity',miss:11,done:2,status:'Weak',
+      res:[['📖','Fluids & Hydrostatics — guide','~28 min · 7 sections','#eaf5e6','var(--leaf)'],
+           ['✎','Equation hack sheet — Fluids','Bernoulli, continuity','var(--secondary)','var(--primary)'],
+           ['▤','Anki — MileDown · Fluids tag','18 linked cards','#f3ecff','#8c7bd4']],
+      misses:[['Confused static vs dynamic pressure in a venturi','AAMC FL2 · Jul 6 — content gap',0],
+              ['Wrong direction on continuity (A₁v₁=A₂v₂)','UWorld · Jul 4 — misread',0],
+              ['Forgot ρgh term in pressure at depth','AAMC FL1 · Jun 29 — resolved',1]]},
+    cond:{crumb:'Psych/Soc › FC7 › <b>7A Individual behavior</b>',title:'Operant vs classical conditioning',miss:6,done:2,status:'Reviewing',
+      res:[['📖','Learning & Conditioning — guide','~26 min · 6 sections','#eaf5e6','var(--leaf)'],
+           ['▤','Anki — Psych · Conditioning','12 linked cards','#f3ecff','#8c7bd4']],
+      misses:[['Mixed up negative reinforcement vs punishment','AAMC FL2 · Jul 3 — content gap',0],
+              ['Called it classical when it was operant','UWorld · Jun 30 — misread',0]]},
+    enzyme:{crumb:'Bio/Biochem › FC1 › <b>1A Amino acids</b>',title:'Enzyme kinetics (Km/Vmax)',miss:4,done:1,status:'Reviewing',res:[],misses:[]},
+    circuits:{crumb:'Chem/Phys › FC5 › <b>5E Circuits</b>',title:'DC circuits',miss:3,done:0,status:'Watch',res:[],misses:[]},
+    tone:{crumb:'CARS › Reasoning within the text',title:'Tone / attitude questions',miss:3,done:0,status:'Watch',res:[],misses:[]},
+    'main-idea':{crumb:'CARS › Foundations of comprehension',title:'Main idea questions',miss:2,done:1,status:'OK',res:[],misses:[]},
+    theories:{crumb:'Psych/Soc › FC6 › <b>6C Emotion</b>',title:'Theories of emotion',miss:2,done:0,status:'Watch',res:[],misses:[]},
+  };
+  const insp=document.getElementById('inspBody'),empty=document.getElementById('inspEmpty');
+  function show(id){
+    const d=DATA[id]; if(!d) return;
+    empty.style.display='none'; insp.style.display='block';
+    document.getElementById('crumb').innerHTML=d.crumb;
+    document.getElementById('ititle').textContent=d.title;
+    document.getElementById('imiss').textContent=d.miss;
+    document.getElementById('idone').textContent=d.done;
+    const secs=insp.querySelectorAll('.sec');
+    secs[0].innerHTML='<h4>Fix it with these</h4>'+(d.res.length?d.res.map(r=>
+      `<a class="res" href="#"><span class="ri" style="background:${r[3]};color:${r[4]}">${r[0]}</span><span><span class="rt">${r[1]}</span><span class="rm">${r[2]}</span></span></a>`).join(''):'<div style="font-size:12px;color:var(--muted-fg);font-weight:600">Resources for this topic appear here once mapped.</div>');
+    secs[1].innerHTML='<h4>Your misses here</h4>'+(d.misses.length?d.misses.map(m=>
+      `<div class="miss${m[2]?' done':''}"><div class="q">${m[0]}</div><div class="m">${m[1]}${m[2]?' ✓':''}</div></div>`).join(''):'<div style="font-size:12px;color:var(--muted-fg);font-weight:600">No individual misses logged yet.</div>');
+  }
+  document.querySelectorAll('.node[data-node]').forEach(n=>n.addEventListener('click',()=>show(n.dataset.node)));
+  // combobox preview
+  const inp=document.getElementById('topicSearch'),menu=document.getElementById('topicMenu');
+  inp.addEventListener('focus',()=>menu.classList.add('open'));
+  inp.addEventListener('blur',()=>setTimeout(()=>menu.classList.remove('open'),150));
+  menu.querySelectorAll('.opt').forEach(o=>o.addEventListener('mousedown',()=>{inp.value=o.textContent.trim();show(o.dataset.node);}));
+  show('fluids');
+</script>
+</body>
+</html>

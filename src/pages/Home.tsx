@@ -98,14 +98,15 @@ function Hero() {
   return (
     <section className="relative min-h-[15rem] overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
       <ThemedHomeImage visualTheme={visualTheme} />
-      <div className="absolute inset-0 bg-slate-950/58" />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/82 via-slate-950/48 to-slate-950/42" />
-      <div className="relative grid gap-4 p-5 text-white md:p-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-center">
+      <div className="absolute inset-0 bg-[#1e2a24]/34 dark:bg-slate-950/58" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#17211d]/72 via-[#3b3a2c]/32 to-[#f8eedb]/8 dark:from-slate-950/82 dark:via-slate-950/48 dark:to-slate-950/42" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#f4ead8]/12 via-transparent to-transparent dark:from-slate-950/10" />
+      <div className="relative grid gap-4 p-5 text-white md:p-6 lg:grid-cols-[minmax(18rem,31rem)_minmax(28rem,1fr)] lg:items-center">
         <div className="min-w-0 space-y-3">
           <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">
             {dateLine} · <span className="tabular-nums">{formatClock(now, '12h')}</span>
           </p>
-          <h1 className="font-display text-3xl font-extrabold leading-none md:text-4xl lg:text-5xl">
+          <h1 className="max-w-[12ch] font-display text-3xl font-extrabold leading-none md:text-[2.45rem] lg:text-[2.85rem]">
             Good to see you again, {firstName(name)}!
           </h1>
           {target && (
@@ -141,7 +142,7 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
   const timelinePercent = (date: Date) => Math.min(98, Math.max(2, ((date.getTime() - dayStart.getTime()) / span) * 100))
 
   return (
-    <div className="rounded-3xl border border-white/12 bg-slate-950/52 p-4 shadow-2xl backdrop-blur-md">
+    <div className="rounded-3xl border border-white/18 bg-[#17211d]/58 p-4 shadow-2xl backdrop-blur-md dark:border-white/12 dark:bg-slate-950/52">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">Today&apos;s schedule</p>
         <button
@@ -152,7 +153,7 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
           Connect
         </button>
       </div>
-      <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
+      <div className="rounded-2xl border border-white/16 bg-[#f8eedb]/10 px-4 py-3 shadow-inner shadow-white/5 dark:border-white/10 dark:bg-white/6">
         {visible.length === 0 && <p className="py-3 text-sm font-semibold text-white/65">No timed events today.</p>}
         {visible.length > 0 && (
           <div className="relative h-9" role="img" aria-label="Today’s schedule timeline">

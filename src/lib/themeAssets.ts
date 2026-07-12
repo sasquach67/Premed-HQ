@@ -4,7 +4,7 @@ export type VisualTheme = Settings['visualTheme']
 
 export function themeAsset(theme: VisualTheme | undefined, base: 'home-banner' | 'wallpaper' | 'mascot', ext: 'jpg' | 'gif' = 'jpg') {
   const suffix = theme === 'doraemon' ? '-doraemon' : ''
-  return `/art/${base}${suffix}.${ext}`
+  return `${import.meta.env.BASE_URL}art/${base}${suffix}.${ext}`
 }
 
 export function homeBanner(theme: VisualTheme | undefined) {

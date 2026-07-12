@@ -17,7 +17,7 @@ const COMMUNITIES = [
 
 const HOW = [
   [ShieldCheck, 'Your data is safe', 'Every edit autosaves to this browser instantly. Connect Google Drive in Settings for an off-device daily backup, and export a JSON copy anytime.'],
-  [Search, 'Search everything (⌘K)', 'Press ⌘K (or Ctrl+K) to jump to any page, course, task, school, or resource — and open resource links straight from search.'],
+  [Search, 'Command search (⌘K)', 'Press ⌘K (or Ctrl+K) to find classes, notes, assignments, tasks, resources, contacts, and settings.'],
   [Sparkles, 'The ram’s daily tip', 'The mascot serves one tip a day from an editable pool — click it for another, or edit the pool with the pencil.'],
   [Keyboard, 'Everything is inline-editable', 'Tables edit in place — add, check off, drag to reorder, delete. Finishing an assignment clears it from the active table and the calendar.'],
 ]

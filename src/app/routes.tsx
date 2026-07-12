@@ -28,7 +28,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'home', label: 'Overview', group: 'Home', icon: Home, tagline: '', mascot: 'home' },
   { id: 'northstar', label: 'Ultimate Guide', group: 'Home', icon: Compass, tagline: 'The big-picture roadmap to med school.', mascot: 'top-right', nav: false },
 
-  { id: 'academics', label: 'Academics & GPA', group: 'Foundation', icon: GraduationCap, tagline: 'AMCAS GPA engine + your UNC Tar Heel tracker.', mascot: 'bottom-right' },
+  { id: 'academics', label: 'Academics', group: 'Foundation', icon: GraduationCap, tagline: 'AMCAS GPA engine + your UNC Tar Heel tracker.', mascot: 'bottom-right' },
   { id: 'mcat', label: 'MCAT', group: 'Foundation', icon: Brain, tagline: 'Resources, schedule, score tracker, error log.', mascot: 'top-right' },
   { id: 'letters', label: 'Letters of Rec', group: 'Foundation', icon: Mail, tagline: 'Who, when asked, and where each letter stands.', mascot: 'bottom-right' },
 

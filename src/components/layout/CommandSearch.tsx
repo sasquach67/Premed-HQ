@@ -166,10 +166,10 @@ export function CommandSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground card-soft hover:bg-muted md:w-64"
+        className="flex h-9 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground card-soft hover:bg-muted sm:w-64 lg:w-80"
       >
         <Search className="size-4" />
-        <span className="hidden md:inline">Search everything...</span>
+        <span className="hidden truncate md:inline">Search or type a command...</span>
         <kbd className="ml-auto hidden rounded border border-border px-1.5 text-[10px] font-semibold md:inline">⌘K</kbd>
       </button>
 
@@ -186,7 +186,7 @@ export function CommandSearch() {
                 else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
                 else if (e.key === 'Enter') { e.preventDefault(); choose(results[active]) }
               }}
-              placeholder="Search pages, courses, tasks, schools, resources..."
+              placeholder="Search classes, notes, assignments, MCAT, tasks, resources, contacts..."
               className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
