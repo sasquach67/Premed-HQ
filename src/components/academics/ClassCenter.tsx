@@ -2,7 +2,7 @@ import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Archive, ArrowLeft, Atom, BarChart3, BookOpen, Brain, Calculator,
-  Dna, Edit3, FlaskConical, FolderOpen, Leaf, Link2, Mail, Microscope,
+  CheckCircle2, Circle, Dna, Edit3, FlaskConical, FolderOpen, Leaf, Link2, Mail, Microscope,
   MoreHorizontal, NotebookText, PenLine, Plus, Search, Stethoscope, Target,
   ListChecks,
   Trash2, Upload, Users, type LucideIcon,
@@ -407,6 +407,10 @@ function ClassCard({
 }) {
   const stats = classStats(row.id, data)
   const topic = data.topics.find((item) => item.id === row.currentTopicId)
+  const nextText = stats.nextDeadline?.title
+    ? `${stats.nextDeadline.title}${stats.nextDeadline.dueDate ? ` · ${daysUntil(stats.nextDeadline.dueDate)}` : ''}`
+    : topic?.title ?? 'Choose a topic'
+  const compactMeta = [row.instructor || 'Instructor TBD', row.semester, compactMeeting(row)].filter(Boolean).join(' · ')
   return (
     <Card
       draggable
@@ -422,7 +426,7 @@ function ClassCard({
       )}
     >
       <span className={cn('absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b', COLOR_STYLES[row.color])} aria-hidden="true" />
-      <CardContent className="space-y-4 p-4 pl-5">
+      <CardContent className="space-y-3 p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
           <Link to={`/academics/classes/${row.id}`} className="flex min-w-0 items-start gap-3">
             <ClassIcon icon={row.icon} className="size-10 rounded-2xl bg-muted text-muted-foreground" />
@@ -444,11 +448,11 @@ function ClassCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="space-y-1 text-sm text-muted-foreground">
-          <p className="font-extrabold text-foreground/80">{row.instructor || 'Instructor TBD'} · {row.semester}</p>
-          <p>{compactMeeting(row) || 'Meeting details not set'}</p>
-          <p className="rounded-xl bg-muted/55 px-3 py-2 text-xs font-extrabold uppercase text-foreground">
-            Up next <span className="ml-1 normal-case text-muted-foreground">{stats.nextDeadline?.title ? `${stats.nextDeadline.title}${stats.nextDeadline.dueDate ? ` · ${daysUntil(stats.nextDeadline.dueDate)}` : ''}` : topic?.title ?? 'Choose a topic'}</span>
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p className="line-clamp-1 font-bold">{compactMeta || 'Details not set'}</p>
+          <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-extrabold text-foreground">
+            <span className="shrink-0 uppercase text-primary">Up next</span>
+            <span className="min-w-0 truncate text-muted-foreground">{nextText}</span>
           </p>
         </div>
         <div>
@@ -457,12 +461,11 @@ function ClassCard({
           </div>
           <p className="mt-1 text-right text-[11px] font-bold text-muted-foreground">{stats.revision}% revised</p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-muted-foreground">
-          <span>{stats.weakCount} weak</span>
-          <span>·</span>
-          <span>{stats.notesCount} notes</span>
-          <span>·</span>
-          <span>{stats.filesCount} files</span>
+        <div className="flex flex-wrap gap-1.5 text-xs font-bold text-muted-foreground">
+          {stats.weakCount > 0 && <span className="rounded-full bg-destructive/12 px-2 py-0.5 text-destructive">{stats.weakCount} weak</span>}
+          {stats.notesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.notesCount} notes</span>}
+          {stats.filesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.filesCount} files</span>}
+          {!stats.weakCount && !stats.notesCount && !stats.filesCount && <span className="rounded-full bg-muted px-2 py-0.5">Ready to fill</span>}
         </div>
       </CardContent>
     </Card>
@@ -778,12 +781,14 @@ function OverviewTab({
                 ['Canvas', row.canvasUrl],
                 ['Anki deck', row.ankiDeckName],
                 ['Drive', row.driveFolderUrl],
-              ].map(([label, value]) => (
+              ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
                 <a key={label} href={value && value.startsWith('http') ? value : undefined} className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-foreground hover:bg-secondary">
                   {label}
                 </a>
               ))}
-              <button className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-muted-foreground">+ link</button>
+              {!row.syllabusUrl && !row.canvasUrl && !row.ankiDeckName && !row.driveFolderUrl && (
+                <button type="button" className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-muted-foreground">Add in Course kit</button>
+              )}
             </div>
             <p className="text-sm font-bold text-muted-foreground">{row.instructor || 'Professor'} — {data.contacts.find((c) => c.classId === row.id)?.officeHours || 'office hours TBD'} {data.contacts.find((c) => c.classId === row.id)?.email && <a className="ml-2 text-primary" href={`mailto:${data.contacts.find((c) => c.classId === row.id)?.email}`}>email ↗</a>}</p>
           </CardContent>
@@ -807,7 +812,7 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
   const [selectedId, setSelectedId] = useState(notes[0]?.id ?? '')
   const selected = data.notes.find((note) => note.id === (selectedId || notes[0]?.id))
   return (
-    <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
+    <div className="grid gap-5 lg:grid-cols-[310px_1fr]">
       <Card>
         <CardHeader className="gap-3">
           <div className="flex items-center justify-between">
@@ -819,14 +824,16 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input className="pl-9" placeholder="Search notes..." value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
-            <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="all">All note types</option>
-              {NOTE_TYPES.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}
-            </select>
-            <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)}>
-              <option value="all">All topics</option>
-              {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
-            </select>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="all">All types</option>
+                {NOTE_TYPES.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}
+              </select>
+              <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)}>
+                <option value="all">All topics</option>
+                {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
+              </select>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -849,8 +856,8 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <Input value={selected.title} onChange={(e) => patchNote(selected.id, { title: e.target.value }, mutate)} className="font-display text-lg font-bold" />
-              <Badge variant={selected.syncStatus === 'synced' ? 'success' : selected.syncStatus === 'error' ? 'danger' : 'warning'}>
-                {selected.syncStatus === 'local-only' ? 'Local only' : selected.syncStatus === 'sync-ready' ? 'Google Docs sync ready' : statusLabel(selected.syncStatus)}
+              <Badge variant={selected.syncStatus === 'synced' ? 'success' : selected.syncStatus === 'error' ? 'danger' : selected.externalDocUrl ? 'secondary' : 'warning'}>
+                {selected.externalDocUrl ? 'Linked doc' : selected.syncStatus === 'synced' ? 'Synced' : selected.syncStatus === 'error' ? 'Sync issue' : 'Local note'}
               </Badge>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -866,13 +873,16 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
               value={selected.topicIds}
               onChange={(topicIds) => patchNote(selected.id, { topicIds }, mutate)}
             />
-            <Textarea className="min-h-[320px]" value={selected.content} onChange={(e) => patchNote(selected.id, { content: e.target.value }, mutate)} placeholder="Type lecture notes, question logs, study guides, or exam review notes here..." />
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="External Google Doc URL (optional)" value={selected.externalDocUrl ?? ''} onChange={(e) => patchNote(selected.id, { externalDocUrl: e.target.value, syncStatus: e.target.value ? 'sync-ready' : 'local-only' }, mutate)} />
-              <div className="rounded-xl border border-dashed border-border bg-muted/35 px-3 py-2 text-xs font-bold text-muted-foreground">
-                Google Docs sync can connect here later. For now, notes save locally and can store an external doc link.
+            <Textarea className="min-h-[420px]" value={selected.content} onChange={(e) => patchNote(selected.id, { content: e.target.value }, mutate)} placeholder="Type lecture notes, question logs, study guides, or exam review notes here..." />
+            <details className="rounded-xl border border-border bg-muted/25 px-3 py-2">
+              <summary className="cursor-pointer text-xs font-extrabold text-muted-foreground">More note options</summary>
+              <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
+                <Input placeholder="Google Doc or external note link" value={selected.externalDocUrl ?? ''} onChange={(e) => patchNote(selected.id, { externalDocUrl: e.target.value, syncStatus: e.target.value ? 'sync-ready' : 'local-only' }, mutate)} />
+                {selected.externalDocUrl && (
+                  <Button asChild variant="outline" size="sm"><a href={selected.externalDocUrl} target="_blank" rel="noreferrer">Open doc</a></Button>
+                )}
               </div>
-            </div>
+            </details>
           </CardContent>
         ) : (
           <CardContent className="py-12 text-center text-sm text-muted-foreground">Create a note to open the editor.</CardContent>
@@ -882,111 +892,77 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
   )
 }
 
-function FilesTab({ row, data, mutate }: ClassTabProps) {
+function CourseKitTab({ row, data, mutate }: ClassTabProps) {
   const files = data.files.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
-  const slots = [
+  const contacts = data.contacts.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
+  const links = [
     ['Syllabus', row.syllabusUrl],
-    ['Canvas page', row.canvasUrl],
-    ['Google Drive folder', row.driveFolderUrl],
-    ['GoodNotes notebook', row.goodNotesUrl],
+    ['Canvas', row.canvasUrl],
     ['Anki deck', row.ankiDeckName],
-    ['Textbook', ''],
+    ['GoodNotes', row.goodNotesUrl],
+    ['Drive folder', row.driveFolderUrl],
   ]
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 md:grid-cols-3">
-        {slots.map(([label, value]) => (
-          <Card key={label}>
-            <CardContent className="flex items-center justify-between gap-3 p-4">
-              <div>
-                <p className="font-bold">{label}</p>
-                <p className="text-xs text-muted-foreground">{value ? 'Linked' : 'Add in Settings'}</p>
-              </div>
-              <Link2 className={cn('size-4', value ? 'text-primary' : 'text-muted-foreground')} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Files and resources</CardTitle>
-          <Button onClick={() => addFile(row.id, mutate)}><Plus className="size-4" /> Add resource</Button>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {files.map((file) => (
-            <div key={file.id} className="grid gap-2 rounded-2xl border border-border bg-card/70 p-3 md:grid-cols-[1fr_160px_1.5fr_auto]">
-              <InlineInput value={file.title} onChange={(value) => patchFile(file.id, { title: value }, mutate)} />
-              <TinySelect value={file.type} options={FILE_TYPES} onChange={(value) => patchFile(file.id, { type: value as ClassFileType }, mutate)} />
-              <Input placeholder="URL or file reference" value={file.url ?? ''} onChange={(e) => patchFile(file.id, { url: e.target.value }, mutate)} />
-              <DeleteButton onClick={() => removeById('files', file.id, mutate)} />
-            </div>
-          ))}
-          {!files.length && <p className="text-sm text-muted-foreground">Add links to slides, syllabi, readings, rubrics, or study guides.</p>}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-function ContactsTab({ row, data, mutate }: ClassTabProps) {
-  const contacts = data.contacts.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle>Contacts</CardTitle>
-        <Button onClick={() => addContact(row.id, mutate)}><Plus className="size-4" /> Add contact</Button>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {contacts.map((contact) => (
-          <div key={contact.id} className="grid gap-3 rounded-2xl border border-border bg-card/70 p-3 lg:grid-cols-[1fr_160px_1fr_1fr_auto]">
-            <InlineInput value={contact.name} onChange={(value) => patchContact(contact.id, { name: value }, mutate)} />
-            <TinySelect value={contact.role} options={CONTACT_ROLES} onChange={(value) => patchContact(contact.id, { role: value as ClassContactRole }, mutate)} />
-            <Input placeholder="Email" value={contact.email ?? ''} onChange={(e) => patchContact(contact.id, { email: e.target.value }, mutate)} />
-            <Input placeholder="Office hours / notes" value={contact.officeHours ?? ''} onChange={(e) => patchContact(contact.id, { officeHours: e.target.value }, mutate)} />
-            <div className="flex justify-end gap-1">
-              {contact.email && (
-                <Button asChild variant="ghost" size="icon"><a href={`mailto:${contact.email}`} aria-label="Email contact"><Mail className="size-4" /></a></Button>
-              )}
-              <DeleteButton onClick={() => removeById('contacts', contact.id, mutate)} />
-            </div>
-          </div>
-        ))}
-        {!contacts.length && <p className="text-sm text-muted-foreground">Add professors, TAs, study partners, advisors, tutors, or peer mentors.</p>}
-      </CardContent>
-    </Card>
-  )
-}
-
-function CourseKitTab({ row, data, mutate }: ClassTabProps) {
-  return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Course kit</CardTitle>
+          <CardTitle>Links & files</CardTitle>
           <Button size="sm" variant="outline" onClick={() => addFile(row.id, mutate)}><Plus className="size-4" /> Resource</Button>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-4">
-          {[
-            ['Syllabus', row.syllabusUrl],
-            ['Canvas', row.canvasUrl],
-            ['Anki deck', row.ankiDeckName],
-            ['GoodNotes', row.goodNotesUrl],
-          ].map(([label, value]) => (
-            <a
-              key={label}
-              href={value && value.startsWith('http') ? value : undefined}
-              className="rounded-2xl bg-muted/45 p-3 font-bold transition hover:bg-muted"
-            >
-              <span className="block">{label}</span>
-              <span className="mt-1 block text-xs font-semibold text-muted-foreground">{value ? 'Linked' : 'Not set'}</span>
-            </a>
-          ))}
+        <CardContent className="space-y-4">
+          <div className="grid gap-2 md:grid-cols-2">
+            {links.map(([label, value]) => (
+              <a
+                key={label}
+                href={value && value.startsWith('http') ? value : undefined}
+                className={cn(
+                  'flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-bold transition',
+                  value ? 'border-border bg-muted/45 text-foreground hover:bg-muted' : 'border-dashed border-border/80 text-muted-foreground'
+                )}
+              >
+                <span>{label}</span>
+                <span className="text-xs">{value ? 'Linked' : 'Add in edit'}</span>
+              </a>
+            ))}
+          </div>
+          <div className="space-y-2 border-t border-border pt-4">
+            {files.map((file) => (
+              <div key={file.id} className="grid gap-2 rounded-xl bg-muted/35 p-2 md:grid-cols-[1fr_130px_1.2fr_auto] md:items-center">
+                <InlineInput value={file.title} onChange={(value) => patchFile(file.id, { title: value }, mutate)} />
+                <TinySelect value={file.type} options={FILE_TYPES} onChange={(value) => patchFile(file.id, { type: value as ClassFileType }, mutate)} />
+                <Input placeholder="URL or file reference" value={file.url ?? ''} onChange={(e) => patchFile(file.id, { url: e.target.value }, mutate)} />
+                <DeleteButton onClick={() => removeById('files', file.id, mutate)} />
+              </div>
+            ))}
+            {!files.length && <p className="text-sm font-semibold text-muted-foreground">No files yet.</p>}
+          </div>
         </CardContent>
       </Card>
-      <div className="grid gap-5 xl:grid-cols-2">
-        <FilesTab row={row} data={data} mutate={mutate} />
-        <ContactsTab row={row} data={data} mutate={mutate} />
-      </div>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>People</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => addContact(row.id, mutate)}><Plus className="size-4" /> Person</Button>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {contacts.map((contact) => (
+            <div key={contact.id} className="grid gap-2 rounded-xl bg-muted/35 p-2 lg:grid-cols-[1fr_120px_auto] lg:items-center">
+              <InlineInput value={contact.name} onChange={(value) => patchContact(contact.id, { name: value }, mutate)} />
+              <TinySelect value={contact.role} options={CONTACT_ROLES} onChange={(value) => patchContact(contact.id, { role: value as ClassContactRole }, mutate)} />
+              <div className="flex justify-end gap-1">
+                {contact.email && (
+                  <Button asChild variant="ghost" size="icon"><a href={`mailto:${contact.email}`} aria-label="Email contact"><Mail className="size-4" /></a></Button>
+                )}
+                <DeleteButton onClick={() => removeById('contacts', contact.id, mutate)} />
+              </div>
+              <Input className="lg:col-span-3" placeholder="Email, office hours, or notes" value={[contact.email, contact.officeHours].filter(Boolean).join(' · ')} onChange={(e) => {
+                const [email, ...rest] = e.target.value.split(' · ')
+                patchContact(contact.id, { email, officeHours: rest.join(' · ') }, mutate)
+              }} />
+            </div>
+          ))}
+          {!contacts.length && <p className="text-sm font-semibold text-muted-foreground">Add your professor, TA, or study group.</p>}
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -1015,9 +991,16 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/80 p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setGeneratorOpen(true)}><Plus className="size-4" /> Practice exam</Button>
-          <Button variant="outline"><NotebookText className="size-4" /> Generate practice from notes</Button>
-          <Button variant="outline"><Brain className="size-4" /> Explain weak topic</Button>
-          <Button variant="outline"><Target className="size-4" /> Build study plan</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline"><MoreHorizontal className="size-4" /> More</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem><NotebookText className="size-4" /> Generate from notes</DropdownMenuItem>
+              <DropdownMenuItem><Brain className="size-4" /> Explain weak topic</DropdownMenuItem>
+              <DropdownMenuItem><Target className="size-4" /> Build study plan</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="min-w-[220px] space-y-1">
           <div className="flex items-center justify-between text-xs font-extrabold uppercase text-muted-foreground">
@@ -1030,10 +1013,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
       <div className="grid gap-5 xl:grid-cols-[1.25fr_.85fr]">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <div>
-              <CardTitle>Topic intelligence</CardTitle>
-              <p className="text-sm text-muted-foreground">Confidence = you · practice = attempts · readiness = both minus weak areas.</p>
-            </div>
+            <CardTitle>Topic intelligence</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="hidden grid-cols-[1fr_120px_140px_140px_140px_92px] gap-3 px-3 py-2 text-xs font-extrabold uppercase text-muted-foreground lg:grid">
@@ -1076,7 +1056,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
                   <span className="text-xs font-extrabold text-muted-foreground">{exam.status === 'submitted' || exam.status === 'reviewed' ? `${exam.score ?? 0}/${exam.totalAutoGradable ?? exam.questionCount}` : statusLabel(exam.status)}</span>
                 </button>
               ))}
-              {!exams.length && <p className="text-sm text-muted-foreground">No practice attempts yet. Generate a practice exam to start moving the gauges.</p>}
+              {!exams.length && <p className="text-sm text-muted-foreground">No practice attempts yet.</p>}
             </CardContent>
           </Card>
         </div>
@@ -1349,59 +1329,72 @@ function ClassEditorDialog({
       <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Set up the class workspace. Integration fields are stored locally for now.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Course code"><Input value={form.courseCode} onChange={(e) => onChange({ courseCode: e.target.value })} placeholder="BIOL 103" /></Field>
-          <Field label="Course title"><Input value={form.courseTitle} onChange={(e) => onChange({ courseTitle: e.target.value })} placeholder="How Cells Function" /></Field>
-          <Field label="Nickname"><Input value={form.nickname ?? ''} onChange={(e) => onChange({ nickname: e.target.value })} placeholder="Cells" /></Field>
-          <Field label="Semester"><Input value={form.semester} onChange={(e) => onChange({ semester: e.target.value })} placeholder="Fall 2026" /></Field>
-          <Field label="Instructor"><Input value={form.instructor ?? ''} onChange={(e) => onChange({ instructor: e.target.value })} /></Field>
-          <Field label="Location"><Input value={form.location ?? ''} onChange={(e) => onChange({ location: e.target.value })} /></Field>
-          <Field label="Meeting days"><Input value={form.meetingDays ?? ''} onChange={(e) => onChange({ meetingDays: e.target.value })} placeholder="MWF" /></Field>
-          <Field label="Meeting time"><Input value={form.meetingTime ?? ''} onChange={(e) => onChange({ meetingTime: e.target.value })} placeholder="10:10 AM-11:00 AM" /></Field>
-          <Field label="Icon">
-            <div className="flex flex-wrap gap-1.5">
-              {CLASS_ICONS.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  title={label}
-                  onClick={() => onChange({ icon: id })}
-                  className={cn(
-                    'grid size-9 place-items-center rounded-xl border text-muted-foreground transition hover:bg-muted hover:text-foreground',
-                    normalizeClassIcon(form.icon) === id ? 'border-primary bg-primary/12 text-primary' : 'border-border bg-card'
-                  )}
-                >
-                  <Icon className="size-4" />
-                </button>
-              ))}
+        <div className="space-y-5">
+          <section className="space-y-3">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Basics</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Course code"><Input value={form.courseCode} onChange={(e) => onChange({ courseCode: e.target.value })} placeholder="BIOL 103" /></Field>
+              <Field label="Course title"><Input value={form.courseTitle} onChange={(e) => onChange({ courseTitle: e.target.value })} placeholder="How Cells Function" /></Field>
+              <Field label="Instructor"><Input value={form.instructor ?? ''} onChange={(e) => onChange({ instructor: e.target.value })} /></Field>
+              <Field label="Semester"><Input value={form.semester} onChange={(e) => onChange({ semester: e.target.value })} placeholder="Fall 2026" /></Field>
+              <Field label="Meeting days"><Input value={form.meetingDays ?? ''} onChange={(e) => onChange({ meetingDays: e.target.value })} placeholder="MWF" /></Field>
+              <Field label="Meeting time"><Input value={form.meetingTime ?? ''} onChange={(e) => onChange({ meetingTime: e.target.value })} placeholder="10:10 AM-11:00 AM" /></Field>
+              <Field label="Location"><Input value={form.location ?? ''} onChange={(e) => onChange({ location: e.target.value })} /></Field>
+              <Field label="Nickname"><Input value={form.nickname ?? ''} onChange={(e) => onChange({ nickname: e.target.value })} placeholder="Optional" /></Field>
             </div>
-          </Field>
-          <Field label="Color">
-            <div className="flex flex-wrap gap-1.5">
-              {COLORS.map((color) => (
-                <button type="button" key={color} onClick={() => onChange({ color })} className={cn('rounded-full px-2.5 py-1 text-xs font-bold capitalize', PILL_STYLES[color], form.color === color && 'ring-2 ring-primary')}>
-                  {color}
-                </button>
-              ))}
+          </section>
+          <section className="space-y-3 border-t border-border pt-4">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Look</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Icon">
+                <div className="flex flex-wrap gap-1.5">
+                  {CLASS_ICONS.map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      title={label}
+                      aria-label={label}
+                      onClick={() => onChange({ icon: id })}
+                      className={cn(
+                        'grid size-9 place-items-center rounded-xl border text-muted-foreground transition hover:bg-muted hover:text-foreground',
+                        normalizeClassIcon(form.icon) === id ? 'border-primary bg-primary/12 text-primary' : 'border-border bg-card'
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Color">
+                <div className="flex flex-wrap gap-1.5">
+                  {COLORS.map((color) => (
+                    <button type="button" key={color} onClick={() => onChange({ color })} className={cn('rounded-full px-2.5 py-1 text-xs font-bold capitalize', PILL_STYLES[color], form.color === color && 'ring-2 ring-primary')}>
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <BannerField value={form.background ?? ''} onChange={(background) => onChange({ background })} />
+              <Field label="Status">
+                <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={form.status} onChange={(e) => onChange({ status: e.target.value as ClassCenterClass['status'] })}>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </Field>
             </div>
-          </Field>
-          <BannerField value={form.background ?? ''} onChange={(background) => onChange({ background })} />
-          <Field label="Status">
-            <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={form.status} onChange={(e) => onChange({ status: e.target.value as ClassCenterClass['status'] })}>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-            </select>
-          </Field>
-        </div>
-        <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-2">
-          <Field label="Syllabus URL"><Input value={form.syllabusUrl ?? ''} onChange={(e) => onChange({ syllabusUrl: e.target.value })} /></Field>
-          <Field label="Canvas URL"><Input value={form.canvasUrl ?? ''} onChange={(e) => onChange({ canvasUrl: e.target.value })} /></Field>
-          <Field label="Google Drive folder"><Input value={form.driveFolderUrl ?? ''} onChange={(e) => onChange({ driveFolderUrl: e.target.value })} /></Field>
-          <Field label="GoodNotes notebook"><Input value={form.goodNotesUrl ?? ''} onChange={(e) => onChange({ goodNotesUrl: e.target.value })} /></Field>
-          <Field label="Anki deck name"><Input value={form.ankiDeckName ?? ''} onChange={(e) => onChange({ ankiDeckName: e.target.value })} /></Field>
-          <Field label="Notes Doc URL"><Input value={form.notesDocUrl ?? ''} onChange={(e) => onChange({ notesDocUrl: e.target.value })} /></Field>
+          </section>
+          <details className="rounded-2xl border border-border bg-muted/25 p-3">
+            <summary className="cursor-pointer text-sm font-extrabold">Links</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Field label="Syllabus"><Input value={form.syllabusUrl ?? ''} onChange={(e) => onChange({ syllabusUrl: e.target.value })} placeholder="Paste URL" /></Field>
+              <Field label="Canvas"><Input value={form.canvasUrl ?? ''} onChange={(e) => onChange({ canvasUrl: e.target.value })} placeholder="Paste URL" /></Field>
+              <Field label="Drive folder"><Input value={form.driveFolderUrl ?? ''} onChange={(e) => onChange({ driveFolderUrl: e.target.value })} placeholder="Paste URL" /></Field>
+              <Field label="GoodNotes"><Input value={form.goodNotesUrl ?? ''} onChange={(e) => onChange({ goodNotesUrl: e.target.value })} placeholder="Paste URL" /></Field>
+              <Field label="Anki deck"><Input value={form.ankiDeckName ?? ''} onChange={(e) => onChange({ ankiDeckName: e.target.value })} placeholder="Deck name or link" /></Field>
+              <Field label="Notes doc"><Input value={form.notesDocUrl ?? ''} onChange={(e) => onChange({ notesDocUrl: e.target.value })} placeholder="Paste URL" /></Field>
+            </div>
+          </details>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -1557,17 +1550,29 @@ function removeById(key: 'files' | 'contacts', id: string, mutate: ClassTabProps
 }
 
 function TopicRow({ topic, current, data, mutate }: { topic: ClassTopic; current: boolean; data: ClassCenterData; mutate: ClassTabProps['mutate'] }) {
-  const practice = topicPracticeStats(topic.id, data)
   const readiness = topicReadiness(topic, data)
+  const weakCount = activeWeakAreasForTopic(topic.id, data).length
+  const StatusIcon = normalizedTopicStatus(topic.status) === 'ready' ? CheckCircle2 : Circle
   return (
-    <div className={cn('space-y-3 rounded-2xl border border-border bg-card/70 p-3', current && 'border-primary/40 bg-primary/8')}>
-      <div className="grid gap-2 md:grid-cols-[1fr_160px_120px_130px_auto]">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{normalizedTopicStatus(topic.status) === 'ready' ? '✓' : current ? '→' : '□'}</span>
-        <InlineInput value={topic.title} onChange={(value) => mutate((draft) => {
-          const item = draft.topics.find((row) => row.id === topic.id)
-          if (item) Object.assign(item, { title: value, updatedAt: Date.now() })
-        })} />
+    <div className={cn(
+      'grid gap-3 rounded-xl border border-border bg-card/60 p-3 text-sm md:grid-cols-[1.4fr_90px_130px_130px_auto] md:items-center',
+      current && 'border-primary/35 bg-primary/8'
+    )}>
+      <div className="flex min-w-0 items-center gap-2">
+        <StatusIcon className={cn('size-4 shrink-0', normalizedTopicStatus(topic.status) === 'ready' ? 'text-leaf' : current ? 'text-primary' : 'text-muted-foreground')} />
+        <div className="min-w-0 flex-1">
+          <InlineInput value={topic.title} onChange={(value) => mutate((draft) => {
+            const item = draft.topics.find((row) => row.id === topic.id)
+            if (item) Object.assign(item, { title: value, updatedAt: Date.now() })
+          })} />
+          <div className="mt-1 flex flex-wrap gap-1">
+            {current && <Badge variant="secondary">Current</Badge>}
+            {weakCount > 0 && <Badge variant="danger">{weakCount} weak</Badge>}
+            <TopicReferenceBadge label="Notes" count={topicLinkedNotes(topic.id, data).length} />
+            <TopicReferenceBadge label="Assignments" count={topicLinkedAssignments(topic.id, data).length} />
+            <TopicReferenceBadge label="Files" count={topicLinkedFiles(topic.id, data).length} />
+          </div>
+        </div>
       </div>
       <InlineInput value={topic.unit ?? ''} placeholder="Unit" onChange={(value) => mutate((draft) => {
         const item = draft.topics.find((row) => row.id === topic.id)
@@ -1577,22 +1582,8 @@ function TopicRow({ topic, current, data, mutate }: { topic: ClassTopic; current
         const item = draft.topics.find((row) => row.id === topic.id)
         if (item) Object.assign(item, { status: value as TopicStatus, updatedAt: Date.now() })
       })} />
-      <TinySelect value={String(topic.confidence)} options={['1', '2', '3']} onChange={(value) => mutate((draft) => {
-        const item = draft.topics.find((row) => row.id === topic.id)
-        if (item) Object.assign(item, { confidence: Number(value) as TopicConfidence, updatedAt: Date.now() })
-      })} />
-      <Button size="sm" variant="outline" onClick={() => addWeakArea(topic.classId, mutate, { topicId: topic.id, label: topic.title })}>Weak</Button>
-      </div>
-      <div className="grid gap-2 md:grid-cols-3">
-        <GaugeLine label="Confidence" value={Math.round((topic.confidence / 3) * 100)} meta={confidenceLabel(topic.confidence)} compact />
-        <GaugeLine label="Practice" value={practice.percent ?? 0} meta={practice.total ? `${practice.correct}/${practice.total}` : 'Not tested'} muted={!practice.total} compact />
-        <GaugeLine label="Readiness" value={readiness} meta={`${activeWeakAreasForTopic(topic.id, data).length} weak`} compact />
-      </div>
-      <div className="flex flex-wrap gap-1">
-        <TopicReferenceBadge label="Notes" count={topicLinkedNotes(topic.id, data).length} />
-        <TopicReferenceBadge label="Assignments" count={topicLinkedAssignments(topic.id, data).length} />
-        <TopicReferenceBadge label="Files" count={topicLinkedFiles(topic.id, data).length} />
-      </div>
+      <InlineGauge value={readiness} meta={`${readiness}% ready`} />
+      <Button size="sm" variant={weakCount ? 'default' : 'outline'} onClick={() => addWeakArea(topic.classId, mutate, { topicId: topic.id, label: topic.title })}>{weakCount ? 'Review' : 'Log weak'}</Button>
     </div>
   )
 }
@@ -1776,18 +1767,6 @@ function ToggleChip({ selected, onClick, children }: { selected: boolean; onClic
   )
 }
 
-function GaugeLine({ label, value, meta, muted, compact }: { label: string; value: number; meta: string; muted?: boolean; compact?: boolean }) {
-  return (
-    <div className={cn('rounded-xl bg-muted/40 p-3', compact && 'p-2')}>
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-xs font-extrabold uppercase text-muted-foreground">{label}</span>
-        <span className={cn('text-xs font-extrabold', muted ? 'text-muted-foreground' : 'text-foreground')}>{meta}</span>
-      </div>
-      <ProgressLine value={value} muted={muted} />
-    </div>
-  )
-}
-
 function InlineGauge({ value, meta, muted }: { value: number; meta: string; muted?: boolean }) {
   return (
     <div className="space-y-1">
@@ -1806,6 +1785,7 @@ function ProgressLine({ value, muted }: { value: number; muted?: boolean }) {
 }
 
 function TopicReferenceBadge({ label, count }: { label: string; count: number }) {
+  if (!count) return null
   return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{count} {label}</span>
 }
 

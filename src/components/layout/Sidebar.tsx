@@ -142,7 +142,7 @@ export function Sidebar({
           {expanded && (
             <div className={cn('min-w-0 leading-tight transition-[opacity,transform] duration-300 motion-reduce:transition-none', labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0')}>
               <p className="truncate text-sm font-bold">{profile.name}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{profile.major} • {profile.track} • {profile.classYear}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Add email in Profile'}</p>
             </div>
           )}
         </div>

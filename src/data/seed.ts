@@ -612,6 +612,7 @@ export function createSeedData(): AppData {
   return {
     profile: {
       name: 'Andy',
+      email: '',
       school: 'UNC–Chapel Hill',
       major: 'Neuroscience B.S.',
       track: 'Pre-Med',

@@ -197,6 +197,7 @@ const GOAL_FIELDS: { key: keyof Goals; label: string; suffix?: string }[] = [
 ]
 const PROFILE_FIELDS: { key: keyof ProfileT; label: string }[] = [
   { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
   { key: 'school', label: 'School' },
   { key: 'major', label: 'Major' },
   { key: 'classYear', label: 'Class year' },

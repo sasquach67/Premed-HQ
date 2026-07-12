@@ -114,8 +114,8 @@ function Hero() {
               <span className="truncate text-white/82">{caption}</span>
             </div>
           )}
-          <div className="pt-2">
-            <MascotBubble tips={tips} ramSize={52} side="right" compact />
+          <div className="max-w-md">
+            <MascotBubble tips={tips} ramSize={44} side="left" compact />
           </div>
         </div>
         <TodaySchedulePanel schedule={schedule} now={now} />
@@ -126,7 +126,7 @@ function Hero() {
 
 function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof useHeroScheduleSource>; now: Date }) {
   const analysis = useMemo(() => normalizeTimedEvents(schedule.events, now), [schedule.events, now])
-  const visible = analysis.timedEvents.slice(0, 5)
+  const visible = analysis.timedEvents.slice(0, 4)
   const dayStart = useMemo(() => {
     const date = new Date(now)
     date.setHours(6, 0, 0, 0)
@@ -141,73 +141,70 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
   const timelinePercent = (date: Date) => Math.min(98, Math.max(2, ((date.getTime() - dayStart.getTime()) / span) * 100))
 
   return (
-    <div className="rounded-3xl border border-white/12 bg-slate-950/58 p-4 shadow-2xl backdrop-blur-md">
+    <div className="rounded-3xl border border-white/12 bg-slate-950/52 p-4 shadow-2xl backdrop-blur-md">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/70">Today's schedule</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">Today&apos;s schedule</p>
         <button
           onClick={() => { void schedule.connect(new Date()) }}
           disabled={!schedule.configured || schedule.status === 'connecting'}
-          className="text-xs font-extrabold text-primary disabled:opacity-50"
+          className="text-[11px] font-extrabold text-primary/90 disabled:opacity-45"
         >
-          Connect ⚡
+          Connect
         </button>
       </div>
-      <div className="relative min-h-[8.8rem] overflow-hidden rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
+      <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
         {visible.length === 0 && <p className="py-3 text-sm font-semibold text-white/65">No timed events today.</p>}
         {visible.length > 0 && (
-          <>
-            <div className="absolute inset-x-4 top-1/2 h-2 -translate-y-1/2 rounded-full bg-white/72 shadow-[0_0_18px_rgba(255,255,255,.35)]" />
+          <div className="relative h-9" role="img" aria-label="Today’s schedule timeline">
+            <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-white/70 shadow-[0_0_16px_rgba(255,255,255,.28)]" />
             <div
-              className="absolute top-1/2 z-20 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow-[0_0_14px_rgba(116,192,252,.65)]"
+              className="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow-[0_0_12px_rgba(116,192,252,.55)]"
               style={{ left: `${timelinePercent(now)}%` }}
               aria-label="Current time"
             />
-            <div className="absolute bottom-2 left-4 text-[10px] font-extrabold tabular-nums text-white/45">{formatClock(dayStart, schedule.calendar.timeFormat).replace(/:00/g, '')}</div>
-            <div className="absolute bottom-2 right-4 text-[10px] font-extrabold tabular-nums text-white/45">{formatClock(dayEnd, schedule.calendar.timeFormat).replace(/:00/g, '')}</div>
-          </>
-        )}
-        {visible.map((event, index) => {
-          const active = analysis.current?.id === event.id
-          const past = event.endDate <= now
-          const left = Math.max(0, event.endDate.getTime() - now.getTime())
-          const start = timelinePercent(event.startDate)
-          const end = timelinePercent(event.endDate)
-          const above = index % 2 === 0
-          return (
-            <div key={event.id}>
-              <div
-                className={cn(
-                  'absolute top-1/2 z-10 h-2 -translate-y-1/2 rounded-full',
-                  active ? 'bg-primary shadow-[0_0_14px_rgba(116,192,252,.55)]' : past ? 'bg-white/25' : 'bg-leaf/80'
-                )}
-                style={{ left: `${start}%`, width: `${Math.max(2.5, end - start)}%` }}
-              />
-              <div
-                className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${start}%` }}
-              >
-                <div className={cn(
-                  'absolute left-1/2 w-1.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,.45)]',
-                  above ? 'bottom-0 h-8' : 'top-0 h-8'
-                )} />
-                <div className={cn(
-                  'absolute w-32 -translate-x-1/2 text-center text-xs',
-                  above ? 'bottom-8 pb-1' : 'top-8 pt-1'
-                )}>
-                  <p className={cn('font-extrabold tabular-nums', active ? 'text-primary' : 'text-white/72')}>
-                    {formatClock(event.startDate, schedule.calendar.timeFormat).replace(/:00/g, '')}
-                  </p>
-                  <p className={cn('truncate font-extrabold leading-tight', past && 'text-white/45 line-through', active ? 'text-primary' : 'text-white')}>
-                    {event.title}
-                  </p>
-                  <p className="truncate font-bold text-white/58">
-                    {active ? `${hms(left).replace(/^0:/, '')} left` : formatEventTimeRange(event, schedule.calendar.timeFormat).split('-')[1]?.trim() ?? ''}
-                  </p>
+            {visible.map((event) => {
+              const active = analysis.current?.id === event.id
+              const past = event.endDate <= now
+              const start = timelinePercent(event.startDate)
+              const end = timelinePercent(event.endDate)
+              return (
+                <div key={event.id}>
+                  <div
+                    className={cn(
+                      'absolute top-1/2 z-10 h-2 -translate-y-1/2 rounded-full',
+                      active ? 'bg-primary shadow-[0_0_14px_rgba(116,192,252,.5)]' : past ? 'bg-white/22' : 'bg-leaf/75'
+                    )}
+                    style={{ left: `${start}%`, width: `${Math.max(2.5, end - start)}%` }}
+                  />
+                  <div
+                    className="absolute top-1/2 z-20 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/95 shadow-[0_0_10px_rgba(255,255,255,.35)]"
+                    style={{ left: `${start}%` }}
+                  />
                 </div>
-              </div>
-            </div>
-          )
-        })}
+              )
+            })}
+          </div>
+        )}
+        {visible.length > 0 && (
+          <div className="mt-2 space-y-1.5">
+            {visible.slice(0, 3).map((event) => {
+              const active = analysis.current?.id === event.id
+              const past = event.endDate <= now
+              const left = Math.max(0, event.endDate.getTime() - now.getTime())
+              return (
+                <div key={event.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-xs">
+                  <span className="tabular-nums font-bold text-white/55">{formatClock(event.startDate, schedule.calendar.timeFormat).replace(/:00/g, '')}</span>
+                  <span className={cn('min-w-0 truncate font-extrabold', active ? 'text-primary' : past ? 'text-white/45 line-through' : 'text-white/86')}>
+                    {event.title}
+                  </span>
+                  <span className={cn('truncate text-right text-[11px] font-bold tabular-nums', active ? 'text-primary' : 'text-white/55')}>
+                    {active ? `${hms(left).replace(/^0:/, '')}` : formatEventTimeRange(event, schedule.calendar.timeFormat).split('-')[1]?.trim() ?? ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

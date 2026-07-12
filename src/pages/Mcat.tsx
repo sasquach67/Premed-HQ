@@ -1,7 +1,7 @@
-import { useMemo, useState, type DragEvent, type ReactNode } from 'react'
+import { useMemo, useState, type ClipboardEvent, type DragEvent, type ReactNode } from 'react'
 import {
   AlertCircle, BarChart3, BookOpen, Brain, CalendarDays, CalendarRange, CheckCircle2, ClipboardList,
-  Clock3, Filter, Flame, LibraryBig, MessageCircle, Plus, Search, Sparkles, Target,
+  Clock3, Filter, Flame, LibraryBig, MessageCircle, Play, Plus, Search, Target,
   Trash2, TrendingUp, UploadCloud,
 } from 'lucide-react'
 import {
@@ -17,10 +17,14 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
@@ -96,17 +100,21 @@ const HEATMAP = Array.from({ length: 70 }, (_, i) => ((i * 7 + 3) % 5))
 export function Mcat() {
   const route = ROUTE_MAP.mcat
   const mcat = useStore((s) => s.mcat)
-  const update = useStore((s) => s.update)
   const best = bestMcat(mcat)
   const goal = mcat.goalScore ?? 515
-  const currentScore = best ?? 480
-  const projectedScore = Math.min(goal, best ? best + 18 : 500)
+  const currentScore = best ?? mcat.baselineScore ?? 472
+  const weeklyHours = mcat.weeklyStudyHours ?? 0
+  const preferredSessionLength = mcat.preferredSessionLength ?? 90
+  const targetDate = mcat.targetDate
+  const planIntensity = mcat.planIntensity ?? 'balanced'
+  const projectedLift = Math.max(10, Math.min(32, Math.round(weeklyHours * 0.9) + (planIntensity === 'aggressive' ? 7 : planIntensity === 'light' ? 2 : 4)))
+  const projectedScore = Math.min(goal, currentScore + projectedLift)
   const readiness = Math.max(18, Math.min(92, Math.round(((currentScore - 472) / (goal - 472 || 1)) * 100)))
   const projectedReadiness = Math.max(readiness + 8, Math.min(96, Math.round(((projectedScore - 472) / (goal - 472 || 1)) * 100)))
   const qotd = pickDaily(MCAT_QOTD, 13) ?? MCAT_QOTD[0]
-  const days = daysUntilNumber(mcat.targetDate)
-  const openTasks = Math.max(12, mcat.schedule.filter((s) => !s.done).length + mcat.errorLog.filter((e) => !e.resolved).length)
-  const debtHours = Math.max(21, Math.round(openTasks * 1.75))
+  const days = daysUntilNumber(targetDate)
+  const openTasks = mcat.schedule.filter((s) => !s.done).length + mcat.errorLog.filter((e) => !e.resolved).length
+  const debtHours = Math.round(openTasks * (preferredSessionLength / 60))
 
   const chartData = useMemo(
     () => {
@@ -127,16 +135,21 @@ export function Mcat() {
     <div>
       <PageHeader title={route.label} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm card-soft">
-        <span className="flex items-center gap-1.5"><CalendarRange className="size-4 text-primary" /> Sit date
-          <Input type="date" defaultValue={mcat.targetDate} onBlur={(e) => update((d) => { d.mcat.targetDate = e.target.value })} className="h-7 w-36" />
-        </span>
-        <span className="font-bold text-primary">{days != null ? `${days} days out` : 'Set a date'}</span>
-        <span className="flex items-center gap-1.5">Goal
-          <Input type="number" min={472} max={528} defaultValue={goal} onBlur={(e) => update((d) => { d.mcat.goalScore = Number(e.target.value) || 515 })} className="h-7 w-20" />
-        </span>
-        <span className="text-muted-foreground">Best so far <b className="text-foreground">{best ?? '—'}</b></span>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm card-soft">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <span className="flex items-center gap-1.5"><CalendarRange className="size-4 text-primary" /> Sit date <b>{formatDateChip(targetDate)}</b></span>
+          <span className="font-bold text-primary">{days != null ? `${days} days out` : 'Set a date'}</span>
+          <span>Goal <b className="text-foreground">{mcat.goalScore ?? 'Set'}</b></span>
+          <span>Baseline <b className="text-foreground">{mcat.baselineScore ?? best ?? 'Set'}</b></span>
+          <span className="text-muted-foreground">Best so far <b className="text-foreground">{best ?? '—'}</b></span>
+        </div>
+        <McatSetupDialog />
       </div>
+
+      <McatFocusLaunchStrip
+        setup={{ weeklyHours, preferredSessionLength, currentPhase: mcat.currentPhase, focusSection: mcat.focusSection }}
+        openTasks={openTasks}
+      />
 
       <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList>
@@ -160,6 +173,7 @@ export function Mcat() {
             debtHours={debtHours}
             sectionReadiness={sectionReadiness}
             qotd={qotd}
+            setup={{ weeklyHours, preferredSessionLength, currentPhase: mcat.currentPhase, focusSection: mcat.focusSection }}
           />
         </TabsContent>
 
@@ -195,8 +209,178 @@ export function Mcat() {
   )
 }
 
+function McatSetupDialog() {
+  const mcat = useStore((s) => s.mcat)
+  const update = useStore((s) => s.update)
+  const [open, setOpen] = useState(false)
+  const [targetDate, setTargetDate] = useState(mcat.targetDate ?? '')
+  const [goalScore, setGoalScore] = useState(mcat.goalScore?.toString() ?? '')
+  const [baselineScore, setBaselineScore] = useState(mcat.baselineScore?.toString() ?? '')
+  const [weeklyStudyHours, setWeeklyStudyHours] = useState(mcat.weeklyStudyHours?.toString() ?? '')
+  const [preferredSessionLength, setPreferredSessionLength] = useState((mcat.preferredSessionLength ?? 90).toString())
+  const [currentPhase, setCurrentPhase] = useState(mcat.currentPhase ?? '')
+  const [planIntensity, setPlanIntensity] = useState(mcat.planIntensity ?? 'balanced')
+  const [focusSection, setFocusSection] = useState(mcat.focusSection ?? '')
+
+  function save() {
+    update((d) => {
+      d.mcat.targetDate = targetDate || undefined
+      d.mcat.goalScore = parseOptionalNumber(goalScore)
+      d.mcat.baselineScore = parseOptionalNumber(baselineScore)
+      d.mcat.weeklyStudyHours = parseOptionalNumber(weeklyStudyHours)
+      d.mcat.preferredSessionLength = parseOptionalNumber(preferredSessionLength) ?? 90
+      d.mcat.currentPhase = currentPhase || undefined
+      d.mcat.planIntensity = planIntensity
+      d.mcat.focusSection = focusSection || undefined
+    })
+    setOpen(false)
+  }
+
+  function clearSetup() {
+    setTargetDate('')
+    setGoalScore('')
+    setBaselineScore('')
+    setWeeklyStudyHours('')
+    setPreferredSessionLength('90')
+    setCurrentPhase('')
+    setPlanIntensity('balanced')
+    setFocusSection('')
+    update((d) => {
+      d.mcat.targetDate = undefined
+      d.mcat.goalScore = undefined
+      d.mcat.baselineScore = undefined
+      d.mcat.weeklyStudyHours = undefined
+      d.mcat.preferredSessionLength = undefined
+      d.mcat.currentPhase = undefined
+      d.mcat.planIntensity = undefined
+      d.mcat.focusSection = undefined
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm"><Target className="size-4" /> Setup MCAT</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Set up MCAT preferences</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          <section className="space-y-3">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Exam goal</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Label className="space-y-1.5">
+                <span>Sit date</span>
+                <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+              </Label>
+              <Label className="space-y-1.5">
+                <span>Goal score</span>
+                <Input type="number" min={472} max={528} placeholder="515" value={goalScore} onChange={(e) => setGoalScore(e.target.value)} />
+              </Label>
+              <Label className="space-y-1.5">
+                <span>Baseline</span>
+                <Input type="number" min={472} max={528} placeholder="Latest diagnostic" value={baselineScore} onChange={(e) => setBaselineScore(e.target.value)} />
+              </Label>
+            </div>
+          </section>
+          <section className="space-y-3 border-t border-border pt-4">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Study plan</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Label className="space-y-1.5">
+                <span>Weekly hours</span>
+                <Input type="number" min={0} max={80} placeholder="12" value={weeklyStudyHours} onChange={(e) => setWeeklyStudyHours(e.target.value)} />
+              </Label>
+              <Label className="space-y-1.5">
+                <span>Session length</span>
+                <Input type="number" min={15} max={240} step={15} value={preferredSessionLength} onChange={(e) => setPreferredSessionLength(e.target.value)} />
+              </Label>
+              <Label className="space-y-1.5">
+                <span>Current phase</span>
+                <select value={currentPhase} onChange={(e) => setCurrentPhase(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <option value="">Choose phase</option>
+                  <option value="Foundation">Foundation</option>
+                  <option value="Content Review">Content Review</option>
+                  <option value="Practice">Practice</option>
+                  <option value="Full Lengths">Full Lengths</option>
+                  <option value="Polish">Polish</option>
+                </select>
+              </Label>
+            </div>
+          </section>
+          <details className="rounded-2xl border border-border bg-muted/25 p-3">
+            <summary className="cursor-pointer text-sm font-extrabold">Preferences</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Label className="space-y-1.5">
+                <span>Plan intensity</span>
+                <select value={planIntensity} onChange={(e) => setPlanIntensity(e.target.value as 'light' | 'balanced' | 'aggressive')} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <option value="light">Light</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="aggressive">Aggressive</option>
+                </select>
+              </Label>
+              <Label className="space-y-1.5">
+                <span>Priority section</span>
+                <select value={focusSection} onChange={(e) => setFocusSection(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <option value="">Auto from scores</option>
+                  {Object.values(SECTION_META).map((section) => <option key={section.label} value={section.label}>{section.label}</option>)}
+                </select>
+              </Label>
+            </div>
+          </details>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" type="button" onClick={clearSetup}>Clear setup</Button>
+          <Button type="button" onClick={save}>Save setup</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function McatFocusLaunchStrip({
+  setup, openTasks,
+}: {
+  setup: { weeklyHours: number; preferredSessionLength: number; currentPhase?: string; focusSection?: string }
+  openTasks: number
+}) {
+  const section = setup.focusSection || 'Mixed review'
+  const length = setup.preferredSessionLength || 90
+  const phase = setup.currentPhase || 'Set your phase'
+
+  return (
+    <section className="mb-4 rounded-2xl border border-leaf/35 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--leaf)_18%,var(--card)),var(--card)_58%,color-mix(in_srgb,var(--primary)_14%,var(--card)))] p-4 shadow-sm card-soft">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf/15 px-2.5 py-1 text-xs font-extrabold text-leaf">
+              <Play className="size-3.5 fill-current" /> Focus session
+            </span>
+            <span className="text-xs font-bold text-muted-foreground">{phase} · {length} min · {section}</span>
+          </div>
+          <h2 className="mt-2 font-display text-2xl font-extrabold">Start the next MCAT block</h2>
+          <p className="mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
+            Choose the section, length, and goal before the timer takes over the screen.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-xs font-bold text-muted-foreground">
+            {openTasks ? `${openTasks} unfinished MCAT items` : 'No MCAT debt logged'}
+          </div>
+          <McatSessionSetupDialog
+            triggerClassName="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-leaf px-6 text-base font-extrabold text-white shadow-sm transition hover:bg-leaf/90"
+            trigger={<><Play className="size-4 fill-current" /> Start session</>}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function McatDashboard({
-  currentScore, projectedScore, goal, readiness, projectedReadiness, days, openTasks, debtHours, sectionReadiness, qotd,
+  currentScore, projectedScore, goal, readiness, projectedReadiness, days, openTasks, debtHours, sectionReadiness, qotd, setup,
 }: {
   currentScore: number
   projectedScore: number
@@ -208,8 +392,12 @@ function McatDashboard({
   debtHours: number
   sectionReadiness: ReturnType<typeof buildSectionReadiness>
   qotd: (typeof MCAT_QOTD)[number]
+  setup: { weeklyHours: number; preferredSessionLength: number; currentPhase?: string; focusSection?: string }
 }) {
   const today = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
+  const statusLabel = readiness >= 70 ? 'On track' : readiness >= 40 ? 'Building momentum' : 'Just getting started'
+  const focusLabel = setup.focusSection || lowestSectionLabel(sectionReadiness)
+  const hasDebt = openTasks > 0
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
@@ -220,7 +408,7 @@ function McatDashboard({
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/60">{today}</p>
               <h2 className="mt-1 font-display text-3xl font-extrabold">MCAT readiness, Andy</h2>
             </div>
-            <span className="rounded-full border border-leaf/40 bg-leaf/15 px-3 py-1 text-xs font-extrabold text-leaf">Just getting started</span>
+            <span className="rounded-full border border-leaf/40 bg-leaf/15 px-3 py-1 text-xs font-extrabold text-leaf">{statusLabel}</span>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
@@ -266,10 +454,6 @@ function McatDashboard({
                 <div className="rounded-2xl bg-muted/35 p-3"><b>0</b><br /><span className="text-muted-foreground">review due</span></div>
                 <div className="rounded-2xl bg-muted/35 p-3"><b>streak 4</b><br /><span className="text-muted-foreground">keep it alive</span></div>
               </div>
-              <McatSessionSetupDialog
-                triggerClassName="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-leaf px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:bg-leaf/90"
-                trigger={<><Sparkles className="size-4" /> Start focus session</>}
-              />
             </CardContent>
           </Card>
         </section>
@@ -281,8 +465,10 @@ function McatDashboard({
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 size-5 text-destructive" />
               <div>
-                <p className="font-display text-lg font-extrabold">You need to catch up!</p>
-                <p className="text-sm font-semibold text-muted-foreground">{openTasks} unfinished tasks · ~{debtHours}h</p>
+                <p className="font-display text-lg font-extrabold">{hasDebt ? 'You need to catch up!' : 'Plan debt is clear'}</p>
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {hasDebt ? `${openTasks} unfinished tasks · ~${debtHours}h` : 'No unfinished MCAT tasks or unresolved misses yet.'}
+                </p>
               </div>
             </div>
             <Button size="sm" className="mt-3 w-full">Rebuild catch-up plan</Button>
@@ -292,15 +478,15 @@ function McatDashboard({
         <Card className="border-leaf/30 bg-leaf/10">
           <CardContent className="p-4">
             <p className="text-xs font-extrabold uppercase tracking-wide text-leaf">Smart nudge</p>
-            <p className="mt-1 font-bold">Focus on Bio & Biochem, your lowest section.</p>
+            <p className="mt-1 font-bold">Focus on {focusLabel}; your setup marks it as the priority.</p>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-2 gap-3">
           <MetricTile icon={Clock3} label="Countdown" value={days != null ? `${days}d` : '—'} />
-          <MetricTile icon={Flame} label="Streak" value="4d" />
-          <MetricTile icon={BookOpen} label="Hours" value="18h" />
-          <MetricTile icon={CheckCircle2} label="Mastered" value="32" />
+          <MetricTile icon={Flame} label="Phase" value={setup.currentPhase || 'Set'} />
+          <MetricTile icon={BookOpen} label="Weekly" value={setup.weeklyHours ? `${setup.weeklyHours}h` : 'Set'} />
+          <MetricTile icon={CheckCircle2} label="Session" value={`${setup.preferredSessionLength}m`} />
         </div>
 
         <Card>
@@ -388,6 +574,7 @@ function MistakeMap() {
   const [lastUpload, setLastUpload] = useState<string>('')
 
   const shown = errorLog.filter((e) => (filter === 'All' || e.section === filter) && (!hideResolved || !e.resolved))
+  const pendingCount = errorLog.filter((e) => e.section === 'Needs classification').length
   const counts = useMemo(() => {
     const m: Record<string, number> = {}
     for (const e of errorLog) m[e.section] = (m[e.section] ?? 0) + 1
@@ -398,10 +585,24 @@ function MistakeMap() {
     update((d) => { const x = d.mcat.errorLog.find((e) => e.id === id); if (x) Object.assign(x, p) })
   }
 
-  function add(sectionName = filter === 'All' ? 'Bio/Biochem' : filter, source = '') {
+  function add(sectionName = filter === 'All' || filter === 'Needs classification' ? 'Bio/Biochem' : filter, source = '') {
     update((d) => d.mcat.errorLog.unshift({
       id: uid(), date: new Date().toISOString().slice(0, 10), section: sectionName,
       topic: '', whyMissed: '', fix: '', source, resolved: false, order: 0,
+    }))
+  }
+
+  function addPendingScreenshot(source = 'Screenshot pending analysis') {
+    update((d) => d.mcat.errorLog.unshift({
+      id: uid(),
+      date: new Date().toISOString().slice(0, 10),
+      section: 'Needs classification',
+      topic: 'Screenshot pending analysis',
+      whyMissed: 'Screenshot saved. Classify it after OCR or manual review.',
+      fix: 'Identify the MCAT section/topic, then add the fix and drill it again.',
+      source,
+      resolved: false,
+      order: 0,
     }))
   }
 
@@ -410,28 +611,47 @@ function MistakeMap() {
     const file = e.dataTransfer.files?.[0]
     if (!file) return
     setLastUpload(file.name)
-    add('Bio/Biochem', `Screenshot upload · ${file.name}`)
+    addPendingScreenshot(`Screenshot upload · ${file.name}`)
+  }
+
+  function handlePaste(e: ClipboardEvent<HTMLDivElement>) {
+    const imageItem = Array.from(e.clipboardData.items).find((item) => item.type.startsWith('image/'))
+    if (!imageItem) return
+    e.preventDefault()
+    setLastUpload('pasted screenshot')
+    addPendingScreenshot('Pasted screenshot')
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onPaste={handlePaste}>
       <div
+        tabIndex={0}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="rounded-2xl border border-dashed border-primary/50 bg-primary/8 p-6 text-center card-soft"
+        className="rounded-2xl border border-dashed border-primary/50 bg-primary/8 p-8 text-center outline-none transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/60 card-soft"
       >
-        <UploadCloud className="mx-auto size-8 text-primary" />
-        <h2 className="mt-2 font-display text-2xl font-extrabold">Mistake map</h2>
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/15 text-primary">
+          <UploadCloud className="size-7" />
+        </div>
+        <h2 className="mt-3 font-display text-2xl font-extrabold">Paste a missed-question screenshot</h2>
         <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
-          Drop a missed-question screenshot here. For now it creates a local review card for tagging; later this boundary can plug into OCR/AI filing.
+          Drop it here or paste with Cmd+V. Premed HQ saves it for analysis first; you can classify it manually when you need to.
         </p>
-        {lastUpload && <p className="mt-2 text-xs font-bold text-primary">Queued from {lastUpload}</p>}
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <Button onClick={() => addPendingScreenshot()}><UploadCloud className="size-4" /> Save for analysis</Button>
+          <Button variant="outline" onClick={() => add()}><Plus className="size-4" /> Enter manually</Button>
+        </div>
+        {(lastUpload || pendingCount > 0) && (
+          <p className="mt-3 text-xs font-bold text-primary">
+            {lastUpload ? `Queued from ${lastUpload}` : `${pendingCount} screenshot${pendingCount === 1 ? '' : 's'} waiting to be classified`}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <Filter className="mr-0.5 size-4 text-muted-foreground" />
-          {['All', ...Object.values(SECTION_META).map((s) => s.label)].map((s) => (
+          {['All', ...(pendingCount ? ['Needs classification'] : []), ...Object.values(SECTION_META).map((s) => s.label)].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -448,12 +668,12 @@ function MistakeMap() {
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <Checkbox checked={hideResolved} onCheckedChange={(v) => setHideResolved(Boolean(v))} /> Hide resolved
           </label>
-          <Button size="sm" onClick={() => add()}><Plus className="size-4" /> Log a miss</Button>
+          <Button size="sm" onClick={() => add()}><Plus className="size-4" /> Enter manually</Button>
         </div>
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState icon={AlertCircle} title="No misses logged here" hint="Every missed question becomes plan fuel: topic ranking, review sessions, and weak-section nudges." action={<Button size="sm" onClick={() => add()}><Plus className="size-4" /> Log a miss</Button>} />
+        <EmptyState icon={AlertCircle} title="No mistakes logged yet" hint="Paste a screenshot above, or enter one manually if you already know the section and topic." action={<Button size="sm" onClick={() => add()}><Plus className="size-4" /> Enter manually</Button>} />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {shown.map((er) => (
@@ -461,13 +681,19 @@ function MistakeMap() {
               <div className="mb-2 flex items-center gap-2">
                 <select
                   value={er.section}
-                  onChange={(e) => patch(er.id, { section: e.target.value })}
+                  onChange={(e) => patch(er.id, {
+                    section: e.target.value,
+                    topic: er.section === 'Needs classification' && er.topic === 'Screenshot pending analysis' ? '' : er.topic,
+                    whyMissed: er.section === 'Needs classification' && er.whyMissed === 'Screenshot saved. Classify it after OCR or manual review.' ? '' : er.whyMissed,
+                    fix: er.section === 'Needs classification' && er.fix === 'Identify the MCAT section/topic, then add the fix and drill it again.' ? '' : er.fix,
+                  })}
                   className="rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground outline-none"
                   style={{ background: sectionColorByLabel(er.section) }}
                 >
+                  {er.section === 'Needs classification' && <option value="Needs classification" className="bg-card text-foreground">Needs classification</option>}
                   {Object.values(SECTION_META).map((s) => <option key={s.label} value={s.label} className="bg-card text-foreground">{s.label}</option>)}
                 </select>
-                <Input defaultValue={er.topic} placeholder="Topic (e.g. amino acid pKa)" onBlur={(e) => patch(er.id, { topic: e.target.value })} className="h-7 flex-1 border-0 px-1 text-sm font-bold shadow-none focus-visible:ring-0" />
+                <Input defaultValue={er.section === 'Needs classification' ? '' : er.topic} placeholder={er.section === 'Needs classification' ? 'Choose a section to classify this screenshot' : 'Topic (e.g. amino acid pKa)'} onBlur={(e) => patch(er.id, { topic: e.target.value || (er.section === 'Needs classification' ? 'Screenshot pending analysis' : '') })} className="h-7 flex-1 border-0 px-1 text-sm font-bold shadow-none focus-visible:ring-0" />
                 <label className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
                   <Checkbox checked={er.resolved} onCheckedChange={(v) => patch(er.id, { resolved: Boolean(v) })} /> Got it
                 </label>
@@ -778,6 +1004,20 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+function parseOptionalNumber(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function formatDateChip(date?: string) {
+  if (!date) return 'Set'
+  const parsed = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return 'Set'
+  return new Intl.DateTimeFormat(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' }).format(parsed)
+}
+
 function daysUntilNumber(date?: string) {
   if (!date) return null
   const target = new Date(`${date}T00:00:00`)
@@ -797,13 +1037,20 @@ function buildSectionReadiness(attempts: ReturnType<typeof useStore.getState>['m
   })
 }
 
+function lowestSectionLabel(sectionReadiness: ReturnType<typeof buildSectionReadiness>) {
+  const lowest = [...sectionReadiness].sort((a, b) => a.now - b.now)[0]
+  return lowest ? SECTION_META[lowest.key].label : 'your weakest section'
+}
+
 function sectionColorByLabel(label: string) {
+  if (label === 'Needs classification') return '#e4a24f'
   return Object.values(SECTION_META).find((s) => s.label === label)?.color ?? 'var(--primary)'
 }
 
 function rankTopics(errorLog: ReturnType<typeof useStore.getState>['mcat']['errorLog']) {
   const counts = new Map<string, number>()
   for (const miss of errorLog) {
+    if (miss.section === 'Needs classification') continue
     const topic = miss.topic?.trim()
     if (topic) counts.set(topic, (counts.get(topic) ?? 0) + 1)
   }

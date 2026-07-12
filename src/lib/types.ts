@@ -416,6 +416,12 @@ export interface McatScheduleItem {
 export interface McatState {
   targetDate?: string
   goalScore?: number
+  baselineScore?: number
+  weeklyStudyHours?: number
+  preferredSessionLength?: number
+  currentPhase?: string
+  planIntensity?: 'light' | 'balanced' | 'aggressive'
+  focusSection?: string
   attempts: McatAttempt[]
   errorLog: McatErrorLog[]
   schedule: McatScheduleItem[]
@@ -524,6 +530,7 @@ export interface Org {
 
 export interface Profile {
   name: string
+  email?: string
   school: string
   major: string
   track: string           // "Pre-Med"
