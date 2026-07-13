@@ -1,19 +1,17 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Archive, BookOpenText, Brain, CalendarPlus, CheckCircle2, ChevronDown, CircleHelp,
-  ClipboardList, Cloud, CloudOff, Contact, LifeBuoy, Menu,
-  Moon, Plus, Settings, ShieldCheck, Stethoscope, Sun, Target, User,
+  Archive, BookOpenText, Brain, CalendarPlus,
+  ClipboardList, Contact, LifeBuoy, Lightbulb, Menu,
+  Plus, Settings, ShieldCheck, Stethoscope, Target, User,
 } from 'lucide-react'
 import { CommandSearch } from './CommandSearch'
 import { useTheme } from '@/store/useTheme'
 import { useBackup } from '@/store/useBackup'
 import { useStore } from '@/store/store'
-import { MCAT_QOTD } from '@/data/mcatQotd'
-import { fmtTimeAgo, pickDaily } from '@/lib/date'
 import { ROUTE_MAP } from '@/app/routes'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -24,27 +22,46 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
   const tasks = useStore((s) => s.tasks)
   const profile = useStore((s) => s.profile)
   const { isDark, setTheme } = useTheme()
+  const backup = useBackup()
 
   const activeRoute = useMemo(() => {
     const first = location.pathname.split('/').filter(Boolean)[0] || 'home'
     return ROUTE_MAP[first] ?? ROUTE_MAP.home
   }, [location.pathname])
 
-  const dueSoon = useMemo(() => {
+  const taskStatus = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const soon = new Date(today)
     soon.setDate(soon.getDate() + 7)
-    return tasks.filter((task) => {
+    const openTasks = tasks.filter((task) => !(task.archived || task.progress === 'Finished' || !task.deadline))
+    const dueToday = openTasks.filter((task) => {
+      const deadline = new Date(`${task.deadline}T00:00:00`)
+      return deadline.getTime() === today.getTime()
+    }).length
+    const overdue = openTasks.filter((task) => {
+      const deadline = new Date(`${task.deadline}T00:00:00`)
+      return deadline < today
+    }).length
+    const dueSoon = openTasks.filter((task) => {
       if (task.archived || task.progress === 'Finished' || !task.deadline) return false
       const deadline = new Date(`${task.deadline}T00:00:00`)
       return deadline >= today && deadline <= soon
     }).length
+    return { dueToday, overdue, dueSoon }
   }, [tasks])
+
+  const liveStatus = useMemo(() => {
+    if (taskStatus.overdue) return { label: `${taskStatus.overdue} overdue`, tone: 'alert' as const }
+    if (taskStatus.dueToday) return { label: `${taskStatus.dueToday} due today`, tone: 'due' as const }
+    if (taskStatus.dueSoon) return { label: `${taskStatus.dueSoon} due soon`, tone: 'due' as const }
+    if (!backup.enabled) return { label: 'Backup off', tone: 'system' as const }
+    return { label: 'Saved', tone: 'clear' as const }
+  }, [backup.enabled, taskStatus])
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 px-3 py-2.5 backdrop-blur-xl md:px-6">
-      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[minmax(16rem,22rem)_minmax(8rem,1fr)_auto]">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={onMenu} aria-label="Open menu">
             <Menu className="size-5" />
@@ -52,134 +69,102 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
           <CommandSearch />
         </div>
 
-        <div className="hidden min-w-0 justify-center md:flex">
-          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-card/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
-            <span className="truncate text-foreground">{activeRoute.label}</span>
-            <span className="size-1 rounded-full bg-muted-foreground/45" aria-hidden="true" />
-            <span className="hidden truncate lg:inline">{dueSoon ? `Today · ${dueSoon} due soon` : 'Today · clear'}</span>
-          </div>
-        </div>
-
         <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
-          <GlobalAddMenu />
-          <HelpMenu />
-          <StatusMenu />
-          <label className="hidden h-8 items-center gap-1.5 rounded-full border border-border bg-card/80 px-2 text-xs font-semibold text-muted-foreground shadow-sm sm:flex">
-            <Sun className="size-3.5" aria-hidden="true" />
-            <Switch
-              checked={isDark}
-              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            />
-            <Moon className="size-3.5" aria-hidden="true" />
-          </label>
-          <ProfileMenu name={profile.name} email={profile.email} />
+          <LiveStatusChip label={liveStatus.label} tone={liveStatus.tone} />
+          <AppearanceButton isDark={isDark} onToggle={() => setTheme(isDark ? 'light' : 'dark')} />
+          <MoreMenu
+            activeLabel={activeRoute.label}
+            liveStatus={liveStatus.label}
+            taskStatus={taskStatus}
+            profileName={profile.name}
+            profileEmail={profile.email}
+          />
         </div>
       </div>
     </header>
   )
 }
 
-function GlobalAddMenu() {
+function LiveStatusChip({ label, tone }: { label: string; tone: 'alert' | 'due' | 'system' | 'clear' }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" className="rounded-full px-3" aria-label="Add a new item">
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">Add</span>
-          <ChevronDown className="hidden size-3.5 sm:block" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Create</DropdownMenuLabel>
-        <DropdownMenuItem asChild><Link to="/timeline"><ClipboardList className="size-4" /> Task</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/academics"><BookOpenText className="size-4" /> Class note</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/academics?tab=assignments"><CalendarPlus className="size-4" /> Assignment</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/mcat?tab=mistakes"><Brain className="size-4" /> MCAT mistake</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/clinical"><Stethoscope className="size-4" /> Clinical hours</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/settings"><Archive className="size-4" /> Resource</Link></DropdownMenuItem>
-        <DropdownMenuItem disabled><Contact className="size-4" /> Contact <span className="ml-auto text-[10px] text-muted-foreground">soon</span></DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Link
+      to={tone === 'system' ? '/settings' : tone === 'clear' ? '/settings' : '/timeline'}
+      className={cn(
+        'inline-flex h-8 max-w-[9rem] items-center gap-1.5 truncate rounded-full border px-3 text-xs font-extrabold shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:max-w-[12rem]',
+        tone === 'alert' && 'border-destructive/35 bg-destructive/10 text-destructive',
+        tone === 'due' && 'border-primary/30 bg-primary/10 text-primary',
+        tone === 'system' && 'border-warning/35 bg-warning/10 text-warning',
+        tone === 'clear' && 'border-[color-mix(in_srgb,var(--success)_30%,var(--border))] bg-card/80 text-[color-mix(in_srgb,var(--success)_70%,var(--foreground))]'
+      )}
+      aria-label={`Current status: ${label}`}
+    >
+      <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
+      <span className="truncate">{label}</span>
+    </Link>
   )
 }
 
-function StatusMenu() {
-  const { enabled, status, lastBackupAt } = useBackup()
-  const backupLabel = !enabled
-    ? 'Backup not set'
-    : status === 'saving'
-      ? 'Backing up'
-      : status === 'error' || status === 'offline'
-        ? 'Backup needs attention'
-        : lastBackupAt
-          ? `Drive ${fmtTimeAgo(lastBackupAt)}`
-          : 'Drive ready'
-
+function AppearanceButton({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="hidden rounded-full bg-card/80 px-3 text-[color-mix(in_srgb,var(--success)_65%,var(--foreground))] md:inline-flex" aria-label="Open save and backup status">
-          <ShieldCheck className="size-4" />
-          Autosaved
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>Status</DropdownMenuLabel>
-        <div className="px-2.5 py-2 text-sm">
-          <div className="flex items-center gap-2 font-semibold">
-            <CheckCircle2 className="size-4 text-[color-mix(in_srgb,var(--success)_70%,var(--foreground))]" />
-            Saved in this browser
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            {enabled ? <Cloud className="size-3.5" /> : <CloudOff className="size-3.5" />}
-            {backupLabel}
-          </div>
-        </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild><Link to="/settings"><ShieldCheck className="size-4" /> Set up backup</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/settings?tab=export"><Archive className="size-4" /> Export data</Link></DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="outline"
+      size="icon"
+      className="size-8 rounded-full bg-card/80"
+      onClick={onToggle}
+      aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
+      title={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}
+    >
+      <Lightbulb className={cn('size-4', isDark ? 'text-primary' : 'text-amber-500')} />
+    </Button>
   )
 }
 
-function HelpMenu() {
+function MoreMenu({
+  activeLabel,
+  liveStatus,
+  taskStatus,
+  profileName,
+  profileEmail,
+}: {
+  activeLabel: string
+  liveStatus: string
+  taskStatus: { dueToday: number; overdue: number; dueSoon: number }
+  profileName: string
+  profileEmail?: string
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="hidden rounded-full bg-card/80 px-3 md:inline-flex" aria-label="Open guide and help">
-          <CircleHelp className="size-4 text-primary" />
-          <span className="hidden lg:inline">Guide</span>
+        <Button variant="outline" size="icon" className="size-8 rounded-full bg-card/80" aria-label="Open more actions">
+          <Menu className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Help</DropdownMenuLabel>
-        <DropdownMenuItem asChild><Link to="/?guide=open"><Target className="size-4" /> Ultimate Guide</Link></DropdownMenuItem>
-        <QotdMenuItem />
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild><Link to="/help"><LifeBuoy className="size-4" /> Help center</Link></DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function ProfileMenu({ name, email }: { name: string; email?: string }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full bg-card/80" aria-label="Open profile menu">
-          <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-extrabold text-primary-foreground">
-            {(name || 'A').slice(0, 1).toUpperCase()}
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-72">
         <div className="px-2.5 py-2">
-          <p className="truncate text-sm font-bold">{name || 'Profile'}</p>
-          <p className="truncate text-xs text-muted-foreground">{email || 'Add email in Profile'}</p>
+          <p className="truncate text-sm font-bold">{profileName || 'Andy'}</p>
+          <p className="truncate text-xs text-muted-foreground">{profileEmail || 'Add email in Profile'}</p>
         </div>
         <DropdownMenuSeparator />
+        <DropdownMenuLabel>Now</DropdownMenuLabel>
+        <div className="px-2.5 pb-2 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-2.5 py-2">
+            <span className="truncate">{activeLabel}</span>
+            <span className="shrink-0 text-foreground">{liveStatus}</span>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+            <span className="rounded-md bg-muted/25 px-2 py-1">{taskStatus.overdue} overdue</span>
+            <span className="rounded-md bg-muted/25 px-2 py-1">{taskStatus.dueToday} today</span>
+            <span className="rounded-md bg-muted/25 px-2 py-1">{taskStatus.dueSoon} soon</span>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Quick capture</DropdownMenuLabel>
+        <QuickAddItems />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild><Link to="/?guide=open"><Target className="size-4" /> Ultimate Guide</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/help"><LifeBuoy className="size-4" /> Help</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/settings"><ShieldCheck className="size-4" /> Backup / sync</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/settings?tab=export"><Archive className="size-4" /> Export data</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/profile"><User className="size-4" /> Profile</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/settings"><Settings className="size-4" /> Settings</Link></DropdownMenuItem>
       </DropdownMenuContent>
@@ -187,15 +172,16 @@ function ProfileMenu({ name, email }: { name: string; email?: string }) {
   )
 }
 
-function QotdMenuItem() {
-  const q = pickDaily(MCAT_QOTD, 13) ?? MCAT_QOTD[0]
+function QuickAddItems() {
   return (
-    <DropdownMenuItem asChild>
-      <Link to="/mcat">
-        <Brain className="size-4" />
-        QOTD
-        <span className="ml-auto text-[10px] text-muted-foreground">{q.section}</span>
-      </Link>
-    </DropdownMenuItem>
+    <>
+      <DropdownMenuItem asChild><Link to="/timeline"><ClipboardList className="size-4" /> Task</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to="/academics"><BookOpenText className="size-4" /> Class note</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to="/academics?tab=assignments"><CalendarPlus className="size-4" /> Assignment</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to="/mcat?tab=mistakes"><Brain className="size-4" /> MCAT mistake</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to="/clinical"><Stethoscope className="size-4" /> Clinical hours</Link></DropdownMenuItem>
+      <DropdownMenuItem asChild><Link to="/settings"><Plus className="size-4" /> Resource</Link></DropdownMenuItem>
+      <DropdownMenuItem disabled><Contact className="size-4" /> Contact <span className="ml-auto text-[10px] text-muted-foreground">soon</span></DropdownMenuItem>
+    </>
   )
 }
