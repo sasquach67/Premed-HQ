@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Premed HQ — Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f7efe1; --fg:#3a3530; --card:#fffaf0; --muted:#efe6d4; --muted-fg:#7a7064;
+    --primary:#3f93cf; --primary-fg:#fff; --secondary:#e6f2fb; --secondary-fg:#1f4e6b;
+    --border:#e9e2d5; --leaf:#79a957; --leaf-soft:#e9f1dd;
+    --destructive:#e26d5c; --success:#5fb49c; --warning:#e0a458;
+    --sec-bb:#76b86c; --sec-cp:#e4a24f; --sec-cars:#62b7ee; --sec-ps:#ef86b4;
+    --card-soft:0 1px 2px rgba(58,53,48,.05),0 6px 16px -8px rgba(58,53,48,.14);
+    --pop:0 8px 30px -6px rgba(58,53,48,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:80px}
+  .display{font-family:'Baloo 2',cursive}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 24px}
+  h1{font-family:'Baloo 2';font-size:34px;font-weight:800;margin:0}
+  .sub{color:var(--muted-fg);font-weight:600;font-size:14px;margin-top:4px}
+  h2{font-family:'Baloo 2';font-size:21px;font-weight:800;margin:44px 0 6px}
+  .rule{font-size:13px;color:var(--muted-fg);font-weight:600;margin:0 0 16px;max-width:70ch}
+  .rule b{color:var(--fg)}
+  .grid{display:grid;gap:14px}
+  .cols-4{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .cols-3{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .cols-2{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--card-soft);padding:16px}
+
+  .swatch{border-radius:12px;border:1px solid var(--border);overflow:hidden}
+  .swatch .c{height:52px}
+  .swatch .m{padding:8px 10px;font-size:11px;font-weight:700}
+  .swatch .m code{display:block;color:var(--muted-fg);font-weight:600;font-size:10.5px}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;border:1px solid transparent}
+  .chip.sec{color:#fff}
+  .chip.soft{border-color:transparent}
+  .btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.outline{background:var(--card);color:var(--fg);border:1px solid var(--border)}
+  .btn.ghost{background:transparent;color:var(--muted-fg)}
+  .btn.destructive{background:var(--destructive);color:#fff}
+
+  .type .row{display:flex;align-items:baseline;gap:16px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .type .row:last-child{border:0}
+  .type .tag{width:120px;flex:0 0 auto;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-fg)}
+
+  .radius-demo{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .radius-demo .box{background:var(--secondary);border:1.5px solid var(--primary);width:110px;height:64px;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--secondary-fg)}
+
+  .dd{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.dd{grid-template-columns:1fr}}
+  .do,.dont{border-radius:16px;padding:14px 16px;border:1px solid var(--border);background:var(--card)}
+  .do{border-left:4px solid var(--success)}
+  .dont{border-left:4px solid var(--destructive)}
+  .do h4,.dont h4{margin:0 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  .do h4{color:var(--success)} .dont h4{color:var(--destructive)}
+  .do p,.dont p{margin:4px 0;font-size:13px;font-weight:600}
+
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--card-soft);padding:13px 15px}
+  .stat .t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg)}
+  .stat .n{font-family:'Baloo 2';font-size:26px;font-weight:800;margin-top:2px}
+  .stat .spine{height:5px;border-radius:3px;background:var(--muted);margin-top:9px;overflow:hidden}
+  .stat .spine i{display:block;height:100%;border-radius:3px;background:var(--leaf);width:62%}
+  code.k{background:var(--muted);border-radius:6px;padding:1px 6px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Premed HQ · Design System</h1>
+  <p class="sub">The canonical tokens + component rules. If a screen disagrees with this page, the screen is wrong. Fonts: Baloo 2 (display) · Nunito (body) — never change.</p>
+
+  <h2>1 · Color tokens</h2>
+  <p class="rule">Never hardcode hex in TSX. Use the CSS vars (<code class="k">var(--primary)</code>…). Section colors are now first-class tokens: <code class="k">--sec-bb/--sec-cp/--sec-cars/--sec-ps</code> — <b>SECTION_META must mirror these</b>.</p>
+  <div class="grid cols-4">
+    <div class="swatch"><div class="c" style="background:var(--primary)"></div><div class="m">Primary · Carolina blue<code>--primary</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--leaf)"></div><div class="m">Leaf (2nd accent)<code>--leaf</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--success)"></div><div class="m">Success<code>--success</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--warning)"></div><div class="m">Warning<code>--warning</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--destructive)"></div><div class="m">Destructive (terracotta)<code>--destructive</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--sec-bb)"></div><div class="m">Bio/Biochem<code>--sec-bb</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--sec-cp)"></div><div class="m">Chem/Phys<code>--sec-cp</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--sec-cars)"></div><div class="m">CARS<code>--sec-cars</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--sec-ps)"></div><div class="m">Psych/Soc<code>--sec-ps</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--bg)"></div><div class="m">Paper bg<code>--background</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--card)"></div><div class="m">Card<code>--card</code></div></div>
+    <div class="swatch"><div class="c" style="background:var(--muted)"></div><div class="m">Muted fill<code>--muted</code></div></div>
+  </div>
+
+  <h2>2 · Radius — three roles only</h2>
+  <p class="rule"><b>Outer surfaces</b> (cards, panels, banners) = <code class="k">rounded-2xl</code> · <b>nested items</b> (rows, tiles, inputs-in-cards) = <code class="k">rounded-xl</code> or <code class="k">rounded-lg</code> · <b>pills/avatars</b> = <code class="k">rounded-full</code>. <b>Banned:</b> <code class="k">rounded-3xl</code>, <code class="k">rounded-sm</code>, arbitrary <code class="k">rounded-[…]</code>.</p>
+  <div class="radius-demo">
+    <div class="box" style="border-radius:16px">2xl · surface</div>
+    <div class="box" style="border-radius:12px">xl · nested</div>
+    <div class="box" style="border-radius:10px">lg · control</div>
+    <div class="box" style="border-radius:999px;width:130px">full · pill</div>
+  </div>
+
+  <h2>3 · Elevation — two shadows, that's it</h2>
+  <p class="rule">Resting cards use the <code class="k">.card-soft</code> utility (already in index.css). Overlays (dialogs, popovers, dropdowns) use <code class="k">shadow-lg</code>. <b>Banned:</b> <code class="k">shadow-sm/md</code> on cards and one-off <code class="k">shadow-[…]</code> values.</p>
+  <div class="grid cols-3">
+    <div class="panel">card-soft — resting card</div>
+    <div class="panel" style="box-shadow:var(--pop)">shadow-lg — overlay/popover</div>
+    <div class="panel" style="box-shadow:none;background:var(--muted)">flat muted — inline wells</div>
+  </div>
+
+  <h2>4 · Type scale — four sizes</h2>
+  <div class="panel type">
+    <div class="row"><span class="tag">Display / page</span><span class="display" style="font-size:26px;font-weight:800">Tar Heel Tracker</span><span class="sub">font-display text-2xl/3xl font-extrabold — page + hero titles, big numerals</span></div>
+    <div class="row"><span class="tag">Heading / card</span><span class="display" style="font-size:17px;font-weight:800">Readiness by section</span><span class="sub">font-display text-lg font-bold — CardTitle</span></div>
+    <div class="row"><span class="tag">Body</span><span style="font-size:14px;font-weight:600">BIOL 252 · Human Anatomy — Tue/Thu 9:30</span><span class="sub">text-sm font-semibold — rows, forms</span></div>
+    <div class="row"><span class="tag">Caption</span><span style="font-size:11.5px;font-weight:700;color:var(--muted-fg)">LAST SYNCED 2 MIN AGO</span><span class="sub">text-xs font-bold uppercase text-muted-foreground — labels, meta</span></div>
+  </div>
+  <p class="rule" style="margin-top:10px">Big numbers (scores, counts, countdowns) always get <code class="k">font-display</code> — a <code class="k">text-2xl font-extrabold</code> numeral in Nunito is a drift bug.</p>
+  <p class="rule"><b>Weight discipline:</b> Baloo 2 at <code class="k">font-extrabold</code> (800) is reserved for the page/hero title and hero numerals — one per view. Card titles cap at <code class="k">font-bold</code> (700). Extrabold everywhere is what tips a rounded font from cozy into kiddie.</p>
+  <p class="rule"><b>Tabular figures:</b> <code class="k">.font-display</code> now sets <code class="k">tabular-nums</code> automatically; live numerals in the body font (tables, timers, stat rows) take the <code class="k">.nums</code> utility (or Tailwind's <code class="k">tabular-nums</code>) so digits keep a fixed width and don't jitter as values change.</p>
+
+  <h2>5 · Chips — use Badge, kill ad-hoc pills</h2>
+  <p class="rule">The <code class="k">Badge</code> component already has every variant needed. The 60+ hand-rolled <code class="k">rounded-full px-2 …</code> spans must migrate. Section chips: <code class="k">&lt;Badge style={{background:'var(--sec-bb)'}}&gt;</code> pattern (solid, white text).</p>
+  <div class="panel" style="display:flex;gap:8px;flex-wrap:wrap">
+    <span class="chip" style="background:var(--primary);color:#fff">default</span>
+    <span class="chip soft" style="background:var(--secondary);color:var(--secondary-fg)">secondary</span>
+    <span class="chip" style="border-color:var(--border)">outline</span>
+    <span class="chip soft" style="background:var(--muted);color:var(--muted-fg)">muted</span>
+    <span class="chip soft" style="background:#ddeee6;color:#2e7d63">success</span>
+    <span class="chip soft" style="background:#f6e7cd;color:#8a5f1e">warning</span>
+    <span class="chip soft" style="background:#f8ddd7;color:#a4402f">danger</span>
+    <span class="chip sec" style="background:var(--sec-bb)">BIO</span>
+    <span class="chip sec" style="background:var(--sec-cp)">CHEM</span>
+    <span class="chip sec" style="background:var(--sec-cars)">CARS</span>
+    <span class="chip sec" style="background:var(--sec-ps)">PSYCH</span>
+  </div>
+
+  <h2>6 · Buttons — one primary per view</h2>
+  <p class="rule">Hierarchy: <b>primary</b> (one per view, the main action) → <b>outline</b> (secondary) → <b>ghost</b> (tertiary/inline) → <b>destructive</b> (confirm first). Card actions consolidate into one ⋯ overflow menu — never a row of icon buttons.</p>
+  <div class="panel" style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn primary">＋ Log a miss</button>
+    <button class="btn outline">Export JSON</button>
+    <button class="btn ghost">View archive</button>
+    <button class="btn destructive">Reset to seed</button>
+  </div>
+
+  <h2>7 · Anatomy patterns</h2>
+  <div class="grid cols-3">
+    <div class="stat"><div class="t">Weakest section</div><div class="n" style="color:var(--sec-cp)">Chem/Phys</div><div class="spine"><i style="background:var(--sec-cp);width:36%"></i></div></div>
+    <div class="stat"><div class="t">BCPM GPA</div><div class="n">3.87</div><div class="spine"></div></div>
+    <div class="panel" style="display:grid;place-items:center;text-align:center;gap:6px">
+      <div style="font-size:26px">🌱</div>
+      <div style="font-weight:800;font-size:14px">No misses logged yet</div>
+      <div style="font-size:12px;color:var(--muted-fg);font-weight:600">Empty states: mascot/emoji + 1 line + 1 action.</div>
+      <button class="btn primary" style="padding:6px 12px;font-size:12px">＋ Log a miss</button>
+    </div>
+  </div>
+
+  <h2>8 · Do / Don't</h2>
+  <div class="dd">
+    <div class="do">
+      <h4>Do</h4>
+      <p>• Tokens for every color; <code class="k">SECTION_META</code> reads <code class="k">--sec-*</code>.</p>
+      <p>• <code class="k">card-soft</code> on every resting card.</p>
+      <p>• Gradients only as scrims over banner art or the one hero.</p>
+      <p>• Spacing rhythm: card padding <code class="k">p-4</code>, section gaps <code class="k">gap-4/6</code>, page stack <code class="k">space-y-4</code>.</p>
+      <p>• One mascot moment per page, max.</p>
+    </div>
+    <div class="dont">
+      <h4>Don't</h4>
+      <p>• No hex literals in TSX (exception: AppErrorBoundary inline styles — but keep them warm-toned).</p>
+      <p>• No <code class="k">rounded-3xl</code>, <code class="k">shadow-[…]</code>, or cold Tailwind grays (#e5e7eb, #1f2937…).</p>
+      <p>• No hand-rolled pills — Badge only.</p>
+      <p>• No decorative panel gradients or purple-blue AI defaults.</p>
+      <p>• No explainer blurbs under titles; no "coming soon" panels.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

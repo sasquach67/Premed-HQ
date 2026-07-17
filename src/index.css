@@ -45,6 +45,13 @@
   --input: #e6dfd1;
   --ring: #7bafd4;
 
+  /* MCAT section colors — single source of truth (SECTION_META mirrors these).
+     bb=Bio/Biochem  cp=Chem/Phys  cars=CARS  ps=Psych/Soc */
+  --sec-bb: #76b86c;
+  --sec-cp: #e4a24f;
+  --sec-cars: #62b7ee;
+  --sec-ps: #ef86b4;
+
   /* Category colors — progress segments, rings, charts */
   --cat-gpa: #4b9cd3;
   --cat-mcat: #8c7bd4;
@@ -285,6 +292,13 @@
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
+    /* tabular figures: scores/GPA/countdowns keep a fixed digit width, so live
+       numbers don't jitter as they change (no-op for non-digit glyphs) */
+    font-variant-numeric: tabular-nums;
+  }
+  /* data numerals rendered in the body font (tables, timers, stat rows) */
+  .nums {
+    font-variant-numeric: tabular-nums;
   }
   /* soft card lift used across the app */
   .card-soft {
