@@ -19,7 +19,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -65,6 +65,11 @@ const CELL_TYPE_ICON: Record<CellType, LucideIcon> = {
   custom: ListFilter,
 }
 
+function columnWidthPx(width?: string) {
+  const match = /^(\d+)px$/.exec(width ?? '')
+  return match ? Number(match[1]) : 160
+}
+
 interface TrackerTableProps {
   collection: CollectionKey
   rows: Row[]
@@ -96,25 +101,26 @@ export function TrackerTable({
   if (!rows.length && empty) return <>{empty}</>
 
   const ids = rows.map((r) => r.id)
+  const minWidth = columns.reduce((sum, column) => sum + columnWidthPx(column.width), 80 + (reorder ? 32 : 0) + (checkKey ? 40 : 0))
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto rounded-xl bg-card/60">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card/70 shadow-sm">
+        <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead>
           <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-extrabold text-foreground/75">
             {reorder && (
-              <th className="w-8 px-1 py-2.5">
+              <th className="w-8 px-1 py-3">
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
               </th>
             )}
             {checkKey && (
-              <th className="w-10 px-2 py-2.5">
+              <th className="w-10 px-2 py-3">
                 <CheckSquare2 className="size-3.5 opacity-60" aria-hidden="true" />
               </th>
             )}
             {columns.map((c) => (
-              <th key={c.key} className={cn('px-3 py-2.5', c.align === 'right' && 'text-right')} style={{ width: c.width }}>
+              <th key={c.key} className={cn('px-3 py-3', c.align === 'right' && 'text-right')} style={{ width: c.width }}>
                 <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap', c.align === 'right' && 'justify-end')}>
                   {(() => {
                     const Icon = CELL_TYPE_ICON[c.type]
@@ -124,7 +130,7 @@ export function TrackerTable({
                 </span>
               </th>
             ))}
-            <th className="w-16 px-2 py-2.5" />
+            <th className="w-16 px-2 py-3" />
           </tr>
           </thead>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -167,7 +173,7 @@ function TableRow({
     <tr
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', isDragging && 'opacity-60', checked && 'opacity-55')}
+      className={cn('group min-h-14 border-b border-border/70 last:border-0 hover:bg-muted/35', isDragging && 'opacity-60', checked && 'opacity-55')}
     >
       {reorder && (
         <td className="px-1 text-muted-foreground">
@@ -182,7 +188,7 @@ function TableRow({
         </td>
       )}
       {columns.map((c) => (
-        <td key={c.key} className={cn('px-3 py-2 align-top', c.align === 'right' && 'text-right')}>
+        <td key={c.key} className={cn('px-3 py-3 align-top', c.align === 'right' && 'text-right')}>
           <Cell row={row} column={c} value={field(row, c.key)} checked={checked} onChange={(v) => onChange(c.key, v)} />
         </td>
       ))}
@@ -240,7 +246,7 @@ function Cell({
       <Select value={selected} onValueChange={(next) => onChange(next === emptyValue ? '' : next)}>
         <SelectTrigger
           className={cn(
-            'h-auto min-h-8 rounded-full border-border/70 bg-transparent px-2.5 py-1 font-display text-sm font-semibold shadow-none hover:bg-muted/45 focus:ring-2 focus:ring-ring/35',
+            'h-auto min-h-8 max-w-full rounded-full border-border/70 bg-transparent px-2.5 py-1 text-left text-sm font-semibold shadow-none hover:bg-muted/45 focus:ring-2 focus:ring-ring/35',
             dotOnly && 'w-fit min-w-12 justify-center px-2',
             !value && 'text-muted-foreground'
           )}
@@ -251,8 +257,11 @@ function Cell({
               <span className="sr-only">{selected}</span>
             </span>
           ) : (
-            <span className="flex min-w-0 items-center gap-2">
-              <SelectValue placeholder={column.placeholder || 'Select…'} />
+            <span className="flex min-w-0 items-center gap-2 overflow-hidden">
+              {selectedDot && <span className={cn('size-2 shrink-0 rounded-full', selectedDot)} aria-hidden="true" />}
+              <span className="min-w-0 truncate">
+                {selected === emptyValue ? column.placeholder || 'Select…' : selected}
+              </span>
             </span>
           )}
         </SelectTrigger>

@@ -451,9 +451,8 @@ function ClassCard({
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="grid grid-cols-2 gap-1.5">
             <ClassMetaChip icon={UserRound} label={row.instructor || 'Instructor TBD'} />
-            <ClassMetaChip icon={CalendarDays} label={row.semester || 'Term TBD'} />
-            <ClassMetaChip icon={Clock3} label={meetingText || 'Time TBD'} />
             <ClassMetaChip icon={MapPin} label={row.location || 'Room TBD'} />
+            <ClassMetaChip icon={Clock3} label={meetingText || 'Time TBD'} className="col-span-2" />
           </div>
           <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-extrabold text-foreground">
             <span className="shrink-0 uppercase text-primary">Up next</span>
@@ -477,9 +476,9 @@ function ClassCard({
   )
 }
 
-function ClassMetaChip({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+function ClassMetaChip({ icon: Icon, label, className }: { icon: LucideIcon; label: string; className?: string }) {
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-[11px] font-bold text-muted-foreground">
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-[11px] font-bold text-muted-foreground', className)} title={label}>
       <Icon className="size-3 shrink-0 text-primary/75" aria-hidden="true" />
       <span className="truncate">{label}</span>
     </span>
@@ -496,35 +495,69 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
     .filter((topic) => activeIds.has(topic.classId) && ['weak', 'reviewing', 'seen'].includes(topic.status))
     .slice(0, 5)
   const weak = data.weakAreas.filter((item) => activeIds.has(item.classId) && item.status !== 'resolved').sort((a, b) => b.severity - a.severity).slice(0, 5)
+  const reviewItems = [
+    ...weak.map((item) => ({ id: item.id, label: item.label, classId: item.classId, status: item.status })),
+    ...revision.map((item) => ({ id: item.id, label: item.title, classId: item.classId, status: item.status })),
+  ].slice(0, 4)
   return (
-    <Card>
-      <CardContent className="grid gap-6 p-4 lg:grid-cols-[1fr_1.2fr_auto]">
-        <div>
-          <h3 className="font-display text-lg font-bold">Across your classes</h3>
-          <p className="mt-3 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Due next</p>
-          <div className="mt-2 space-y-1.5">
-            {upcoming.slice(0, 3).map((item) => (
-              <div key={item.id} className="flex items-center gap-2 text-sm">
-                <span className="size-2 rounded-full bg-primary" />
-                <span className="min-w-0 flex-1 truncate font-bold">{classLabel(item.classId, data)} · {item.title}</span>
-                <span className="text-xs font-extrabold text-destructive">{item.dueDate ? daysUntil(item.dueDate) : ''}</span>
-              </div>
-            ))}
+    <Card className="overflow-hidden">
+      <CardContent className="space-y-4 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-display text-lg font-bold">Across your classes</h3>
+            <p className="text-xs font-semibold text-muted-foreground">Deadlines and review targets from active courses.</p>
           </div>
+          <Button asChild variant="link" className="h-auto px-0 text-primary">
+            <Link to="/academics?tab=assignments">Full assignments view →</Link>
+          </Button>
         </div>
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Review queue · weakest first</p>
-          <div className="mt-2 grid gap-1.5">
-            {[...weak.map((item) => ({ id: item.id, label: item.label, classId: item.classId, status: item.status })), ...revision.map((item) => ({ id: item.id, label: item.title, classId: item.classId, status: item.status }))].slice(0, 4).map((item) => (
-              <div key={item.id} className="flex items-center gap-2 text-sm">
-                <span className="min-w-0 flex-1 truncate font-bold">{item.label}</span>
-                <Badge variant={String(item.status).includes('weak') || item.status === 'active' ? 'danger' : 'warning'}>{String(item.status).replace(/-/g, ' ')}</Badge>
-                <Link to={`/academics/classes/${item.classId}`} className="text-xs font-extrabold text-primary">Review →</Link>
-              </div>
-            ))}
-          </div>
+
+        <div className="grid gap-3 lg:grid-cols-[0.95fr_1.15fr]">
+          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                <CalendarDays className="size-4 text-primary" /> Due next
+              </p>
+              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{upcoming.length} active</span>
+            </div>
+            <div className="space-y-1.5">
+              {upcoming.slice(0, 3).map((item) => (
+                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-background/65 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold">{item.title}</p>
+                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
+                  </div>
+                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-extrabold text-destructive">
+                    {item.dueDate ? daysUntil(item.dueDate) : 'TBD'}
+                  </span>
+                </div>
+              ))}
+              {upcoming.length === 0 && <p className="rounded-xl bg-background/55 px-3 py-3 text-sm font-semibold text-muted-foreground">No dated assignments yet.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                <Target className="size-4 text-primary" /> Review queue
+              </p>
+              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Weakest first</span>
+            </div>
+            <div className="grid gap-1.5">
+              {reviewItems.map((item) => (
+                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-background/65 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold">{item.label}</p>
+                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
+                  </div>
+                  <Badge variant={String(item.status).includes('weak') || item.status === 'active' ? 'danger' : 'warning'}>{String(item.status).replace(/-/g, ' ')}</Badge>
+                  <Link to={`/academics/classes/${item.classId}`} className="text-xs font-extrabold text-primary">Review →</Link>
+                </div>
+              ))}
+              {reviewItems.length === 0 && <p className="rounded-xl bg-background/55 px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
+            </div>
+          </section>
         </div>
-        <Button asChild variant="link" className="self-start justify-self-end"><Link to="/academics?tab=assignments">Full assignments view →</Link></Button>
       </CardContent>
     </Card>
   )

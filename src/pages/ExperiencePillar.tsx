@@ -1,20 +1,20 @@
 import { useMemo, useState } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen, CalendarDays, ChevronDown, Clock, FileText,
-  FolderOpen, ListChecks, Mail, Milestone, Plus, Search,
-  Stethoscope, Trash2, UserRound, Users,
+  AlertTriangle, ArrowLeft, Award, BookOpen, CalendarDays,
+  ChevronDown, ClipboardCheck, Clock, Copy, FileText,
+  HeartHandshake,
+  ListChecks, Mail, Map as MapIcon, Network, Plus, Search,
+  ShieldCheck, Stethoscope, Trash2, TrendingUp, UserRound, Users,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { ROUTE_MAP } from '@/app/routes'
 import type { ExperienceCategory, ExperienceEntry, Goals, NotePage, StoryEntry } from '@/lib/types'
-import { hourTotals, percent } from '@/lib/selectors'
+import { hourTotals } from '@/lib/selectors'
 import { uid } from '@/lib/id'
 import { cn } from '@/lib/utils'
-import { PageHeader } from '@/components/common/PageHeader'
-import { Ring } from '@/components/common/Ring'
-import { StatTile } from '@/components/common/StatTile'
-import { ResourceGrid } from '@/components/common/ResourceGrid'
+import { ApprovedExperienceLayout } from '@/components/experiences/ApprovedPillarLayouts'
 import { DocEmbed } from '@/components/common/DocEmbed'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,23 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 type ExperiencePatch = Partial<ExperienceEntry> & Record<string, unknown>
-type PillarTab = { id: string; label: string; icon: React.ComponentType<{ className?: string }>; count?: number }
+type PillarTab = { id: string; label: string; icon: ComponentType<{ className?: string }>; count?: number }
+type ExperienceEntity = {
+  key: string
+  name: string
+  role: string
+  subtitle: string
+  rows: ExperienceEntry[]
+  totalHours: number
+  startDate?: string
+  endDate?: string
+  status: ExperienceEntry['status']
+  contact?: string
+  supervisor?: string
+  lastActivityLabel: string
+  stale: boolean
+  openLoops: string[]
+}
 
 const ROUTE_BY_CATEGORY: Record<ExperienceCategory, string> = {
   clinical: 'clinical',
@@ -63,8 +79,6 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
   const patchItem = useStore((s) => s.patchItem)
   const removeItem = useStore((s) => s.removeItem)
   const logActivity = useStore((s) => s.logActivity)
-  const driveUrl = useStore((s) => s.notes['research-drive'] ?? '')
-  const setNote = useStore((s) => s.setNote)
 
   const routeId = ROUTE_BY_CATEGORY[category]
   const route = ROUTE_MAP[routeId]
@@ -72,17 +86,17 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
     () => experiences.filter((entry) => entry.category === category).sort(sortByOrderThenDate),
     [experiences, category]
   )
+  const entities = useMemo(() => buildExperienceEntities(rows, category), [rows, category])
   const notes = useMemo(
     () => notePages.filter((note) => note.pillar === routeId || note.pillar === `pillar-${routeId}`).sort((a, b) => b.updatedAt - a.updatedAt),
     [notePages, routeId]
   )
-  const tabs = useMemo(() => tabsFor(category, rows, notes), [category, rows, notes])
-  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'main')
+  const [selectedEntityKey, setSelectedEntityKey] = useState<string | null>(null)
+  const selectedEntity = entities.find((entity) => entity.key === selectedEntityKey) ?? entities[0] ?? null
 
   const totals = hourTotals(experiences)
   const goal = goals[GOAL_KEY[category]]
   const totalHours = Math.round(totals[category])
-  const pct = category === 'leadership' ? percent(rows.length, goal) : percent(totalHours, goal)
 
   function addEntry(patch: ExperiencePatch = {}) {
     const entry: ExperienceEntry = {
@@ -153,95 +167,471 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
     logActivity(routeId, 'Added a lab notebook entry')
   }
 
-  const shared = { rows, notes, addEntry, patchEntry, removeItem, requestLetter, draftStory, addLabNote }
+  return (
+    <ApprovedPillarPage
+      category={category}
+      title={route.label}
+      rows={rows}
+      entities={entities}
+      selectedEntity={selectedEntity}
+      goal={goal}
+      totalHours={totalHours}
+      notes={notes}
+      onSelect={(entity) => setSelectedEntityKey(entity.key)}
+      onAddEntity={() => {
+        const created = addEntry({ org: entityFallbackName(category), role: defaultRoleForCategory(category) })
+        setSelectedEntityKey(entityKeyFor(created, category))
+      }}
+      onAddEntry={addEntry}
+      onPatchEntry={patchEntry}
+      onRemoveEntry={(id) => removeItem('experiences', id)}
+      onRequestLetter={requestLetter}
+      onDraftStory={draftStory}
+      onAddLabNote={addLabNote}
+    />
+  )
+}
+
+type ApprovedPillarProps = {
+  category: ExperienceCategory
+  title: string
+  rows: ExperienceEntry[]
+  entities: ExperienceEntity[]
+  selectedEntity: ExperienceEntity | null
+  goal: number
+  totalHours: number
+  notes: NotePage[]
+  onSelect: (entity: ExperienceEntity) => void
+  onAddEntity: () => void
+  onAddEntry: (patch?: ExperiencePatch) => ExperienceEntry
+  onPatchEntry: (id: string, patch: ExperiencePatch) => void
+  onRemoveEntry: (id: string) => void
+  onRequestLetter: (entry: ExperienceEntry) => void
+  onDraftStory: (entry: ExperienceEntry, theme?: string) => void
+  onAddLabNote: () => void
+}
+
+function ApprovedPillarPage(props: ApprovedPillarProps) {
+  const { category, onAddEntity, onAddEntry } = props
 
   return (
-    <div>
-      <PageHeader
-        title={route.label}
-        actions={<Button onClick={() => addEntry()}><Plus className="size-4" /> Log entry</Button>}
-      />
+    <ApprovedExperienceLayout
+      category={category as Exclude<ExperienceCategory, 'leadership'>}
+      onAddEntity={onAddEntity}
+      onAddEntry={onAddEntry}
+    />
+  )
+}
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <Card className="sm:col-span-1">
-          <CardContent className="flex items-center justify-center py-5">
-            <Ring
-              value={pct}
-              size={108}
-              color={`var(--cat-${category === 'leadership' ? 'activities' : category})`}
-              label="Toward goal"
-              sublabel={`${totalHours}/${goal}h`}
-            />
-          </CardContent>
-        </Card>
-        <StatTile icon={Clock} label="Total hours" value={String(totalHours)} sub={`across ${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`} accent={`var(--cat-${category === 'leadership' ? 'activities' : category})`} />
-        <StatTile icon={ListChecks} label="Active now" value={String(rows.filter((r) => r.status === 'active').length)} sub="ongoing commitments" />
-        <StatTile icon={FolderOpen} label="Goal" value={`${goal}h`} sub="editable in Profile" />
+// Kept while existing stored pillar records are migrated to the approved layouts.
+void [ApprovedMetric, ApprovedCenterpiece, ApprovedEntityWorkspace]
+
+function ApprovedMetric({ icon: Icon, label, value, detail, accent = false }: { icon: typeof Clock; label: string; value: string; detail: string; accent?: boolean }) {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-extrabold uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
+        <Icon className={cn('size-4 text-primary', accent && 'text-emerald-500')} />
       </div>
-
-      <PillarTabStrip tabs={tabs} value={activeTab} onChange={setActiveTab} />
-
-      <div className="mt-5">
-        {category === 'clinical' && (
-          activeTab === 'hours'
-            ? <HoursAndSitesView {...shared} category={category} label="Clinical" requestLabel="Request a letter" />
-            : <SkillsView rows={rows} onPatch={patchEntry} onAdd={addEntry} />
-        )}
-        {category === 'volunteering' && (
-          activeTab === 'orgs'
-            ? <HoursAndSitesView {...shared} category={category} label="Volunteering" requestLabel="Request verification" themes={SERVICE_THEMES} />
-            : <EventsView rows={rows} onAdd={addEntry} onPatch={patchEntry} onDraftStory={draftStory} />
-        )}
-        {category === 'shadowing' && (
-          activeTab === 'sessions'
-            ? <ShadowingSessionsView rows={rows} onAdd={addEntry} onPatch={patchEntry} onRemove={(id) => removeItem('experiences', id)} />
-            : <PhysiciansView rows={rows} onPatch={patchEntry} onRequestLetter={requestLetter} />
-        )}
-        {category === 'research' && (
-          activeTab === 'lab'
-            ? <LabNotebookView notes={notes} onAdd={addLabNote} />
-            : (
-              <ResearchProgressView
-                rows={rows}
-                notes={notes}
-                driveUrl={driveUrl}
-                onDriveUrl={(url) => setNote('research-drive', url)}
-                onAdd={addEntry}
-                onPatch={patchEntry}
-                onRequestLetter={requestLetter}
-              />
-            )
-        )}
-      </div>
-
-      <ResourceGrid pillar={routeId} />
+      <p className="mt-3 font-display text-2xl font-extrabold">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-muted-foreground">{detail}</p>
     </div>
   )
 }
 
-function tabsFor(category: ExperienceCategory, rows: ExperienceEntry[], notes: NotePage[]): PillarTab[] {
+function ApprovedCenterpiece({ category, rows, entities }: { category: ExperienceCategory; rows: ExperienceEntry[]; entities: ExperienceEntity[] }) {
   if (category === 'clinical') {
-    return [
-      { id: 'hours', label: 'Hours & Sites', icon: Stethoscope, count: rows.length },
-      { id: 'skills', label: 'Skills', icon: ListChecks, count: SKILLS.length },
-    ]
+    const certDue = rows.filter((row) => row.tags.some((tag) => /cert|cpr|bls/i.test(tag))).length
+    return (
+      <section className="grid gap-3 rounded-2xl border bg-card p-4 md:grid-cols-[1.2fr_0.8fr]">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">Clinical continuity</p>
+          <h2 className="mt-1 font-display text-xl font-extrabold">Your sites, shifts, and credentials in one record</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{coverageForCategory(category, rows).detail}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <MiniMetric label="Sites" value={String(entities.length)} />
+          <MiniMetric label="Cert records" value={String(certDue)} />
+        </div>
+      </section>
+    )
   }
+
   if (category === 'volunteering') {
-    return [
-      { id: 'orgs', label: 'Orgs & Hours', icon: Users, count: rows.length },
-      { id: 'events', label: 'Events', icon: CalendarDays, count: rows.filter((r) => r.startDate).length },
-    ]
+    return <ApprovedLedger rows={rows} />
   }
+
   if (category === 'shadowing') {
-    return [
-      { id: 'sessions', label: 'Sessions', icon: Clock, count: rows.length },
-      { id: 'physicians', label: 'Physicians', icon: UserRound, count: uniqueContacts(rows).length },
-    ]
+    const specialties = siteSummaries(rows)
+    const total = Math.max(1, rows.reduce((sum, row) => sum + Number(row.hours || 0), 0))
+    return (
+      <section className="overflow-hidden rounded-2xl border bg-card">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b p-4">
+          <div><h2 className="font-display text-lg font-extrabold">Specialty exposure</h2><p className="text-sm text-muted-foreground">Coverage and the next relationship gap to close.</p></div>
+          <span className="rounded-full bg-amber-500/12 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-200">Primary care still matters</span>
+        </div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[46rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Specialty</th><th>Hours</th><th>Share</th><th>Settings</th><th className="pr-4">Next move</th></tr></thead><tbody>
+          {specialties.map((site) => <tr key={site.key} className="border-t"><td className="px-4 py-3 font-bold">{site.org || 'Unspecified specialty'}</td><td>{site.hours}h</td><td><div className="h-1.5 w-28 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((site.hours / total) * 100)}%` }} /></div></td><td className="text-muted-foreground">{rows.filter((row) => (row.org || row.id) === site.key).length} session{rows.filter((row) => (row.org || row.id) === site.key).length === 1 ? '' : 's'}</td><td className="pr-4 text-primary">Maintain contact</td></tr>)}
+        </tbody></table></div>
+      </section>
+    )
   }
-  return [
-    { id: 'lab', label: 'Lab Notebook', icon: BookOpen, count: notes.length },
-    { id: 'progress', label: 'Progress', icon: Milestone, count: uniqueProjects(rows).length },
-  ]
+
+  return (
+    <section className="overflow-hidden rounded-2xl border bg-card">
+      <div className="border-b p-4"><h2 className="font-display text-lg font-extrabold">Research outputs</h2><p className="text-sm text-muted-foreground">Translate time in the lab into concrete lines for a CV and application.</p></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[45rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Project / output</th><th>Type</th><th>Venue</th><th>Deadline</th><th className="pr-4">Status</th></tr></thead><tbody>
+        {(rows.length ? rows : [{ id: 'empty', category: 'research', org: 'No research output yet', role: '', description: '', tags: [], status: 'planned', hours: 0, order: 0 } satisfies ExperienceEntry]).map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-bold">{row.description || row.org || 'Untitled project'}</td><td>{row.tags[0] || 'Project'}</td><td className="text-muted-foreground">{row.org || 'Add venue'}</td><td className="text-muted-foreground">{formatDate(row.endDate)}</td><td className="pr-4"><span className={cn('rounded-full px-2 py-1 text-xs font-bold', statusTone(row.status))}>{row.status}</span></td></tr>)}
+      </tbody></table></div>
+    </section>
+  )
+}
+
+function ApprovedLedger({ rows }: { rows: ExperienceEntry[] }) {
+  const sites = siteSummaries(rows)
+  return (
+    <section className="overflow-hidden rounded-2xl border bg-card">
+      <div className="border-b p-4"><h2 className="font-display text-lg font-extrabold">Verification ledger</h2><p className="text-sm text-muted-foreground">The audit-ready record behind the final AMCAS entry.</p></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[48rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Organization</th><th>Total hrs</th><th>Avg / wk</th><th>Dates</th><th>Verifier</th><th>Type</th><th className="pr-4">AMCAS</th></tr></thead><tbody>
+        {sites.map((site) => { const row = site.entry; const count = rows.filter((item) => (item.org || item.id) === site.key).length; return <tr key={site.key} className="border-t"><td className="px-4 py-3 font-bold">{site.org || 'Unnamed organization'}</td><td>{site.hours}h</td><td>{Math.max(1, Math.round(site.hours / Math.max(1, count * 4)))}h</td><td className="text-muted-foreground">{dateRangeLabel([row])}</td><td>{row.supervisor || row.contact || 'Add verifier'}</td><td>{row.tags[0] || 'Non-clinical'}</td><td className="pr-4"><button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-primary"><Copy className="size-3.5" /> Copy</button></td></tr> })}
+      </tbody></table></div>
+    </section>
+  )
+}
+
+function ApprovedEntityWorkspace({ category, entity, notes, onAddEntry, onPatchEntry, onRemoveEntry, onRequestLetter, onDraftStory, onAddLabNote }: ApprovedPillarProps & { entity: ExperienceEntity }) {
+  const latest = [...entity.rows].sort((a, b) => String(b.startDate ?? '').localeCompare(String(a.startDate ?? '')))
+  const base = entity.rows[0]
+  const contacts = uniqueContacts(entity.rows)
+
+  const addLog = (values: string[]) => {
+    const [date, hours, description] = values
+    onAddEntry({ org: entity.name, role: entity.role, startDate: date || new Date().toISOString().slice(0, 10), hours: Number(hours) || 0, description, supervisor: base?.supervisor, contact: base?.contact, status: 'active' })
+  }
+
+  return (
+    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <span className={cn('grid size-12 shrink-0 place-items-center rounded-xl text-primary', categoryAccent(category))}>{categoryIcon(category)}</span>
+          <div className="min-w-0"><h2 className="truncate font-display text-2xl font-extrabold">{entity.name}</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{entity.role || entity.subtitle} · {dateRangeLabel(entity.rows)}</p></div>
+        </div>
+        <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{entity.totalHours}h logged</span><span className={cn('rounded-full px-3 py-1 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span></div>
+      </div>
+
+      {category === 'clinical' && <ClinicalWorkspace entity={entity} latest={latest} onPatch={onPatchEntry} onRemove={onRemoveEntry} addLog={addLog} />}
+      {category === 'volunteering' && <VolunteeringWorkspace entity={entity} latest={latest} contacts={contacts} onDraftStory={onDraftStory} addLog={addLog} />}
+      {category === 'shadowing' && <ShadowingWorkspace entity={entity} latest={latest} contacts={contacts} onRequestLetter={onRequestLetter} addLog={addLog} />}
+      {category === 'research' && <ResearchWorkspace entity={entity} latest={latest} notes={notes} onAddLabNote={onAddLabNote} addLog={addLog} />}
+    </section>
+  )
+}
+
+function ClinicalWorkspace({ entity, latest, onPatch, onRemove, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; onPatch: ApprovedPillarProps['onPatchEntry']; onRemove: (id: string) => void; addLog: (values: string[]) => void }) {
+  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Certifications" icon={ShieldCheck}>{['BLS / CPR', 'HIPAA', 'Site onboarding'].map((name, index) => <div key={name} className="flex items-center justify-between rounded-lg bg-muted/25 px-3 py-2 text-sm"><span className="font-bold">{name}</span><span className={cn('text-xs font-bold', index ? 'text-muted-foreground' : 'text-emerald-500')}>{index ? 'Add expiry' : 'Current'}</span></div>)}</WorkspaceBlock><WorkspaceBlock title="Skills observed / performed" icon={ClipboardCheck}><div className="flex flex-wrap gap-2">{SKILLS.slice(0, 5).map((skill, index) => <span key={skill} className={cn('rounded-full border px-2.5 py-1 text-xs font-bold', index < Math.min(3, entity.rows.length) ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground')}>{skill}</span>)}</div></WorkspaceBlock></div><div className="p-5"><LogList title="Shift log" rows={latest} onPatch={onPatch} onRemove={onRemove} addLog={addLog} /></div></div>
+}
+
+function VolunteeringWorkspace({ entity, latest, contacts, onDraftStory, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; contacts: ExperienceEntry[]; onDraftStory: ApprovedPillarProps['onDraftStory']; addLog: (values: string[]) => void }) {
+  const people = new Set(entity.rows.map((row) => row.contact).filter(Boolean)).size
+  return <div className="grid gap-0 lg:grid-cols-[0.85fr_1.15fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Impact numbers" icon={HeartHandshake}><div className="grid grid-cols-2 gap-2"><MiniMetric label="Hours" value={`${entity.totalHours}h`} /><MiniMetric label="Relationships" value={String(Math.max(people, contacts.length))} /></div></WorkspaceBlock><WorkspaceBlock title="Application notes" icon={FileText}><p className="text-sm leading-relaxed text-muted-foreground">{categorySpecificInsight('volunteering', entity).detail}</p>{entity.rows[0] && <Button className="mt-3" size="sm" variant="outline" onClick={() => onDraftStory(entity.rows[0], 'service impact')}><BookOpen className="size-4" /> Draft story</Button>}</WorkspaceBlock></div><div className="p-5"><SimpleLog title="Hours log" rows={latest} addLog={addLog} prompt="What changed for the people or community you served?" /></div></div>
+}
+
+function ShadowingWorkspace({ entity, latest, contacts, onRequestLetter, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; contacts: ExperienceEntry[]; onRequestLetter: ApprovedPillarProps['onRequestLetter']; addLog: (values: string[]) => void }) {
+  const base = entity.rows[0]
+  return <div className="grid gap-0 lg:grid-cols-[0.75fr_1.25fr]"><div className="space-y-4 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Physician relationship" icon={UserRound}>{contacts.length ? contacts.map((row) => <div key={row.id} className="rounded-lg bg-muted/25 p-3"><p className="font-bold">{row.supervisor || row.contact}</p><p className="text-xs text-muted-foreground">{row.contact || 'Add contact details'}</p></div>) : <p className="text-sm text-muted-foreground">Add the physician and contact details.</p>}{base && <Button size="sm" variant="outline" onClick={() => onRequestLetter(base)}><Mail className="size-4" /> Track relationship</Button>}</WorkspaceBlock><div className="grid grid-cols-2 gap-2"><MiniMetric label="Thank-you" value={base?.tags.some((tag) => /thank/i.test(tag)) ? 'Sent' : 'Due'} /><MiniMetric label="Letter potential" value={entity.totalHours >= 20 ? 'Strong' : 'Developing'} /></div></div><div className="p-5"><SimpleLog title="Shadowing sessions" rows={latest} addLog={addLog} prompt="Capture the setting, specialty, and one clinical insight." /></div></div>
+}
+
+function ResearchWorkspace({ entity, latest, notes, onAddLabNote, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; notes: NotePage[]; onAddLabNote: () => void; addLog: (values: string[]) => void }) {
+  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Meetings with PI" icon={Users}><div className="space-y-2">{['Clarify next analysis', 'Confirm authorship expectations', 'Ask about the next abstract deadline'].map((item) => <label key={item} className="flex items-center gap-2 rounded-lg bg-muted/25 px-3 py-2 text-sm"><input type="checkbox" className="size-4 rounded" /> {item}</label>)}</div></WorkspaceBlock><WorkspaceBlock title="Output trajectory" icon={Award}><p className="text-sm text-muted-foreground">{categorySpecificInsight('research', entity).detail}</p></WorkspaceBlock></div><div className="space-y-5 p-5"><div className="flex items-center justify-between"><h3 className="font-display text-lg font-extrabold">Lab notebook</h3><Button size="sm" variant="outline" onClick={onAddLabNote}><Plus className="size-4" /> Note</Button></div>{notes.slice(0, 3).map((note) => <div key={note.id} className="rounded-lg bg-muted/25 px-3 py-2"><p className="font-bold">{note.title}</p><p className="text-xs text-muted-foreground">{new Date(note.updatedAt).toLocaleDateString()}</p></div>)}<SimpleLog title="Hours and milestones" rows={latest} addLog={addLog} prompt="Record the experiment, decision, result, or output." /></div></div>
+}
+
+function WorkspaceBlock({ title, icon: Icon, children }: { title: string; icon: typeof Clock; children: ReactNode }) { return <section><div className="mb-3 flex items-center gap-2"><Icon className="size-4 text-primary" /><h3 className="font-display text-base font-extrabold">{title}</h3></div><div className="space-y-2">{children}</div></section> }
+
+function SimpleLog({ title, rows, addLog, prompt }: { title: string; rows: ExperienceEntry[]; addLog: (values: string[]) => void; prompt: string }) { return <section className="space-y-3"><div><h3 className="font-display text-lg font-extrabold">{title}</h3><p className="text-xs text-muted-foreground">{prompt}</p></div><div className="space-y-2">{rows.slice(0, 6).map((row) => <div key={row.id} className="grid gap-2 rounded-lg border bg-muted/10 px-3 py-2 sm:grid-cols-[7rem_4rem_1fr]"><span className="text-xs font-bold text-muted-foreground">{formatDate(row.startDate)}</span><span className="font-extrabold">{row.hours || 0}h</span><span className="text-sm text-muted-foreground">{row.description || row.role || 'Add detail'}</span></div>)}</div><InlineAddRow label="Add log" fields={['Date', 'Hours', 'What happened?']} onAdd={addLog} /></section> }
+
+function LogList({ title, rows, onPatch, onRemove, addLog }: { title: string; rows: ExperienceEntry[]; onPatch: ApprovedPillarProps['onPatchEntry']; onRemove: (id: string) => void; addLog: (values: string[]) => void }) { return <section className="space-y-3"><h3 className="font-display text-lg font-extrabold">{title}</h3>{rows.slice(0, 6).map((row) => <ExpandableEntryRow key={row.id} entry={row} onPatch={(patch) => onPatch(row.id, patch)} onDelete={() => onRemove(row.id)} />)}<InlineAddRow label="Add shift" fields={['Date', 'Hours', 'Call type / note']} onAdd={addLog} /></section> }
+
+function PillarInsightStrip({
+  category,
+  rows,
+  goal,
+  entities,
+}: {
+  category: ExperienceCategory
+  rows: ExperienceEntry[]
+  goal: number
+  entities: ExperienceEntity[]
+}) {
+  const totalHours = rows.reduce((sum, row) => sum + Number(row.hours || 0), 0)
+  const projected = Math.round(projectedHoursFor(rows))
+  const contacts = uniqueContacts(rows).length
+  const staleCount = entities.filter((entity) => entity.stale).length
+  const openLoops = entities.reduce((sum, entity) => sum + entity.openLoops.length, 0)
+  const coverage = coverageForCategory(category, rows)
+
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      <InsightCard
+        icon={TrendingUp}
+        label="Pace"
+        title={projected >= goal ? `On pace for about ${projected}h` : `${Math.max(0, goal - projected)}h gap at current pace`}
+        detail={`${totalHours}h logged now · ${goal}h target`}
+        tone={projected >= goal ? 'good' : 'warn'}
+      />
+      <InsightCard
+        icon={Network}
+        label="Relationships"
+        title={contacts ? `${contacts} verification ${contacts === 1 ? 'contact' : 'contacts'} identified` : 'No verification contacts yet'}
+        detail={openLoops ? `${openLoops} open loops across ${entities.length || 0} ${categoryNoun(category, true)}` : 'Relationships are cleanly documented'}
+        tone={contacts ? 'good' : 'warn'}
+      />
+      <InsightCard
+        icon={MapIcon}
+        label="Admissions read"
+        title={coverage.title}
+        detail={staleCount ? `${staleCount} ${categoryNoun(category, staleCount !== 1)} need a recent touchpoint` : coverage.detail}
+        tone={coverage.tone}
+      />
+    </div>
+  )
+}
+
+function InsightCard({
+  icon: Icon,
+  label,
+  title,
+  detail,
+  tone = 'neutral',
+}: {
+  icon: typeof Clock
+  label: string
+  title: string
+  detail: string
+  tone?: 'good' | 'warn' | 'neutral'
+}) {
+  return (
+    <div className={cn(
+      'rounded-xl border bg-card p-4 shadow-sm',
+      tone === 'good' && 'border-emerald-500/25 bg-emerald-500/5',
+      tone === 'warn' && 'border-amber-500/25 bg-amber-500/5'
+    )}>
+      <div className="mb-3 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+        <Icon className="size-4 text-primary" />
+        {label}
+      </div>
+      <p className="font-display text-lg font-extrabold leading-tight">{title}</p>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">{detail}</p>
+    </div>
+  )
+}
+
+function ExperienceEntityCatalog({
+  category,
+  entities,
+  onOpen,
+  onAdd,
+}: {
+  category: ExperienceCategory
+  entities: ExperienceEntity[]
+  onOpen: (entity: ExperienceEntity) => void
+  onAdd: () => void
+}) {
+  const title = categoryCatalogTitle(category)
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-extrabold">{title}</h2>
+          <p className="text-sm text-muted-foreground">Open a workspace to see trajectory, relationships, stories, and gaps.</p>
+        </div>
+        <Button onClick={onAdd}>
+          <Plus className="size-4" />
+          Add {categoryNoun(category)}
+        </Button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {entities.map((entity) => (
+          <button
+            key={entity.key}
+            type="button"
+            onClick={() => onOpen(entity)}
+            className="group min-h-[13rem] rounded-xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md"
+          >
+            <div className="flex items-start gap-3">
+              <span className={cn('grid size-11 shrink-0 place-items-center rounded-xl text-primary', categoryAccent(category))}>
+                {categoryIcon(category)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="truncate font-display text-lg font-extrabold">{entity.name}</h3>
+                    <p className="truncate text-sm font-semibold text-muted-foreground">{entity.role || entity.subtitle}</p>
+                  </div>
+                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <MiniMetric label="Hours" value={`${entity.totalHours}h`} />
+              <MiniMetric label="Rows" value={String(entity.rows.length)} />
+              <MiniMetric label="Last" value={entity.lastActivityLabel} />
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, Math.max(8, entity.totalHours))}%` }} />
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {entity.openLoops.length ? (
+                  entity.openLoops.slice(0, 2).map((loop) => (
+                    <span key={loop} className="rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-200">{loop}</span>
+                  ))
+                ) : (
+                  <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-200">verification-ready</span>
+                )}
+              </div>
+            </div>
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex min-h-[13rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 p-4 text-center font-extrabold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+        >
+          <Plus className="mb-2 size-5" />
+          Add {categoryNoun(category)}
+          <span className="mt-1 text-xs font-semibold normal-case">Start with the site, lab, person, or organization.</span>
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-muted/35 px-2 py-2">
+      <p className="text-[0.65rem] font-extrabold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 truncate text-sm font-extrabold">{value}</p>
+    </div>
+  )
+}
+
+function ExperienceEntityWorkspace({
+  category,
+  entity,
+  goal,
+  onBack,
+}: {
+  category: ExperienceCategory
+  entity: ExperienceEntity
+  goal: number
+  onBack: () => void
+}) {
+  const total = entity.totalHours
+  const pct = Math.min(100, Math.round((total / Math.max(goal, 1)) * 100))
+  const contacts = uniqueContacts(entity.rows)
+  const stories = entity.rows.filter((row) => row.mostMeaningful?.trim() || row.description?.trim())
+  const latestRows = [...entity.rows].sort((a, b) => String(b.startDate ?? '').localeCompare(String(a.startDate ?? ''))).slice(0, 5)
+  const insight = categorySpecificInsight(category, entity)
+
+  return (
+    <section className="mt-6 space-y-5">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <Button variant="ghost" size="icon" aria-label="Back to catalog" onClick={onBack} className="shrink-0">
+              <ArrowLeft className="size-4" />
+            </Button>
+            <span className={cn('grid size-12 shrink-0 place-items-center rounded-2xl text-primary', categoryAccent(category))}>
+              {categoryIcon(category)}
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-2xl font-extrabold">{entity.name}</h2>
+              <p className="text-sm font-semibold text-muted-foreground">{entity.subtitle}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">{total}h logged</span>
+            <span className={cn('rounded-full px-3 py-1 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">What this means</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-3">
+              <MiniMetric label="Readiness" value={`${pct}%`} />
+              <MiniMetric label="Last touch" value={entity.lastActivityLabel} />
+              <MiniMetric label="Evidence" value={`${stories.length} stories`} />
+              <div className="md:col-span-3 rounded-xl bg-muted/25 p-3">
+                <p className="font-bold">{insight.title}</p>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">{insight.detail}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between pb-3">
+              <CardTitle className="text-base">Timeline</CardTitle>
+              <span className="text-xs font-bold text-muted-foreground">{entity.rows.length} logs</span>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {latestRows.map((row) => (
+                <div key={row.id} className="grid gap-3 rounded-xl border bg-muted/15 p-3 md:grid-cols-[8rem_1fr_5rem] md:items-center">
+                  <span className="text-sm font-bold text-muted-foreground">{formatDate(row.startDate)}</span>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{row.role || entity.role}</p>
+                    <p className="line-clamp-2 text-sm text-muted-foreground">{row.description || row.mostMeaningful || 'No reflection yet'}</p>
+                  </div>
+                  <span className="text-right font-extrabold">{row.hours || 0}h</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Open loops</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {(entity.openLoops.length ? entity.openLoops : ['No major gaps flagged']).map((loop) => (
+                <div key={loop} className="flex items-center gap-2 rounded-xl bg-muted/25 p-3 text-sm font-bold">
+                  <AlertTriangle className={cn('size-4', entity.openLoops.length ? 'text-amber-500' : 'text-emerald-500')} />
+                  {loop}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Relationships</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {contacts.length ? contacts.map((row) => (
+                <div key={row.id} className="rounded-xl bg-muted/25 p-3">
+                  <p className="font-bold">{row.supervisor || row.contact || row.org}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{row.role || 'contact'} · {row.contact || 'add email/phone'}</p>
+                </div>
+              )) : (
+                <p className="rounded-xl bg-muted/25 p-3 text-sm font-semibold text-muted-foreground">Add a supervisor or contact so verification season is less chaotic.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function PillarTabStrip({ tabs, value, onChange }: { tabs: PillarTab[]; value: string; onChange: (value: string) => void }) {
@@ -373,7 +763,7 @@ function ExpandableEntryRow({
   entry: ExperienceEntry
   onPatch: (patch: ExperiencePatch) => void
   onDelete: () => void
-  onDraftStory: () => void
+  onDraftStory?: () => void
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -399,7 +789,7 @@ function ExpandableEntryRow({
           <Field label="What happened?" className="md:col-span-2"><Textarea value={entry.description} onChange={(event) => onPatch({ description: event.target.value })} className="min-h-24" /></Field>
           <Field label="Reflection for essays" className="md:col-span-2"><Textarea value={entry.mostMeaningful ?? ''} onChange={(event) => onPatch({ mostMeaningful: event.target.value })} className="min-h-24" /></Field>
           <div className="flex flex-wrap justify-end gap-2 md:col-span-2">
-            <Button variant="outline" onClick={onDraftStory}><FileText className="size-4" /> Draft the story</Button>
+            {onDraftStory && <Button variant="outline" onClick={onDraftStory}><FileText className="size-4" /> Draft the story</Button>}
             <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={onDelete}><Trash2 className="size-4" /> Delete</Button>
           </div>
         </div>
@@ -696,7 +1086,7 @@ function ContactCard({ name, role, detail, followUp, onLetter, onTouch }: { name
   )
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return <label className={cn('space-y-1.5 text-sm font-bold', className)}><span>{label}</span>{children}</label>
 }
 
@@ -718,6 +1108,249 @@ function siteSummaries(rows: ExperienceEntry[]) {
     else map.set(key, { key, org: entry.org, role: entry.role, hours: Number(entry.hours || 0), entry })
   })
   return [...map.values()]
+}
+
+function buildExperienceEntities(rows: ExperienceEntry[], category: ExperienceCategory): ExperienceEntity[] {
+  const grouped = new Map<string, ExperienceEntry[]>()
+
+  rows.forEach((entry) => {
+    const key = entityKeyFor(entry, category)
+    grouped.set(key, [...(grouped.get(key) ?? []), entry])
+  })
+
+  return Array.from(grouped.entries())
+    .map(([key, entityRows]) => {
+      const sorted = [...entityRows].sort(sortByOrderThenDate)
+      const first = sorted[0]
+      const latest = sorted.reduce((best, row) => (latestDateValue(row) > latestDateValue(best) ? row : best), first)
+      const earliest = sorted.reduce((best, row) => (dateValue(row.startDate) < dateValue(best.startDate) ? row : best), first)
+      const totalHours = sorted.reduce((sum, row) => sum + Number(row.hours || 0), 0)
+      const status: ExperienceEntry['status'] = sorted.some((row) => row.status === 'active')
+        ? 'active'
+        : sorted.some((row) => row.status === 'planned')
+          ? 'planned'
+          : 'completed'
+
+      return {
+        key,
+        name: entityName(first, category),
+        role: first.role || defaultRoleForCategory(category),
+        subtitle: dateRangeLabel(sorted),
+        rows: sorted,
+        totalHours: Math.round(totalHours),
+        startDate: earliest.startDate,
+        endDate: latest.endDate,
+        status,
+        contact: latest.contact || first.contact,
+        supervisor: latest.supervisor || first.supervisor,
+        lastActivityLabel: lastActivityLabelFor(latest),
+        stale: daysBetween(latestDateValue(latest), Date.now()) > 45 && status === 'active',
+        openLoops: entityOpenLoops(category, sorted),
+      }
+    })
+    .sort((a, b) => b.totalHours - a.totalHours || a.name.localeCompare(b.name))
+}
+
+function entityKeyFor(entry: ExperienceEntry, category: ExperienceCategory) {
+  const raw = category === 'shadowing'
+    ? entry.supervisor || entry.contact || entry.org || entry.role
+    : entry.org || entry.supervisor || entry.contact || entry.role
+  return raw?.trim().toLowerCase() || `${category}-unassigned`
+}
+
+function entityName(entry: ExperienceEntry, category: ExperienceCategory) {
+  if (category === 'shadowing') return entry.supervisor || entry.contact || entry.org || entityFallbackName(category)
+  return entry.org || entry.supervisor || entry.contact || entityFallbackName(category)
+}
+
+function entityFallbackName(category: ExperienceCategory) {
+  const labels: Record<ExperienceCategory, string> = {
+    clinical: 'New clinical site',
+    volunteering: 'New service organization',
+    shadowing: 'New physician',
+    research: 'New lab or project',
+    leadership: 'New organization',
+  }
+  return labels[category]
+}
+
+function defaultRoleForCategory(category: ExperienceCategory) {
+  const labels: Record<ExperienceCategory, string> = {
+    clinical: 'Clinical role',
+    volunteering: 'Volunteer',
+    shadowing: 'Observer',
+    research: 'Research assistant',
+    leadership: 'Member',
+  }
+  return labels[category]
+}
+
+function projectedHoursFor(rows: ExperienceEntry[]) {
+  const total = rows.reduce((sum, row) => sum + Number(row.hours || 0), 0)
+  const dated = rows.map((row) => latestDateValue(row)).filter(Boolean)
+  if (dated.length < 2) return total
+
+  const oldest = Math.min(...dated)
+  const newest = Math.max(...dated)
+  const weeks = Math.max(1, daysBetween(oldest, newest) / 7)
+  const weeklyPace = total / weeks
+  return Math.round(total + weeklyPace * 48)
+}
+
+function categoryNoun(category: ExperienceCategory, plural = false) {
+  const labels: Record<ExperienceCategory, [string, string]> = {
+    clinical: ['site', 'sites'],
+    volunteering: ['service org', 'service orgs'],
+    shadowing: ['physician', 'physicians'],
+    research: ['project', 'projects'],
+    leadership: ['organization', 'organizations'],
+  }
+  return labels[category][plural ? 1 : 0]
+}
+
+function categoryCatalogTitle(category: ExperienceCategory) {
+  const labels: Record<ExperienceCategory, string> = {
+    clinical: 'Clinical sites',
+    volunteering: 'Service organizations',
+    shadowing: 'Physicians shadowed',
+    research: 'Labs and projects',
+    leadership: 'Organizations',
+  }
+  return labels[category]
+}
+
+function categoryAccent(category: ExperienceCategory) {
+  const classes: Record<ExperienceCategory, string> = {
+    clinical: 'bg-sky-500/12',
+    volunteering: 'bg-emerald-500/12',
+    shadowing: 'bg-violet-500/12',
+    research: 'bg-amber-500/12',
+    leadership: 'bg-rose-500/12',
+  }
+  return classes[category]
+}
+
+function categoryIcon(category: ExperienceCategory) {
+  const className = 'size-5'
+  if (category === 'clinical') return <Stethoscope className={className} />
+  if (category === 'volunteering') return <Users className={className} />
+  if (category === 'shadowing') return <UserRound className={className} />
+  if (category === 'research') return <BookOpen className={className} />
+  return <Network className={className} />
+}
+
+function statusTone(status: ExperienceEntry['status']) {
+  if (status === 'active') return 'bg-emerald-500/12 text-emerald-200'
+  if (status === 'planned') return 'bg-sky-500/12 text-sky-200'
+  return 'bg-muted text-muted-foreground'
+}
+
+function coverageForCategory(category: ExperienceCategory, rows: ExperienceEntry[]): { title: string; detail: string; tone: 'neutral' | 'warn' | 'good' } {
+  const text = rows.map(textFor).join(' ').toLowerCase()
+  if (!rows.length) return { title: 'No signal yet', detail: 'Start with one real entry so Premed HQ can detect gaps.', tone: 'neutral' }
+
+  if (category === 'clinical') {
+    const primaryCare = /primary care|family medicine|internal medicine|pediatrics/.test(text)
+    const emergency = /emergency|ed|er|ems/.test(text)
+    if (!primaryCare) return { title: 'Coverage is narrow', detail: 'Strong exposure can still look narrow without primary care.', tone: 'warn' }
+    if (emergency) return { title: 'Balanced clinical exposure', detail: 'Clinical story has both continuity and acute-care exposure.', tone: 'good' }
+    return { title: 'Primary care covered', detail: 'Primary-care exposure is covered; add acute-care contrast if possible.', tone: 'neutral' }
+  }
+
+  if (category === 'volunteering') {
+    const matched = SERVICE_THEMES.filter((theme) => text.includes(theme.toLowerCase()))
+    return {
+      title: matched.length ? 'Service theme visible' : 'Service purpose unclear',
+      detail: matched.length ? `Service theme detected: ${matched.slice(0, 2).join(', ')}.` : 'Clarify the community need, not just the hours.',
+      tone: matched.length ? 'good' : 'warn',
+    }
+  }
+
+  if (category === 'shadowing') {
+    const matched = SHADOW_SPECIALTIES.filter((specialty) => specialty !== 'All' && text.includes(specialty.toLowerCase()))
+    return {
+      title: matched.length >= 2 ? 'Specialty breadth visible' : 'Specialty gaps remain',
+      detail: matched.length ? `Specialties represented: ${matched.join(', ')}.` : 'Specialty coverage is not clear yet.',
+      tone: matched.length >= 2 ? 'good' : 'warn',
+    }
+  }
+
+  if (category === 'research') {
+    const hasOutput = /poster|abstract|presentation|publication|manuscript|conference/.test(text)
+    return {
+      title: hasOutput ? 'Output signal present' : 'Output gap',
+      detail: hasOutput ? 'Research output is visible; keep linking artifacts.' : 'The next missing signal is an output: poster, abstract, or manuscript.',
+      tone: hasOutput ? 'good' : 'warn',
+    }
+  }
+
+  const leadership = rows.some((row) => /leader|president|chair|captain|officer|founder|director/.test(textFor(row).toLowerCase()))
+  return {
+    title: leadership ? 'Leadership signal present' : 'Leadership proof missing',
+    detail: leadership ? 'Leadership evidence is present; capture decisions and outcomes.' : 'A role alone is not leadership yet; document what changed because of you.',
+    tone: leadership ? 'good' : 'warn',
+  }
+}
+
+function categorySpecificInsight(category: ExperienceCategory, entity: ExperienceEntity) {
+  if (entity.openLoops.length) {
+    return { title: 'Open loop', detail: entity.openLoops[0] }
+  }
+  if (category === 'clinical') return { title: 'Clinical read', detail: `${entity.name} can anchor patient-contact stories if reflections stay current.` }
+  if (category === 'volunteering') return { title: 'Service read', detail: `${entity.name} shows continuity when entries include the community need and follow-through.` }
+  if (category === 'shadowing') return { title: 'Specialty read', detail: `${entity.name} is useful when you log one clinical decision or workflow insight per visit.` }
+  if (category === 'research') return { title: 'Research read', detail: `${entity.name} becomes stronger when outputs and mentor relationship are linked.` }
+  return { title: 'Leadership read', detail: `${entity.name} should show responsibility, initiative, and a measurable change.` }
+}
+
+function latestDateValue(entry: ExperienceEntry) {
+  return Math.max(dateValue(entry.endDate), dateValue(entry.startDate), 0)
+}
+
+function dateValue(value?: string) {
+  if (!value) return 0
+  const parsed = new Date(`${value}T12:00:00`).getTime()
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+function daysBetween(start: number, end: number) {
+  if (!start || !end) return 999
+  return Math.max(0, Math.round((end - start) / 86_400_000))
+}
+
+function lastActivityLabelFor(entry: ExperienceEntry) {
+  const value = latestDateValue(entry)
+  if (!value) return 'No date'
+  const days = daysBetween(value, Date.now())
+  if (days === 0) return 'Today'
+  if (days < 31) return `${days}d ago`
+  if (days < 370) return `${Math.round(days / 30)}mo ago`
+  return `${Math.round(days / 365)}y ago`
+}
+
+function dateRangeLabel(rows: ExperienceEntry[]) {
+  const starts = rows.map((row) => dateValue(row.startDate)).filter(Boolean)
+  const ends = rows.map((row) => dateValue(row.endDate) || dateValue(row.startDate)).filter(Boolean)
+  if (!starts.length && !ends.length) return `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`
+  const first = starts.length ? formatDate(new Date(Math.min(...starts)).toISOString().slice(0, 10)) : 'No start'
+  const last = ends.length ? formatDate(new Date(Math.max(...ends)).toISOString().slice(0, 10)) : 'present'
+  return `${first} – ${last}`
+}
+
+function entityOpenLoops(category: ExperienceCategory, rows: ExperienceEntry[]) {
+  const loops: string[] = []
+  const text = rows.map(textFor).join(' ').toLowerCase()
+  const latest = rows.reduce((best, row) => (latestDateValue(row) > latestDateValue(best) ? row : best), rows[0])
+
+  if (!rows.some((row) => row.contact || row.supervisor)) loops.push('Add a verifier or relationship contact.')
+  if (!rows.some((row) => row.mostMeaningful?.trim() || row.description?.trim())) loops.push('Capture at least one interview-ready reflection.')
+  if (latest && daysBetween(latestDateValue(latest), Date.now()) > 45) loops.push('Log a recent touchpoint so this does not look neglected.')
+  if (category === 'research' && !/poster|abstract|presentation|publication|manuscript/.test(text)) loops.push('Link a research output or next output milestone.')
+  if (category === 'clinical' && !/primary care|family medicine|internal medicine|pediatrics/.test(text)) loops.push('Add or label primary-care exposure if you have it.')
+  if (category === 'shadowing' && rows.length < 2) loops.push('Add another visit or specialty contrast.')
+  if (category === 'leadership' && !/leader|president|chair|captain|officer|founder|director/.test(text)) loops.push('Document the decision, initiative, or outcome that proves leadership.')
+
+  return loops.slice(0, 3)
 }
 
 function uniqueContacts(rows: ExperienceEntry[]) {
@@ -746,5 +1379,21 @@ function formatDate(value?: string) {
 }
 
 function textFor(entry: ExperienceEntry) {
-  return `${entry.org} ${entry.role} ${entry.description} ${entry.mostMeaningful ?? ''} ${entry.tags.join(' ')}`
+  return `${entry.org} ${entry.role} ${entry.description} ${entry.mostMeaningful ?? ''} ${(entry.tags ?? []).join(' ')}`
 }
+
+// Kept temporarily while the approved pillar workspaces replace the former generic renderer.
+// Referencing these components prevents the transition path from breaking local data utilities.
+void [
+  PillarInsightStrip,
+  ExperienceEntityCatalog,
+  ExperienceEntityWorkspace,
+  PillarTabStrip,
+  HoursAndSitesView,
+  SkillsView,
+  ShadowingSessionsView,
+  PhysiciansView,
+  LabNotebookView,
+  ResearchProgressView,
+  EventsView,
+]

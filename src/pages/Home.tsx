@@ -10,10 +10,11 @@ import { gpaStats, fmtGpa, hourTotals, bestMcat, percent, upcomingAlerts } from 
 import { daysUntil, fmtRelative, pickDaily, fmtTimeAgo } from '@/lib/date'
 import { formatClock, formatEventTimeRange, normalizeTimedEvents } from '@/lib/schedule'
 import { MCAT_QOTD } from '@/data/mcatQotd'
+import { PREPCAT_CONTENT_COUNTS } from '@/data/prepcatContent'
 import { uid } from '@/lib/id'
 import { homeBanner, type VisualTheme } from '@/lib/themeAssets'
-import type { TaskItem, TaskProgress, TaskType } from '@/lib/types'
-import { MascotBubble } from '@/components/mascot/MascotBubble'
+import type { TaskItem, TaskProgress, TaskType, TipEntry } from '@/lib/types'
+import { Ram } from '@/components/mascot/Ram'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { SegmentedBar } from '@/components/common/SegmentedBar'
 import { InfoTip } from '@/components/common/InfoTip'
@@ -39,6 +40,50 @@ const ROADMAP = [
   { id: 'matriculate', label: 'Matriculate', date: 'Fall 2030', route: 'profile', detail: 'No forced gap year on the default plan.' },
 ]
 
+const OVERVIEW_GUIDE_TIPS: TipEntry[] = [
+  {
+    id: 'overview-tip-mcat-library',
+    text: `MCAT Content has the motherload: ${PREPCAT_CONTENT_COUNTS.guide} guides, ${PREPCAT_CONTENT_COUNTS['hack-sheet']} cheat sheets, pathways, and drills.`,
+    source: 'MCAT guide',
+    tag: 'andy',
+    pillar: 'mcat',
+  },
+  {
+    id: 'overview-tip-mistake-map',
+    text: 'Drop missed-question screenshots into Mistakes, then let the review queue point you back to weak topics.',
+    source: 'MCAT guide',
+    tag: 'andy',
+    pillar: 'mcat',
+  },
+  {
+    id: 'overview-tip-class-center',
+    text: 'Class Center is for daily execution: notes, topics, weak areas, and what to study next.',
+    source: 'Ultimate Guide',
+    tag: 'andy',
+    pillar: 'academics',
+  },
+  {
+    id: 'overview-tip-roadmap',
+    text: 'The roadmap is the big picture; Today and Class Center are where the next move actually happens.',
+    source: 'Ultimate Guide',
+    tag: 'andy',
+  },
+  {
+    id: 'overview-tip-school-list',
+    text: 'Use the school list for fit signals early, not just stats right before applications.',
+    source: 'Application guide',
+    tag: 'andy',
+    pillar: 'schools',
+  },
+  {
+    id: 'overview-tip-assignments',
+    text: 'Linked assignments can feed deadlines, revision, and the weekly plan.',
+    source: 'Class Center',
+    tag: 'andy',
+    pillar: 'academics',
+  },
+]
+
 function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -54,6 +99,15 @@ function hms(ms: number) {
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function shortDuration(ms: number) {
+  const total = Math.max(0, Math.ceil(ms / 60000))
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  if (h <= 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
 }
 
 function firstName(name: string) {
@@ -89,39 +143,115 @@ function Hero() {
   const name = useStore((s) => s.profile.name)
   const schedule = useHeroScheduleSource()
   const now = useNow(1000)
-  const analysis = useMemo(() => normalizeTimedEvents(schedule.events, now), [schedule.events, now])
-  const target = analysis.current ?? analysis.next
-  const targetMs = target ? (analysis.current ? target.endDate.getTime() - now.getTime() : target.startDate.getTime() - now.getTime()) : 0
-  const caption = analysis.current ? `${analysis.current.title} ends soon` : target ? `${target.title} starts soon` : 'No timed events left'
+  const heroTips = useMemo(() => {
+    const byId = new Map<string, TipEntry>()
+    ;[...tips, ...OVERVIEW_GUIDE_TIPS].forEach((tip) => byId.set(tip.id, tip))
+    return [...byId.values()]
+  }, [tips])
+  const nudge = pickDaily(heroTips, 5)
   const dateLine = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <section className="relative min-h-[15rem] overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+    <section className="relative min-h-[21rem] overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:min-h-[23rem]">
       <ThemedHomeImage visualTheme={visualTheme} />
-      <div className="absolute inset-0 bg-[#1e2a24]/34 dark:bg-slate-950/58" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#17211d]/72 via-[#3b3a2c]/32 to-[#f8eedb]/8 dark:from-slate-950/82 dark:via-slate-950/48 dark:to-slate-950/42" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#f4ead8]/12 via-transparent to-transparent dark:from-slate-950/10" />
-      <div className="relative grid gap-4 p-5 text-white md:p-6 lg:grid-cols-[minmax(18rem,31rem)_minmax(28rem,1fr)] lg:items-center">
-        <div className="min-w-0 space-y-3">
+      <div className="absolute inset-0 bg-slate-950/50 dark:bg-slate-950/62" />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/86 via-slate-950/50 to-slate-950/28" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_30%,rgba(255,255,255,.08),transparent_34%),linear-gradient(to_top,rgba(2,6,23,.5),transparent_58%)]" />
+      <div className="relative grid min-h-[21rem] gap-7 p-6 text-white md:min-h-[23rem] md:p-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,.96fr)] lg:items-center">
+        <div className="min-w-0 space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">
             {dateLine} · <span className="tabular-nums">{formatClock(now, '12h')}</span>
           </p>
-          <h1 className="max-w-[12ch] font-display text-3xl font-extrabold leading-none md:text-[2.45rem] lg:text-[2.85rem]">
+          <h1 className="max-w-full text-balance font-display text-[clamp(2rem,2.55vw,2.55rem)] font-extrabold leading-[0.98] lg:whitespace-nowrap">
             Good to see you again, {firstName(name)}!
           </h1>
-          {target && (
-            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-leaf/45 bg-leaf/18 px-3 py-2 text-sm font-extrabold text-leaf-soft shadow-sm backdrop-blur-md">
-              <span className="rounded-full bg-leaf/24 px-2.5 py-1 font-display text-base tabular-nums text-leaf-soft">{hms(targetMs)}</span>
-              <span className="truncate text-white/82">{caption}</span>
-            </div>
-          )}
-          <div className="max-w-md">
-            <MascotBubble tips={tips} ramSize={44} side="left" compact />
-          </div>
+          <HeroLiveStatus schedule={schedule} now={now} />
+          {nudge && <HeroMascotNudge tip={nudge} />}
         </div>
         <TodaySchedulePanel schedule={schedule} now={now} />
       </div>
     </section>
+  )
+}
+
+function HeroMascotNudge({ tip }: { tip: TipEntry }) {
+  return (
+    <div className="hidden max-w-xl items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/34 px-3 py-2 shadow-sm backdrop-blur-sm sm:inline-flex">
+      <Ram size={38} className="pointer-events-none shrink-0 drop-shadow-md" />
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold leading-snug text-white/68">{tip.text}</p>
+        <p className="mt-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white/42">{tip.source}</p>
+      </div>
+    </div>
+  )
+}
+
+function HeroLiveStatus({ schedule, now }: { schedule: ReturnType<typeof useHeroScheduleSource>; now: Date }) {
+  const analysis = useMemo(() => normalizeTimedEvents(schedule.events, now), [schedule.events, now])
+  const previous = analysis.timedEvents.filter((event) => event.endDate <= now).at(-1)
+  const dayEnd = useMemo(() => {
+    const date = new Date(now)
+    date.setHours(23, 59, 59, 999)
+    return date
+  }, [now])
+
+  let eyebrow = 'Free window'
+  let title = previous ? 'Open focus time' : 'Open block'
+  let detail = 'until midnight'
+  let timer = hms(dayEnd.getTime() - now.getTime())
+  let progress = 0
+
+  if (analysis.current) {
+    const left = analysis.current.endDate.getTime() - now.getTime()
+    const duration = Math.max(1, analysis.current.endDate.getTime() - analysis.current.startDate.getTime())
+    const elapsed = now.getTime() - analysis.current.startDate.getTime()
+    eyebrow = 'Happening now'
+    title = analysis.current.title
+    timer = hms(left)
+    progress = Math.min(100, Math.max(0, (elapsed / duration) * 100))
+    detail = `Ends ${formatClock(analysis.current.endDate, schedule.calendar.timeFormat)}`
+  } else if (analysis.next) {
+    const until = analysis.next.startDate.getTime() - now.getTime()
+    const isFreeWindow = Boolean(previous)
+    eyebrow = isFreeWindow ? 'Free window' : 'Next up'
+    title = analysis.next.title
+    timer = hms(until)
+    progress = isFreeWindow ? 100 : 0
+    detail = isFreeWindow
+      ? `${shortDuration(until)} until start`
+      : `Starts ${formatClock(analysis.next.startDate, schedule.calendar.timeFormat)}`
+  } else {
+    const windowStart = previous?.endDate ?? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    const totalWindow = Math.max(1, dayEnd.getTime() - windowStart.getTime())
+    const elapsedWindow = Math.max(0, now.getTime() - windowStart.getTime())
+    progress = Math.min(100, Math.max(8, (elapsedWindow / totalWindow) * 100))
+  }
+
+  return (
+    <div className="w-full max-w-[28rem] rounded-3xl border border-white/14 bg-slate-950/48 px-5 py-4 text-left shadow-lg shadow-black/15 backdrop-blur-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary/90">{eyebrow}</p>
+          <p className="mt-1 truncate text-sm font-extrabold text-white">{title}</p>
+        </div>
+        <p className="shrink-0 text-xs font-bold text-white/62">{detail}</p>
+      </div>
+      {timer ? (
+        <div className="mt-3">
+          <p className="font-display text-[clamp(2.6rem,5vw,4rem)] font-extrabold leading-none text-white tabular-nums">
+            {timer}
+          </p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/16">
+            <div
+              className="h-full rounded-full bg-primary shadow-[0_0_18px_rgba(116,192,252,.32)] transition-[width] duration-500"
+              style={{ width: `${timer && progress ? progress : 14}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        <p className="mt-3 text-sm font-semibold text-white/68">{detail}</p>
+      )}
+    </div>
   )
 }
 
@@ -142,24 +272,23 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
   const timelinePercent = (date: Date) => Math.min(98, Math.max(2, ((date.getTime() - dayStart.getTime()) / span) * 100))
 
   return (
-    <div className="rounded-3xl border border-white/18 bg-[#17211d]/58 p-4 shadow-2xl backdrop-blur-md dark:border-white/12 dark:bg-slate-950/52">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">Today&apos;s schedule</p>
+    <div className="relative rounded-3xl border border-white/14 bg-slate-950/58 p-4 shadow-xl backdrop-blur-md">
+      {!schedule.connected && (
         <button
           onClick={() => { void schedule.connect(new Date()) }}
           disabled={!schedule.configured || schedule.status === 'connecting'}
-          className="text-[11px] font-extrabold text-primary/90 disabled:opacity-45"
+          className="absolute right-4 top-3 z-20 rounded-full border border-white/10 bg-slate-950/62 px-2.5 py-1 text-[11px] font-extrabold text-primary/90 shadow-sm backdrop-blur transition hover:bg-white/8 disabled:opacity-45"
         >
           Connect
         </button>
-      </div>
-      <div className="rounded-2xl border border-white/16 bg-[#f8eedb]/10 px-4 py-3 shadow-inner shadow-white/5 dark:border-white/10 dark:bg-white/6">
+      )}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-4 shadow-inner shadow-black/10">
         {visible.length === 0 && <p className="py-3 text-sm font-semibold text-white/65">No timed events today.</p>}
         {visible.length > 0 && (
           <div className="relative h-9" role="img" aria-label="Today’s schedule timeline">
-            <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-white/70 shadow-[0_0_16px_rgba(255,255,255,.28)]" />
+            <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/55" />
             <div
-              className="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow-[0_0_12px_rgba(116,192,252,.55)]"
+              className="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary"
               style={{ left: `${timelinePercent(now)}%` }}
               aria-label="Current time"
             />
@@ -172,13 +301,13 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
                 <div key={event.id}>
                   <div
                     className={cn(
-                      'absolute top-1/2 z-10 h-2 -translate-y-1/2 rounded-full',
-                      active ? 'bg-primary shadow-[0_0_14px_rgba(116,192,252,.5)]' : past ? 'bg-white/22' : 'bg-leaf/75'
+                      'absolute top-1/2 z-10 h-1.5 -translate-y-1/2 rounded-full',
+                      active ? 'bg-primary' : past ? 'bg-white/20' : 'bg-leaf/70'
                     )}
                     style={{ left: `${start}%`, width: `${Math.max(2.5, end - start)}%` }}
                   />
                   <div
-                    className="absolute top-1/2 z-20 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/95 shadow-[0_0_10px_rgba(255,255,255,.35)]"
+                    className="absolute top-1/2 z-20 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/90"
                     style={{ left: `${start}%` }}
                   />
                 </div>

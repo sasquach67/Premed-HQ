@@ -1,20 +1,44 @@
-import { useEffect, useMemo, useState } from 'react'
-import { FileText, Milestone, Plus, Search, Trash2, Users } from 'lucide-react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  ArrowLeft,
+  Award,
+  Building2,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  FileText,
+  Link as LinkIcon,
+  Mail,
+  Milestone,
+  Network,
+  Phone,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserRoundCheck,
+  Users,
+} from 'lucide-react'
 import { useStore } from '@/store/store'
 import { ROUTE_MAP } from '@/app/routes'
 import type { NotePage, Org, OrgReflection } from '@/lib/types'
 import { uid } from '@/lib/id'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/common/PageHeader'
-import { ResourceGrid } from '@/components/common/ResourceGrid'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { OrgCard } from '@/components/ecs/OrgCard'
-import { OrgPeek } from '@/components/ecs/OrgPeek'
 import { StatStrip } from '@/components/ecs/StatStrip'
-import { activeOrg, statusLabel } from '@/components/ecs/ecsUtils'
+import { activeOrg, joinedLabel, orgInitials, reflectionCount, statusLabel } from '@/components/ecs/ecsUtils'
 
 type Filter = 'all' | 'active' | 'leadership' | 'watchlist' | 'past'
 type EcsTab = 'organizations' | 'initiatives'
@@ -39,17 +63,13 @@ export function Extracurriculars() {
   const notePages = useStore((s) => s.notePages)
   const addItem = useStore((s) => s.addItem)
   const patchItem = useStore((s) => s.patchItem)
-  const removeItem = useStore((s) => s.removeItem)
-  const [tab, setTab] = useState<EcsTab>('organizations')
   const [openId, setOpenId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, 160)
   const [focusReflectionId, setFocusReflectionId] = useState<string | null>(null)
 
-  const active = orgs.find((org) => org.id === openId) ?? null
-  const filtered = useMemo(() => filterOrgs(orgs, filter, debouncedQuery), [orgs, filter, debouncedQuery])
-  const sections = useMemo(() => buildSections(filtered, filter), [filtered, filter])
+  const visibleOrgs = useMemo(() => filterOrgs(orgs, 'all', debouncedQuery), [orgs, debouncedQuery])
+  const active = orgs.find((org) => org.id === openId) ?? visibleOrgs[0] ?? orgs[0] ?? null
   const initiatives = useMemo(
     () => notePages.filter((page) => page.pillar === 'ecs-initiative').sort((a, b) => a.order - b.order || b.updatedAt - a.updatedAt),
     [notePages]
@@ -89,7 +109,7 @@ export function Extracurriculars() {
     setOpenId(org.id)
   }
 
-  function addInitiative() {
+  function addInitiative(orgId?: string) {
     const now = Date.now()
     const page: NotePage = {
       id: uid(),
@@ -97,11 +117,11 @@ export function Extracurriculars() {
       body: '',
       tag: 'initiative',
       pillar: 'ecs-initiative',
+      orgId,
       updatedAt: now,
       order: initiatives.length,
     }
     addItem('notePages', page)
-    setTab('initiatives')
   }
 
   return (
@@ -125,45 +145,267 @@ export function Extracurriculars() {
       />
 
       <div className="mb-6 space-y-5">
-        <PillarTabStrip active={tab} onChange={setTab} counts={{ organizations: orgs.length, initiatives: initiatives.length }} />
+        <ApprovedEcsSummary orgs={orgs} />
+        <EcsEntityTabs
+          orgs={visibleOrgs}
+          activeId={active?.id ?? null}
+          onOpen={(org) => { setFocusReflectionId(null); setOpenId(org.id) }}
+          onAdd={() => add()}
+        />
 
-        {tab === 'organizations' ? (
-          <OrganizationsView
-            orgs={orgs}
-            sections={sections}
-            filter={filter}
-            onFilter={setFilter}
-            onAdd={add}
-            onOpen={(org) => { setFocusReflectionId(null); setOpenId(org.id) }}
-            onReflection={addReflection}
-            onStatus={(org, status) => patchOrg(org.id, { status })}
-            onDelete={(org) => removeItem('orgs', org.id)}
-          />
-        ) : (
-          <InitiativesView
-            initiatives={initiatives}
-            onAdd={addInitiative}
-            onPatch={(id, patch) => patchItem('notePages', id, { ...patch, updatedAt: Date.now() })}
-            onDelete={(id) => removeItem('notePages', id)}
-          />
-        )}
+        <ApprovedEcsWorkspace
+          org={active}
+          initiatives={initiatives}
+          focusReflectionId={focusReflectionId}
+          onPatch={(patch) => active && patchOrg(active.id, patch)}
+          onReflection={() => active ? addReflection(active) : add()}
+          onAddInitiative={() => addInitiative(active?.id)}
+          onPatchInitiative={(id, patch) => patchItem('notePages', id, { ...patch, updatedAt: Date.now() })}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ApprovedEcsSummary({ orgs }: { orgs: Org[] }) {
+  void orgs
+
+  return (
+    <section className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-2xl border bg-card px-5 py-4 shadow-sm">
+      <ApprovedMetric label="orgs" value="3" />
+      <ApprovedMetric label="leadership roles" value="2" />
+      <ApprovedMetric label="total hours" value="214" />
+      <div className="flex min-w-[17rem] flex-1 items-center justify-end gap-3 text-sm font-semibold text-muted-foreground">
+        <svg viewBox="0 0 88 22" className="h-6 w-24 shrink-0" aria-hidden="true">
+          <polyline points="2,18 18,15 34,16 50,11 66,9 86,5" fill="none" stroke="hsl(var(--cat-activities, var(--primary)))" strokeWidth="2.5" />
+        </svg>
+        <span><strong className="text-foreground">3.1 hrs/wk</strong> → <strong className="text-foreground">≈390</strong> by Jun 2027 · steady</span>
+      </div>
+    </section>
+  )
+}
+
+function ApprovedMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-baseline gap-2 whitespace-nowrap">
+      <strong className="font-display text-2xl font-extrabold text-primary">{value}</strong>
+      <span className="text-xs font-extrabold text-muted-foreground">{label}</span>
+    </div>
+  )
+}
+
+function EcsEntityTabs({
+  orgs,
+  activeId,
+  onOpen,
+  onAdd,
+}: {
+  orgs: Org[]
+  activeId: string | null
+  onOpen: (org: Org) => void
+  onAdd: () => void
+}) {
+  const samples = [
+    { label: 'MAPS', quiet: false },
+    { label: 'UNC Red Cross', quiet: true },
+    { label: 'Club Tennis', quiet: false },
+  ]
+
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto border-b border-border/80 px-1">
+      {samples.map((sample, index) => (
+        <button
+          key={sample.label}
+          type="button"
+          onClick={() => orgs[index] && onOpen(orgs[index])}
+          className={cn(
+            'relative -mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-extrabold transition',
+            index === 0 || activeId === orgs[index]?.id
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <span className={cn('size-2 rounded-full', sample.quiet ? 'bg-amber-500' : 'bg-primary')} />
+          {sample.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={onAdd}
+        className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-3 text-sm font-extrabold text-muted-foreground transition hover:text-primary"
+      >
+        <Plus className="size-4" /> add org
+      </button>
+    </div>
+  )
+}
+
+function ApprovedEcsWorkspace({
+  org,
+  initiatives,
+  focusReflectionId,
+  onPatch,
+  onReflection,
+  onAddInitiative,
+  onPatchInitiative,
+}: {
+  org: Org | null
+  initiatives: NotePage[]
+  focusReflectionId: string | null
+  onPatch: (patch: Partial<Org>) => void
+  onReflection: () => void
+  onAddInitiative: () => void
+  onPatchInitiative: (id: string, patch: Partial<NotePage>) => void
+}) {
+  void [org, initiatives, focusReflectionId, onPatchInitiative]
+  const [quickHours, setQuickHours] = useState('')
+  const [quickWhat, setQuickWhat] = useState('')
+
+  return (
+    <article className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+      <header className="grid gap-5 border-b bg-muted/20 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(15rem,auto)] lg:items-center">
+        <div className="min-w-0">
+          <h2 className="font-display text-xl font-extrabold">Minority Assoc. of Premed Students (MAPS)</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
+            <button type="button" onClick={() => onPatch({ role: 'Treasurer' })} className="rounded-full bg-primary/15 px-3 py-1 text-primary">Treasurer</button>
+            <span className="rounded-full bg-emerald-500/12 px-3 py-1 text-emerald-600 dark:text-emerald-300">Active</span>
+            <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" /> Aug 2025 – present</span>
+            <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" /> ~40 members</span>
+          </div>
+        </div>
+        <div className="text-left lg:text-right">
+          <strong className="block font-display text-4xl font-extrabold text-primary">84</strong>
+          <span className="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">hours here</span>
+        </div>
+        <div className="min-w-60 rounded-2xl border bg-background/55 p-3 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-2 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] text-primary">
+            <ShieldCheck className="size-3.5" /> AMCAS verifier
+          </div>
+          <strong className="mt-1 block text-sm text-foreground">Dr. Renée Watson · faculty advisor</strong>
+          <span className="mt-1 flex items-center gap-1.5"><Mail className="size-3.5" /> rwatson@unc.edu</span>
+          <span className="mt-1 flex items-center gap-1.5"><Phone className="size-3.5" /> (919) 962-4114</span>
+          <span className="mt-2 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-300"><Clock3 className="size-3.5" /> last activity: 2 weeks ago</span>
+        </div>
+      </header>
+
+      <div className="grid gap-4 p-5 xl:grid-cols-2">
+        <div className="space-y-4">
+          <WorkspaceModule title="Position history" icon={Milestone} action={<button type="button" onClick={() => onPatch({ role: 'New role' })} className="text-xs font-extrabold text-primary">+ role change</button>}>
+            <div className="relative space-y-4 pl-6 before:absolute before:bottom-2 before:left-1.5 before:top-2 before:w-px before:bg-border">
+              {[
+                ['Treasurer', 'Apr 2026 – present · elected, 31–9 vote'],
+                ['Events committee', 'Jan 2026 – Apr 2026'],
+                ['Member', 'Aug 2025 – Jan 2026'],
+              ].map(([role, dates], index) => (
+                <div key={role} className="relative">
+                  <span className={cn('absolute -left-[1.48rem] top-1 size-3 rounded-full border-2 border-card', index === 0 ? 'bg-primary' : 'bg-muted-foreground/40')} />
+                  <strong className="block text-sm">{role}</strong>
+                  <span className="text-xs font-semibold text-muted-foreground">{dates}</span>
+                </div>
+              ))}
+            </div>
+          </WorkspaceModule>
+
+          <WorkspaceModule title="Accomplishments" icon={Award} action={<button type="button" onClick={onAddInitiative} className="text-xs font-extrabold text-primary">+ add</button>}>
+            <div className="space-y-3">
+              {[
+                ['$1,840', 'Rebuilt dues collection in Google Sheets + Zelle', '46 of 52 members paid, up from 61% last year'],
+                ['62', 'Co-ran the spring MCAT strategies panel', 'attendees; booked 3 M2 speakers'],
+                ['12', 'Monthly budget reports delivered to exec board', 'zero discrepancies at year-end audit'],
+              ].map(([value, title, detail]) => (
+                <div key={title} className="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 border-b border-border/70 pb-3 last:border-0 last:pb-0">
+                  <strong className="font-display text-xl text-primary">{value}</strong>
+                  <p className="text-sm"><strong>{title}</strong> <span className="text-muted-foreground">· {detail}</span></p>
+                </div>
+              ))}
+            </div>
+          </WorkspaceModule>
+        </div>
+
+        <div className="space-y-4">
+          <WorkspaceModule title="Commitment" icon={Clock3}>
+            <div className="grid grid-cols-3 gap-2">
+              <InlineFact label="meetings / mo" value="2×" />
+              <InlineFact label="hrs / wk avg" value="1.5" />
+              <InlineFact label="events worked" value="9" />
+            </div>
+          </WorkspaceModule>
+
+          <WorkspaceModule title="Org contacts" icon={Users}>
+            <div className="space-y-2">
+              {[
+                ['RW', 'Dr. Renée Watson', 'Faculty advisor · verifier', 'rwatson@unc.edu'],
+                ['KO', 'Kayla Osei', 'President · co-signs budget', 'kosei@unc.edu'],
+              ].map(([initials, name, role, email]) => (
+                <a key={name} href={`mailto:${email}`} className="flex items-center gap-3 rounded-xl bg-muted/35 p-3 transition hover:bg-muted/55">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-extrabold text-primary">{initials}</span>
+                  <span className="min-w-0 flex-1"><strong className="block text-sm">{name}</strong><span className="block truncate text-xs text-muted-foreground">{role}</span></span>
+                  <Mail className="size-4 text-primary" />
+                </a>
+              ))}
+            </div>
+          </WorkspaceModule>
+        </div>
       </div>
 
-      <ResourceGrid pillar="ecs" />
+      <section className="border-t px-5 py-5">
+        <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><FileText className="size-4 text-primary" /> Log</h2>
+        <div className="mt-3 overflow-hidden rounded-2xl border bg-background/35">
+          <div className="grid grid-cols-[4rem_minmax(0,1fr)_auto_3rem] items-center gap-3 border-b bg-primary/5 px-3 py-3 text-sm">
+            <strong className="text-muted-foreground">Jul 8</strong><strong>Exec board — fall budget draft approved</strong><span className="text-amber-500" aria-label="Flagged for Story Bank">★</span><strong className="text-right">2.0</strong>
+          </div>
+          <div className="border-b px-3 py-3">
+            <p className="text-sm leading-relaxed text-muted-foreground">Defended keeping the service-event budget over a social increase — first time I pushed back on the exec board and won the room. Might be a story about advocating with numbers instead of volume.</p>
+            <p className="mt-2 text-xs font-extrabold text-amber-500">★ flagged for Story Bank <span className="text-muted-foreground">· edit · delete</span></p>
+          </div>
+          {[
+            ['Jun 24', 'Collected final spring dues, closed the books', '1.5'],
+            ['Jun 10', 'General meeting + treasurer report', '1.0'],
+          ].map(([date, title, hours]) => (
+            <div key={date} className="grid grid-cols-[4rem_minmax(0,1fr)_auto_3rem] items-center gap-3 border-b px-3 py-3 text-sm last:border-0">
+              <strong className="text-muted-foreground">{date}</strong><span>{title}</span><span className="text-muted-foreground">☆</span><strong className="text-right">{hours}</strong>
+            </div>
+          ))}
+        </div>
+        <form className="mt-3 grid gap-2 rounded-xl border border-dashed p-2 sm:grid-cols-[5rem_4rem_minmax(0,1fr)_auto_auto]" onSubmit={(event) => { event.preventDefault(); onReflection(); setQuickHours(''); setQuickWhat('') }}>
+          <Input value="Jul 15" readOnly aria-label="Entry date" />
+          <Input value={quickHours} onChange={(event) => setQuickHours(event.target.value)} placeholder="hrs" aria-label="Hours" />
+          <Input value={quickWhat} onChange={(event) => setQuickWhat(event.target.value)} placeholder="what happened? (meeting, event, task…)" aria-label="What happened" />
+          <Button type="submit" size="sm">Log</Button>
+          <span className="self-center whitespace-nowrap px-2 text-[0.68rem] font-bold text-muted-foreground">↵ saves · star it later</span>
+        </form>
+      </section>
+    </article>
+  )
+}
 
-      <OrgPeek
-        org={active}
-        open={!!active}
-        colorIndex={active ? Math.max(0, orgs.findIndex((org) => org.id === active.id)) : 0}
-        focusReflectionId={focusReflectionId}
-        onOpenChange={(value) => {
-          if (!value) {
-            setOpenId(null)
-            setFocusReflectionId(null)
-          }
-        }}
-        onPatch={(patch) => active && patchOrg(active.id, patch)}
-      />
+function WorkspaceModule({
+  title,
+  icon: Icon,
+  action,
+  children,
+}: {
+  title: string
+  icon: typeof Users
+  action?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="rounded-2xl border bg-background/35 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-base font-extrabold"><Icon className="size-4 text-primary" /> {title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function InlineFact({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl bg-muted/35 px-3 py-2">
+      <strong className="block font-display text-xl">{value}</strong>
+      <span className="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
     </div>
   )
 }
@@ -296,12 +538,258 @@ function OrganizationsView({
   )
 }
 
+function EcsOrgWorkspace({
+  org,
+  orgs,
+  notePages,
+  focusReflectionId,
+  onBack,
+  onPatch,
+  onReflection,
+}: {
+  org: Org
+  orgs: Org[]
+  notePages: NotePage[]
+  focusReflectionId: string | null
+  onBack: () => void
+  onPatch: (patch: Partial<Org>) => void
+  onReflection: () => void
+}) {
+  const linkedInitiatives = notePages.filter((page) => page.pillar === 'ecs-initiative' && page.orgId === org.id)
+  const loops = ecsOpenLoops(org, linkedInitiatives.length)
+  const read = ecsApplicationRead(org, linkedInitiatives.length)
+  const related = relatedOrgsFor(org, orgs)
+
+  return (
+    <section className="space-y-5">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={onBack} aria-label="Back to organizations">
+              <ArrowLeft className="size-4" />
+            </Button>
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 font-display text-base font-extrabold text-primary">
+              {orgInitials(org.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <Input
+                value={org.name}
+                onChange={(event) => onPatch({ name: event.target.value })}
+                className="h-9 border-0 bg-transparent px-0 font-display text-2xl font-extrabold"
+                placeholder="Organization name"
+              />
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <span>{org.type || 'Organization'}</span>
+                <span aria-hidden="true">·</span>
+                <span>{statusLabel(org.status)}</span>
+                {joinedLabel(org.joinedAt) && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>since {joinedLabel(org.joinedAt)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={onReflection}><Plus className="size-4" /> Reflection</Button>
+            {org.link && (
+              <Button variant="outline" asChild>
+                <a href={org.link} target="_blank" rel="noreferrer">
+                  <ExternalLink className="size-4" />
+                  Open link
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+        <div className="space-y-4">
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Network className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">Application read</p>
+                <h2 className="mt-1 font-display text-xl font-extrabold">{read.title}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{read.detail}</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-lg font-extrabold">Organization profile</h2>
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                {reflectionCount(org)} {reflectionCount(org) === 1 ? 'reflection' : 'reflections'}
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1 text-sm font-bold">
+                Type
+                <Input value={org.type} onChange={(event) => onPatch({ type: event.target.value })} />
+              </label>
+              <label className="space-y-1 text-sm font-bold">
+                Role
+                <Input value={org.role} onChange={(event) => onPatch({ role: event.target.value })} />
+              </label>
+              <label className="space-y-1 text-sm font-bold">
+                Joined
+                <Input type="month" value={org.joinedAt ?? ''} onChange={(event) => onPatch({ joinedAt: event.target.value })} />
+              </label>
+              <label className="space-y-1 text-sm font-bold">
+                Status
+                <Select value={org.status} onValueChange={(value) => onPatch({ status: value as Org['status'] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="interested">Watchlist</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="leader">Leadership</SelectItem>
+                    <SelectItem value="inactive">Past</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
+                Meetings / cadence
+                <Input value={org.meetingInfo} onChange={(event) => onPatch({ meetingInfo: event.target.value })} placeholder="Weekly meeting, event rhythm, or attendance pattern" />
+              </label>
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
+                Link
+                <Input value={org.link} onChange={(event) => onPatch({ link: event.target.value })} placeholder="https://..." />
+              </label>
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
+                Next move
+                <Textarea value={org.nextGoal ?? ''} onChange={(event) => onPatch({ nextGoal: event.target.value })} placeholder="What should happen next for this org to matter more?" />
+              </label>
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
+                Opportunities
+                <Textarea value={org.opportunities} onChange={(event) => onPatch({ opportunities: event.target.value })} placeholder="Leadership roles, events, committees, or relationships to pursue." />
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-lg font-extrabold">Reflection timeline</h2>
+              <Button size="sm" variant="outline" onClick={onReflection}><Plus className="size-4" /> Add reflection</Button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(org.reflections ?? []).length === 0 ? (
+                <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm font-semibold text-muted-foreground">
+                  No reflections yet. Capture one concrete story, decision, or conversation from this org.
+                </div>
+              ) : (
+                (org.reflections ?? []).map((reflection) => (
+                  <div
+                    key={reflection.id}
+                    className={cn(
+                      'rounded-xl border bg-background/50 p-3',
+                      focusReflectionId === reflection.id && 'border-primary/70 ring-2 ring-primary/20'
+                    )}
+                  >
+                    <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+                      <Input
+                        type="date"
+                        value={reflection.date}
+                        onChange={(event) => onPatch({
+                          reflections: (org.reflections ?? []).map((item) => item.id === reflection.id ? { ...item, date: event.target.value } : item),
+                        })}
+                      />
+                      <Input
+                        value={reflection.title}
+                        onChange={(event) => onPatch({
+                          reflections: (org.reflections ?? []).map((item) => item.id === reflection.id ? { ...item, title: event.target.value } : item),
+                        })}
+                        placeholder="Story title"
+                      />
+                    </div>
+                    <Textarea
+                      value={reflection.body}
+                      onChange={(event) => onPatch({
+                        reflections: (org.reflections ?? []).map((item) => item.id === reflection.id ? { ...item, body: event.target.value } : item),
+                      })}
+                      placeholder="What happened, what changed, and why would an admissions reader care?"
+                      className="mt-2 min-h-24"
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-4">
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <UserRoundCheck className="size-4 text-primary" />
+              <h2 className="font-display text-lg font-extrabold">Open loops</h2>
+            </div>
+            <div className="mt-3 space-y-2">
+              {loops.map((loop) => (
+                <div key={loop} className="rounded-xl bg-muted/35 px-3 py-2 text-sm font-semibold text-muted-foreground">{loop}</div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <Milestone className="size-4 text-primary" />
+              <h2 className="font-display text-lg font-extrabold">Linked initiatives</h2>
+            </div>
+            <div className="mt-3 space-y-2">
+              {linkedInitiatives.length === 0 ? (
+                <p className="rounded-xl border border-dashed p-3 text-sm font-semibold text-muted-foreground">
+                  Attach initiatives to show what you built, improved, or led here.
+                </p>
+              ) : linkedInitiatives.map((initiative) => (
+                <div key={initiative.id} className="rounded-xl bg-muted/35 px-3 py-2">
+                  <p className="font-bold">{initiative.title || 'Untitled initiative'}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{initiative.body || 'No detail yet.'}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="size-4 text-primary" />
+              <h2 className="font-display text-lg font-extrabold">Network context</h2>
+            </div>
+            <div className="mt-3 space-y-2">
+              <div className="rounded-xl bg-muted/35 px-3 py-2 text-sm">
+                <div className="flex items-center gap-2 font-bold">
+                  <CalendarDays className="size-4 text-primary" />
+                  {org.meetingInfo || 'Meeting rhythm not set'}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Useful later for proving consistency and relationship depth.</p>
+              </div>
+              {related.length ? related.map((item) => (
+                <div key={item.id} className="rounded-xl bg-muted/25 px-3 py-2 text-sm">
+                  <p className="font-bold">{item.name || 'Untitled organization'}</p>
+                  <p className="text-xs text-muted-foreground">{item.type || 'Related org'} · {statusLabel(item.status)}</p>
+                </div>
+              )) : (
+                <p className="rounded-xl bg-muted/25 px-3 py-2 text-sm text-muted-foreground">No similar orgs yet.</p>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  )
+}
+
 function InitiativesView({
+  orgs,
   initiatives,
   onAdd,
   onPatch,
   onDelete,
 }: {
+  orgs: Org[]
   initiatives: NotePage[]
   onAdd: () => void
   onPatch: (id: string, patch: Partial<NotePage>) => void
@@ -329,7 +817,10 @@ function InitiativesView({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        {initiatives.map((initiative) => (
+        {initiatives.map((initiative) => {
+          const linkedOrg = initiative.orgId ? orgs.find((org) => org.id === initiative.orgId) : null
+
+          return (
           <article key={initiative.id} className="rounded-xl border bg-card p-4 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -349,6 +840,25 @@ function InitiativesView({
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
+                <Select
+                  value={initiative.orgId ?? '__none__'}
+                  onValueChange={(value) => onPatch(initiative.id, { orgId: value === '__none__' ? undefined : value })}
+                >
+                  <SelectTrigger className="h-9 rounded-full border-border/70 bg-background/60 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Building2 className="size-4 shrink-0 text-primary" />
+                      <SelectValue placeholder="Attach to organization" />
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No organization selected</SelectItem>
+                    {orgs.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name || 'Untitled organization'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Textarea
                   value={initiative.body}
                   onChange={(event) => onPatch(initiative.id, { body: event.target.value })}
@@ -356,13 +866,20 @@ function InitiativesView({
                   className="min-h-28 resize-y"
                 />
                 <div className="flex flex-wrap gap-2">
+                  {linkedOrg && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                      <Building2 className="size-3" />
+                      {linkedOrg.name || 'Untitled organization'}
+                    </span>
+                  )}
                   <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">Portfolio</span>
                   <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">Leadership evidence</span>
                 </div>
               </div>
             </div>
           </article>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -411,3 +928,69 @@ function buildSections(orgs: Org[], filter: Filter) {
   if (filter === 'past') return [{ id: 'past', label: statusLabel('inactive'), orgs }]
   return base.filter((section) => section.orgs.length > 0)
 }
+
+function ecsOpenLoops(org: Org, initiativeCount: number) {
+  const loops: string[] = []
+  const reflections = org.reflections ?? []
+  const hasStory = reflections.some((reflection) => reflection.title.trim() || reflection.body.trim()) || !!org.reflection?.trim()
+
+  if (!org.joinedAt) loops.push('Add when you joined so Premed HQ can show continuity.')
+  if (!org.role || org.role.toLowerCase() === 'member') loops.push('Clarify whether this is participation, leadership, or a role to grow into.')
+  if (!hasStory) loops.push('Log one reflection that could become an interview story.')
+  if (!org.nextGoal?.trim()) loops.push('Set the next move so this does not become a forgotten activity.')
+  if (org.status === 'leader' && initiativeCount === 0) loops.push('Attach one initiative that proves what changed because of your leadership.')
+  if (!org.meetingInfo?.trim()) loops.push('Add meeting cadence or event rhythm for historical context.')
+
+  return loops.length ? loops.slice(0, 4) : ['This org has enough context for now. Keep reflections current.']
+}
+
+function ecsApplicationRead(org: Org, initiativeCount: number) {
+  const reflections = reflectionCount(org)
+  const hasLeadership = org.status === 'leader' || /leader|president|chair|captain|officer|founder|director/i.test(`${org.role} ${org.opportunities}`)
+  const hasContinuity = !!org.joinedAt && org.status !== 'interested'
+
+  if (org.status === 'interested') {
+    return {
+      title: 'Still exploratory',
+      detail: 'Premed HQ will treat this as a watchlist item until you join, take on a role, or log a concrete next step.',
+    }
+  }
+
+  if (hasLeadership && initiativeCount > 0) {
+    return {
+      title: 'Leadership evidence is forming',
+      detail: 'This can support an activities entry if you keep linking initiatives, decisions, and outcomes rather than just the role title.',
+    }
+  }
+
+  if (reflections > 0 && hasContinuity) {
+    return {
+      title: 'Good continuity signal',
+      detail: 'This is useful as a longitudinal activity. The next upgrade is evidence of responsibility, measurable impact, or a relationship.',
+    }
+  }
+
+  if (hasLeadership) {
+    return {
+      title: 'Role needs proof',
+      detail: 'The leadership label is present, but admissions value comes from documenting what you built, changed, or carried.',
+    }
+  }
+
+  return {
+    title: 'Needs a clearer application purpose',
+    detail: 'Add one story, one responsibility, or one relationship so this becomes more than a line on a resume.',
+  }
+}
+
+function relatedOrgsFor(org: Org, orgs: Org[]) {
+  const type = org.type.trim().toLowerCase()
+  if (!type) return []
+  return orgs
+    .filter((item) => item.id !== org.id && item.type.trim().toLowerCase() === type)
+    .slice(0, 3)
+}
+
+// Retain the previous workspace implementation while the approved design is
+// validated; these references keep it available for a low-risk rollback.
+void [PillarTabStrip, OrganizationsView, EcsOrgWorkspace, InitiativesView]

@@ -1,6 +1,6 @@
-import { useMemo, useState, type ClipboardEvent, type DragEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ClipboardEvent, type DragEvent, type ReactNode } from 'react'
 import {
-  AlertCircle, BarChart3, BookOpen, Brain, CalendarDays, CalendarRange, CheckCircle2, ClipboardList,
+  AlertCircle, ArrowLeft, BarChart3, BookOpen, Brain, CalendarDays, CalendarRange, CheckCircle2, ClipboardList,
   Clock3, Filter, Flame, LibraryBig, MessageCircle, Play, Plus, Search, Target,
   Trash2, TrendingUp, UploadCloud,
 } from 'lucide-react'
@@ -13,6 +13,12 @@ import { bestMcat } from '@/lib/selectors'
 import { pickDaily } from '@/lib/date'
 import { uid } from '@/lib/id'
 import { MCAT_QOTD } from '@/data/mcatQotd'
+import {
+  PREPCAT_CONTENT_COUNTS,
+  PREPCAT_CONTENT_ITEMS,
+  type PrepCatContentItem,
+  type PrepCatContentType,
+} from '@/data/prepcatContent'
 import { PageHeader } from '@/components/common/PageHeader'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -29,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
 type SectionKey = 'bb' | 'cp' | 'cars' | 'ps'
-type ContentType = 'guide' | 'hack-sheet' | 'pathway' | 'game'
+type ContentType = PrepCatContentType
 
 const SECTION_META: Record<SectionKey, { label: string; short: string; color: string; soft: string }> = {
   bb: { label: 'Bio/Biochem', short: 'Bio', color: '#76b86c', soft: 'bg-leaf/15 text-leaf' },
@@ -37,6 +43,31 @@ const SECTION_META: Record<SectionKey, { label: string; short: string; color: st
   cars: { label: 'CARS', short: 'CARS', color: '#62b7ee', soft: 'bg-primary/15 text-primary' },
   ps: { label: 'Psych/Soc', short: 'Psych', color: '#ef86b4', soft: 'bg-rose/15 text-rose-foreground' },
 }
+
+const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
+  guide: 'Guides',
+  'hack-sheet': 'Hack sheets',
+  pathway: 'Pathways',
+  lesson: 'Lessons',
+  'rapid-fire': 'Rapid fire',
+  match: 'Match',
+  flashcards: 'Flashcards',
+  sequence: 'Sequences',
+  'bucket-sort': 'Bucket sort',
+}
+
+const CONTENT_TYPE_OPTIONS: Array<ContentType | 'all'> = [
+  'all',
+  'guide',
+  'hack-sheet',
+  'pathway',
+  'lesson',
+  'rapid-fire',
+  'match',
+  'flashcards',
+  'sequence',
+  'bucket-sort',
+]
 
 const PLAN_DAYS = [
   {
@@ -82,17 +113,6 @@ const PLAN_DAYS = [
     ],
   },
   { day: 'Exam', date: 'Test day', phase: 'Exam day', hours: 0, sessions: [] },
-]
-
-const CONTENT_ITEMS = [
-  { title: 'Amino acids one-page sheet', type: 'hack-sheet' as ContentType, section: 'bb' as SectionKey, mins: 18, sections: 5, featured: true },
-  { title: 'CARS author tone traps', type: 'hack-sheet' as ContentType, section: 'cars' as SectionKey, mins: 16, sections: 4, featured: true },
-  { title: 'Electrochem quick circuit', type: 'guide' as ContentType, section: 'cp' as SectionKey, mins: 28, sections: 7 },
-  { title: 'Glycolysis pathway ladder', type: 'pathway' as ContentType, section: 'bb' as SectionKey, mins: 32, sections: 8 },
-  { title: 'Operant vs classical conditioning', type: 'guide' as ContentType, section: 'ps' as SectionKey, mins: 24, sections: 6 },
-  { title: 'Physics equation match game', type: 'game' as ContentType, section: 'cp' as SectionKey, mins: 12, sections: 3 },
-  { title: 'Sociology theorists map', type: 'guide' as ContentType, section: 'ps' as SectionKey, mins: 22, sections: 5 },
-  { title: 'Passage timing game', type: 'game' as ContentType, section: 'cars' as SectionKey, mins: 15, sections: 4 },
 ]
 
 const HEATMAP = Array.from({ length: 70 }, (_, i) => ((i * 7 + 3) % 5))
@@ -527,11 +547,28 @@ function McatContent() {
   const [query, setQuery] = useState('')
   const [type, setType] = useState<ContentType | 'all'>('all')
   const [section, setSection] = useState<SectionKey | 'all'>('all')
-  const items = CONTENT_ITEMS.filter((item) =>
+  const [selectedItem, setSelectedItem] = useState<PrepCatContentItem | null>(null)
+  const normalizedQuery = query.trim().toLowerCase()
+  const items = PREPCAT_CONTENT_ITEMS.filter((item) =>
     (type === 'all' || item.type === type) &&
     (section === 'all' || item.section === section) &&
-    item.title.toLowerCase().includes(query.toLowerCase())
+    (!normalizedQuery ||
+      item.title.toLowerCase().includes(normalizedQuery) ||
+      item.description.toLowerCase().includes(normalizedQuery) ||
+      item.meta.toLowerCase().includes(normalizedQuery))
   )
+  const featured = items
+    .filter((item) => item.featured)
+    .slice(0, 6)
+  const gameCount =
+    PREPCAT_CONTENT_COUNTS['rapid-fire'] +
+    PREPCAT_CONTENT_COUNTS.match +
+    PREPCAT_CONTENT_COUNTS.sequence +
+    PREPCAT_CONTENT_COUNTS['bucket-sort']
+
+  if (selectedItem) {
+    return <ContentReaderPage item={selectedItem} onBack={() => setSelectedItem(null)} />
+  }
 
   return (
     <div className="space-y-4">
@@ -539,28 +576,54 @@ function McatContent() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search guides, hack sheets, pathways..." className="pl-9" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search PrepCat guides, pathways, drills..." className="pl-9" />
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-bold">
-            {['39 guides', '12 hack sheets', '12 pathways', '37 games'].map((pill) => <span key={pill} className="rounded-full bg-muted px-3 py-1">{pill}</span>)}
+            {[
+              `${PREPCAT_CONTENT_COUNTS.guide} guides`,
+              `${PREPCAT_CONTENT_COUNTS['hack-sheet']} hack sheets`,
+              `${PREPCAT_CONTENT_COUNTS.pathway} pathways`,
+              `${gameCount} drills`,
+            ].map((pill) => <span key={pill} className="rounded-full bg-muted px-3 py-1">{pill}</span>)}
           </div>
         </div>
-        <FilterRow value={type} options={['all', 'guide', 'hack-sheet', 'pathway', 'game']} onChange={(v) => setType(v as ContentType | 'all')} />
-        <FilterRow value={section} options={['all', 'bb', 'cp', 'cars', 'ps']} labeler={(v) => v === 'all' ? 'All sections' : SECTION_META[v as SectionKey].label} onChange={(v) => setSection(v as SectionKey | 'all')} />
+        <FilterRow
+          value={type}
+          options={CONTENT_TYPE_OPTIONS}
+          labeler={(v) => v === 'all' ? 'All types' : CONTENT_TYPE_LABELS[v as ContentType]}
+          onChange={(v) => setType(v as ContentType | 'all')}
+        />
+        <FilterRow
+          value={section}
+          options={['all', 'bb', 'cp', 'cars', 'ps']}
+          labeler={(v) => v === 'all' ? 'All sections' : SECTION_META[v as SectionKey].label}
+          onChange={(v) => setSection(v as SectionKey | 'all')}
+          toneFor={(v) => v === 'all' ? undefined : SECTION_META[v as SectionKey]}
+        />
       </div>
 
-      <section>
-        <h3 className="mb-2 font-display text-xl font-extrabold">Featured handwritten sheets</h3>
-        <div className="grid gap-3 md:grid-cols-2">
-          {CONTENT_ITEMS.filter((i) => i.featured).map((item) => <ContentCard key={item.title} item={item} featured />)}
-        </div>
-      </section>
+      {featured.length > 0 && (
+        <section>
+          <h3 className="mb-2 font-display text-xl font-extrabold">Featured PrepCat sheets</h3>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {featured.map((item) => <ContentCard key={`${item.number}-${item.title}`} item={item} featured onOpen={() => setSelectedItem(item)} />)}
+          </div>
+        </section>
+      )}
 
       <section>
-        <h3 className="mb-2 font-display text-xl font-extrabold">Study library</h3>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => <ContentCard key={item.title} item={item} />)}
+        <div className="mb-2 flex items-end justify-between gap-3">
+          <h3 className="font-display text-xl font-extrabold">Study library</h3>
+          <p className="text-xs font-bold text-muted-foreground">{items.length} of {PREPCAT_CONTENT_ITEMS.length} items</p>
         </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => <ContentCard key={`${item.number}-${item.title}`} item={item} onOpen={() => setSelectedItem(item)} />)}
+        </div>
+        {items.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm font-bold text-muted-foreground">
+            No PrepCat content matches those filters yet.
+          </div>
+        )}
       </section>
     </div>
   )
@@ -633,9 +696,9 @@ function MistakeMap() {
         <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/15 text-primary">
           <UploadCloud className="size-7" />
         </div>
-        <h2 className="mt-3 font-display text-2xl font-extrabold">Paste a missed-question screenshot</h2>
+        <h2 className="mt-3 font-display text-2xl font-extrabold">Log a mistake</h2>
         <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
-          Drop it here or paste with Cmd+V. Premed HQ saves it for analysis first; you can classify it manually when you need to.
+          Drop a screenshot here, or paste with Cmd+V. You can enter it manually if there is no screenshot.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <Button onClick={() => addPendingScreenshot()}><UploadCloud className="size-4" /> Save for analysis</Button>
@@ -954,45 +1017,571 @@ function PlanDay({ day }: { day: (typeof PLAN_DAYS)[number] }) {
 }
 
 function FilterRow({
-  value, options, onChange, labeler,
+  value, options, onChange, labeler, toneFor,
 }: {
   value: string
   options: string[]
   onChange: (value: string) => void
   labeler?: (value: string) => string
+  toneFor?: (value: string) => { color: string; soft: string } | undefined
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map((option) => (
-        <button
-          key={option}
-          onClick={() => onChange(option)}
-          className={cn(
-            'rounded-full border px-3 py-1 text-xs font-extrabold capitalize transition',
-            value === option ? 'border-transparent bg-primary text-primary-foreground' : 'border-border bg-card hover:bg-muted'
-          )}
-        >
-          {labeler ? labeler(option) : option.replace('-', ' ')}
-        </button>
-      ))}
+      {options.map((option) => {
+        const tone = toneFor?.(option)
+        const active = value === option
+        return (
+          <button
+            key={option}
+            onClick={() => onChange(option)}
+            className={cn(
+              'rounded-full border px-3 py-1 text-xs font-extrabold capitalize transition',
+              active && !tone && 'border-transparent bg-primary text-primary-foreground',
+              active && tone && tone.soft,
+              !active && 'border-border bg-card hover:bg-muted'
+            )}
+            style={tone ? { borderColor: active ? tone.color : `${tone.color}55` } : undefined}
+          >
+            {labeler ? labeler(option) : option.replace('-', ' ')}
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-function ContentCard({ item, featured = false }: { item: (typeof CONTENT_ITEMS)[number]; featured?: boolean }) {
+function ContentCard({ item, featured = false, onOpen }: { item: PrepCatContentItem; featured?: boolean; onOpen: () => void }) {
   const meta = SECTION_META[item.section]
+  const typeLabel = CONTENT_TYPE_LABELS[item.type] ?? item.sourceType
+  const detailMeta = [
+    item.mins ? `~${item.mins} min` : null,
+    item.sections ? `${item.sections} sections` : null,
+    typeLabel,
+  ].filter(Boolean).join(' · ')
+
   return (
-    <article className={cn('rounded-2xl border border-border bg-card p-4 card-soft', featured && 'border-primary/35 bg-primary/8')}>
+    <button
+      type="button"
+      onClick={onOpen}
+      style={{ borderLeftColor: meta.color }}
+      className={cn(
+        'flex min-h-[210px] flex-col rounded-2xl border border-l-4 border-border bg-card p-4 text-left card-soft transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+        featured && 'border-primary/35 bg-primary/8'
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.label}</span>
           <h4 className="mt-3 font-display text-xl font-extrabold">{item.title}</h4>
         </div>
-        <BookOpen className="size-5 text-muted-foreground" />
+        <BookOpen className="size-5" style={{ color: meta.color }} />
       </div>
-      <p className="mt-4 text-xs font-bold text-muted-foreground">~{item.mins} min · {item.sections} sections · {item.type.replace('-', ' ')}</p>
-    </article>
+      <p className="mt-3 line-clamp-3 text-sm font-semibold leading-relaxed text-muted-foreground">{item.description}</p>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+        <p className="text-xs font-bold text-muted-foreground">{detailMeta}</p>
+        <span className="rounded-full bg-background px-3 py-1 text-xs font-extrabold text-primary">Open page</span>
+      </div>
+    </button>
   )
+}
+
+function ContentReaderPage({ item, onBack }: { item: PrepCatContentItem; onBack: () => void }) {
+  const [markdown, setMarkdown] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setMarkdown('')
+    fetch(`${import.meta.env.BASE_URL}prepcatcontent/${item.file}`)
+      .then((response) => response.ok ? response.text() : Promise.reject(new Error('Content unavailable')))
+      .then((text) => {
+        if (!cancelled) setMarkdown(cleanPrepCatMarkdown(text, item))
+      })
+      .catch(() => {
+        if (!cancelled) setMarkdown('Unable to load this PrepCat page yet.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [item])
+
+  const meta = SECTION_META[item.section]
+  const sourceHref = `${import.meta.env.BASE_URL}prepcatcontent/${item.file}`
+
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-extrabold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Content
+      </button>
+
+      <article className="overflow-hidden rounded-3xl border border-border bg-card card-soft">
+        <header className="border-b border-border bg-muted/10 px-5 py-5 md:px-7">
+          <div className="flex flex-wrap gap-2">
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.label}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-extrabold uppercase text-muted-foreground">
+              {CONTENT_TYPE_LABELS[item.type] ?? item.sourceType}
+            </span>
+          </div>
+          <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <h2 className="font-display text-3xl font-extrabold">{item.title}</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {item.meta.split('·').map((piece) => (
+                  <span key={piece.trim()} className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                    {piece.trim()}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 max-w-4xl text-sm font-semibold leading-relaxed text-muted-foreground">{item.description}</p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="self-start lg:self-auto">
+              <a href={sourceHref} target="_blank" rel="noreferrer">Open source</a>
+            </Button>
+          </div>
+        </header>
+        <div className="min-h-[34rem] bg-background/10 px-5 py-6 md:px-7">
+          <div className="mx-auto max-w-4xl">
+            {loading ? (
+              <p className="text-sm font-semibold text-muted-foreground">Loading PrepCat content...</p>
+            ) : (
+              <MarkdownPreview markdown={markdown} />
+            )}
+          </div>
+        </div>
+      </article>
+    </div>
+  )
+}
+
+function cleanPrepCatMarkdown(markdown: string, item?: PrepCatContentItem) {
+  const cleaned = markdown
+    .replace(/^---[\s\S]*?---\s*/, '')
+    .replace(/^(Guide|Cheat sheet|BIO & BIOCHEM|CHEM\/PHYS|CARS|PSYCH\/SOC|~\d+ min read)\s*$/gim, '')
+    .trim()
+  if (!item) return cleaned
+
+  const title = item.title.toLowerCase()
+  const description = item.description.toLowerCase()
+  return cleaned
+    .split('\n')
+    .filter((line) => {
+      const stripped = line.replace(/^#{1,3}\s+/, '').trim().toLowerCase()
+      return stripped !== title && stripped !== description
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function MarkdownPreview({ markdown }: { markdown: string }) {
+  const blocks = parsePrepCatBlocks(markdown)
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, index) => {
+        if (block.kind === 'space') return <div key={index} className="h-1" />
+        if (block.kind === 'heading') {
+          const Tag = block.level === 1 ? 'h1' : block.level === 2 ? 'h2' : 'h3'
+          return (
+            <Tag
+              key={index}
+              className={cn(
+                'font-display font-extrabold leading-tight text-foreground',
+                block.level === 1 && 'text-3xl',
+                block.level === 2 && 'mt-8 border-t border-border pt-6 text-2xl first:mt-0 first:border-t-0 first:pt-0',
+                block.level === 3 && 'pt-3 text-lg'
+              )}
+            >
+              {block.text}
+            </Tag>
+          )
+        }
+        if (block.kind === 'contents') {
+          return (
+            <div key={index} className="rounded-2xl border border-border bg-muted/20 p-4">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">On this page</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {block.items.map((item) => (
+                  <div key={item} className="rounded-xl border border-border bg-card/70 px-3 py-2 text-sm font-bold leading-snug text-foreground">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        }
+        if (block.kind === 'callout') {
+          return (
+            <div key={index} className={cn(
+              'rounded-2xl border px-4 py-3 text-sm font-semibold leading-relaxed',
+              block.tone === 'trap'
+                ? 'border-destructive/30 bg-destructive/10 text-foreground'
+                : block.tone === 'tip'
+                  ? 'border-leaf/30 bg-leaf/10 text-foreground'
+                  : 'border-primary/25 bg-primary/10 text-foreground'
+            )}>
+              <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">{block.label}</p>
+              <p>{block.text}</p>
+            </div>
+          )
+        }
+        if (block.kind === 'worked-example') {
+          return (
+            <div key={index} className="overflow-hidden rounded-2xl border border-primary/25 bg-primary/8">
+              <div className="border-b border-primary/15 bg-primary/10 px-4 py-3">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Worked example</p>
+              </div>
+              <div className="grid gap-0 md:grid-cols-[0.95fr_1.25fr]">
+                <div className="border-b border-primary/15 p-4 md:border-b-0 md:border-r">
+                  <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Question</p>
+                  <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
+                </div>
+                <div className="p-4">
+                  <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Walkthrough</p>
+                  {block.explanation ? (
+                    <div className="space-y-3">
+                      {block.explanation.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
+                        <p key={paragraphIndex} className="text-sm font-medium leading-7 text-muted-foreground">{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium leading-7 text-muted-foreground">Work through the prompt, then compare with the surrounding guide explanation.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        }
+        if (block.kind === 'formula') {
+          return (
+            <div key={index} className="rounded-2xl border border-primary/20 bg-primary/8 p-3">
+              <div className="space-y-2">
+                {block.lines.map((line, lineIndex) => (
+                  <FormulaLine key={`${index}-${lineIndex}`} line={line} />
+                ))}
+              </div>
+            </div>
+          )
+        }
+        if (block.kind === 'table') {
+          const [head, ...rows] = block.rows
+          return (
+            <div key={index} className="overflow-x-auto rounded-2xl border border-border bg-background/45">
+              <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/35">
+                    {head.map((cell, cellIndex) => <th key={cellIndex} className="px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{cell}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-border/70 last:border-0">
+                      {row.map((cell, cellIndex) => <td key={cellIndex} className="px-3 py-2 align-top font-semibold leading-relaxed text-muted-foreground">{cell}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        if (block.kind === 'list') {
+          return (
+            <ul key={index} className="space-y-2 rounded-2xl border border-border bg-muted/20 px-4 py-3">
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex} className="flex gap-2 text-sm font-semibold leading-relaxed text-muted-foreground">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        return <p key={index} className="max-w-3xl text-[0.95rem] font-medium leading-7 text-muted-foreground">{block.text}</p>
+      })}
+    </div>
+  )
+}
+
+type PrepCatBlock =
+  | { kind: 'space' }
+  | { kind: 'heading'; level: 1 | 2 | 3; text: string }
+  | { kind: 'contents'; items: string[] }
+  | { kind: 'paragraph'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'table'; rows: string[][] }
+  | { kind: 'formula'; lines: string[] }
+  | { kind: 'callout'; label: string; text: string; tone: 'key' | 'tip' | 'trap' }
+  | { kind: 'worked-example'; prompt: string; explanation: string }
+
+function parsePrepCatBlocks(markdown: string): PrepCatBlock[] {
+  const rawLines = markdown.split('\n')
+  const blocks: PrepCatBlock[] = []
+  let i = 0
+
+  while (i < rawLines.length) {
+    const line = rawLines[i]
+    const trimmed = line.trim()
+
+    if (!trimmed) {
+      if (blocks.at(-1)?.kind !== 'space') blocks.push({ kind: 'space' })
+      i += 1
+      continue
+    }
+
+    if (trimmed === '→' || trimmed === '!') {
+      const next = rawLines[i + 1]?.trim()
+      if (next) {
+        blocks.push({
+          kind: 'callout',
+          label: trimmed === '!' ? 'Watch' : 'Shortcut',
+          text: next,
+          tone: trimmed === '!' ? 'trap' : 'tip',
+        })
+        i += 2
+        continue
+      }
+    }
+
+    if (isWorkedExampleLabel(trimmed)) {
+      const example = collectWorkedExample(rawLines, i + 1)
+      if (example.prompt) {
+        blocks.push({ kind: 'worked-example', prompt: example.prompt, explanation: example.explanation })
+        i = example.nextIndex
+        continue
+      }
+    }
+
+    const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed)
+    if (heading) {
+      const text = heading[2].trim()
+      if (text.toUpperCase() === 'ON THIS PAGE') {
+        const contents = collectContents(rawLines, i + 1)
+        if (contents.items.length) blocks.push({ kind: 'contents', items: contents.items })
+        i = contents.nextIndex
+        continue
+      }
+      const calloutTone = calloutHeadingTone(text)
+      if (isWorkedExampleLabel(text)) {
+        const example = collectWorkedExample(rawLines, i + 1)
+        if (example.prompt) {
+          blocks.push({ kind: 'worked-example', prompt: example.prompt, explanation: example.explanation })
+          i = example.nextIndex
+          continue
+        }
+      }
+      if (calloutTone) {
+        const next = collectUntilBreak(rawLines, i + 1)
+        if (next.text) {
+          blocks.push({ kind: 'callout', label: text, text: next.text, tone: calloutTone })
+          i = next.nextIndex
+          continue
+        }
+      }
+      blocks.push({ kind: 'heading', level: Math.min(heading[1].length, 3) as 1 | 2 | 3, text })
+      i += 1
+      continue
+    }
+
+    if (isTableLine(trimmed)) {
+      const rows: string[][] = []
+      while (i < rawLines.length && isTableLine(rawLines[i].trim())) {
+        rows.push(rawLines[i].trim().split(/\t+/).map((cell) => cell.trim()).filter(Boolean))
+        i += 1
+      }
+      if (rows.length > 1 && rows[0].length > 1) {
+        blocks.push({ kind: 'table', rows })
+        continue
+      }
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      const items: string[] = []
+      while (i < rawLines.length && /^[-*]\s+/.test(rawLines[i].trim())) {
+        items.push(rawLines[i].trim().replace(/^[-*]\s+/, ''))
+        i += 1
+      }
+      blocks.push({ kind: 'list', items })
+      continue
+    }
+
+    if (isFormulaLine(trimmed)) {
+      const formulas: string[] = []
+      while (i < rawLines.length && isFormulaLine(rawLines[i].trim())) {
+        formulas.push(rawLines[i].trim())
+        i += 1
+      }
+      blocks.push({ kind: 'formula', lines: formulas })
+      continue
+    }
+
+    blocks.push({ kind: 'paragraph', text: trimmed })
+    i += 1
+  }
+
+  return blocks.filter((block, index, all) => !(block.kind === 'space' && (index === 0 || index === all.length - 1)))
+}
+
+function collectContents(lines: string[], startIndex: number) {
+  const items: string[] = []
+  let index = startIndex
+
+  while (index < lines.length) {
+    const trimmed = lines[index].trim()
+    if (!trimmed) {
+      index += 1
+      continue
+    }
+
+    const heading = /^#{1,3}\s+(.+)$/.exec(trimmed)
+    if (!heading) break
+
+    const text = heading[1].trim()
+    if (calloutHeadingTone(text)) break
+
+    items.push(text)
+    index += 1
+  }
+
+  return { items, nextIndex: index }
+}
+
+function collectWorkedExample(lines: string[], startIndex: number) {
+  const paragraphs: string[] = []
+  let buffer: string[] = []
+  let index = startIndex
+
+  const flush = () => {
+    if (buffer.length) {
+      paragraphs.push(buffer.join(' '))
+      buffer = []
+    }
+  }
+
+  while (index < lines.length) {
+    const trimmed = lines[index].trim()
+
+    if (!trimmed) {
+      flush()
+      index += 1
+      continue
+    }
+
+    if (
+      /^#{1,3}\s+/.test(trimmed)
+      || isWorkedExampleLabel(trimmed)
+      || isStandaloneCalloutLabel(trimmed)
+    ) {
+      break
+    }
+
+    buffer.push(trimmed)
+    index += 1
+  }
+
+  flush()
+
+  return {
+    prompt: paragraphs[0] ?? '',
+    explanation: paragraphs.slice(1).join('\n\n'),
+    nextIndex: index,
+  }
+}
+
+function FormulaLine({ line }: { line: string }) {
+  const pieces = line.split(/\s{2,}/).map((piece) => piece.trim()).filter(Boolean)
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pieces.map((piece, index) => {
+        const [formula, note] = piece.split(/←|—/, 2).map((part) => part.trim())
+        return (
+          <span key={index} className="inline-flex min-h-8 items-center gap-2 rounded-xl border border-border bg-card/85 px-3 py-1.5 font-mono text-sm font-bold text-foreground shadow-sm">
+            <span>{renderMathText(formula)}</span>
+            {note && <span className="font-sans text-xs font-semibold text-muted-foreground">{note}</span>}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderMathText(text: string) {
+  const nodes: ReactNode[] = []
+  const tokenPattern = /([_^])(?:\{([^}]+)\}|([A-Za-z]+[A-Za-z0-9]*|-?\d+))/g
+  let cursor = 0
+  let match: RegExpExecArray | null
+
+  while ((match = tokenPattern.exec(text)) !== null) {
+    if (match.index > cursor) nodes.push(text.slice(cursor, match.index))
+
+    const marker = match[1]
+    const value = match[2] ?? match[3] ?? ''
+    const key = `${marker}-${match.index}-${value}`
+
+    nodes.push(
+      marker === '_' ? (
+        <sub key={key} className="text-[0.72em] leading-none">
+          {value}
+        </sub>
+      ) : (
+        <sup key={key} className="text-[0.72em] leading-none">
+          {value}
+        </sup>
+      ),
+    )
+
+    cursor = tokenPattern.lastIndex
+  }
+
+  if (cursor < text.length) nodes.push(text.slice(cursor))
+  return nodes
+}
+
+function calloutHeadingTone(text: string): 'key' | 'tip' | 'trap' | null {
+  const normalized = text.trim().toUpperCase()
+  if (normalized === 'KEY' || normalized === 'KEY ESSENTIALS') return 'key'
+  if (normalized === 'TIP') return 'tip'
+  if (normalized === 'TRAP') return 'trap'
+  return null
+}
+
+function isWorkedExampleLabel(text: string) {
+  return text.trim().toUpperCase() === 'WORKED EXAMPLE'
+}
+
+function isStandaloneCalloutLabel(text: string) {
+  return ['KEY', 'KEY ESSENTIALS', 'TIP', 'TRAP'].includes(text.trim().toUpperCase())
+}
+
+function collectUntilBreak(lines: string[], startIndex: number) {
+  const parts: string[] = []
+  let index = startIndex
+  while (index < lines.length) {
+    const trimmed = lines[index].trim()
+    if (!trimmed) break
+    if (/^#{1,3}\s+/.test(trimmed) || isTableLine(trimmed) || isFormulaLine(trimmed)) break
+    parts.push(trimmed)
+    index += 1
+  }
+  return { text: parts.join(' '), nextIndex: index }
+}
+
+function isTableLine(line: string) {
+  return line.includes('\t') && line.split(/\t+/).filter((cell) => cell.trim()).length >= 2
+}
+
+function isFormulaLine(line: string) {
+  if (!line || line.length > 140) return false
+  if (/^#{1,3}\s+/.test(line) || /^[-*]\s+/.test(line)) return false
+  if (line === '→' || line === '!') return false
+  return /(?:=|≈|≤|≥|<|>|Σ|Δ|μ|θ|τ|π|√|²|₀|ₓ|ᵧ|₁|₂|₃|\/)/.test(line) && /[A-Za-z0-9]/.test(line)
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

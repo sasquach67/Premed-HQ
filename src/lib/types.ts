@@ -499,6 +499,7 @@ export interface NotePage {
   body: string
   tag?: string
   pillar?: string         // which pillar's notes this belongs to (e.g. 'academics')
+  orgId?: ID              // optional organization link for extracurricular initiatives
   updatedAt: number
   order: number
 }
@@ -509,6 +510,23 @@ export interface OrgReflection {
   date: string
   title: string
   body: string
+  hours?: number
+  storyBank?: boolean
+}
+
+export interface OrgPosition {
+  id: ID
+  role: string
+  startDate?: string
+  endDate?: string
+  note?: string
+}
+
+export interface OrgAccomplishment {
+  id: ID
+  value?: string
+  title: string
+  detail?: string
 }
 
 export interface Org {
@@ -526,6 +544,16 @@ export interface Org {
   meetingInfo: string     // calendar / events / when-where
   link: string
   order: number
+  totalHours?: number
+  avgHoursWeekly?: number
+  memberCount?: number
+  eventsWorked?: number
+  verifierName?: string
+  verifierRole?: string
+  verifierEmail?: string
+  verifierPhone?: string
+  positionHistory?: OrgPosition[]
+  accomplishments?: OrgAccomplishment[]
 }
 
 export interface Profile {

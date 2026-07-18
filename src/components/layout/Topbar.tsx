@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Archive, BookOpenText, Brain, CalendarPlus,
-  ClipboardList, Contact, LifeBuoy, Lightbulb, Menu,
-  Plus, Settings, ShieldCheck, Stethoscope, Target, User,
+  Archive, LifeBuoy, Lightbulb, Menu,
+  Settings, ShieldCheck, Target, User,
 } from 'lucide-react'
 import { CommandSearch } from './CommandSearch'
 import { useTheme } from '@/store/useTheme'
@@ -139,14 +138,25 @@ function MoreMenu({
           <Menu className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
-        <div className="px-2.5 py-2">
-          <p className="truncate text-sm font-bold">{profileName || 'Andy'}</p>
-          <p className="truncate text-xs text-muted-foreground">{profileEmail || 'Add email in Profile'}</p>
+      <DropdownMenuContent align="end" className="w-80 overflow-hidden rounded-3xl p-2">
+        <div className="rounded-2xl bg-muted/35 px-4 py-4 text-center">
+          <div className="mx-auto grid size-14 place-items-center rounded-full border border-primary/30 bg-primary text-lg font-extrabold text-primary-foreground shadow-sm">
+            {(profileName || 'Andy').trim().charAt(0).toUpperCase() || 'A'}
+          </div>
+          <p className="mt-2 truncate text-base font-extrabold">{profileName || 'Andy'}</p>
+          <p className="truncate text-xs font-medium text-muted-foreground">{profileEmail || 'Add email in Profile'}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/profile"><User className="size-3.5" /> Profile</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="rounded-full bg-card/70">
+              <Link to="/settings"><Settings className="size-3.5" /> Settings</Link>
+            </Button>
+          </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>Now</DropdownMenuLabel>
-        <div className="px-2.5 pb-2 text-xs font-semibold text-muted-foreground">
+        <DropdownMenuLabel>Today</DropdownMenuLabel>
+        <div className="px-1.5 pb-2 text-xs font-semibold text-muted-foreground">
           <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/35 px-2.5 py-2">
             <span className="truncate">{activeLabel}</span>
             <span className="shrink-0 text-foreground">{liveStatus}</span>
@@ -158,30 +168,11 @@ function MoreMenu({
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>Quick capture</DropdownMenuLabel>
-        <QuickAddItems />
-        <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/?guide=open"><Target className="size-4" /> Ultimate Guide</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/help"><LifeBuoy className="size-4" /> Help</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/settings"><ShieldCheck className="size-4" /> Backup / sync</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/settings?tab=export"><Archive className="size-4" /> Export data</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/profile"><User className="size-4" /> Profile</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/settings"><Settings className="size-4" /> Settings</Link></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
-
-function QuickAddItems() {
-  return (
-    <>
-      <DropdownMenuItem asChild><Link to="/timeline"><ClipboardList className="size-4" /> Task</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/academics"><BookOpenText className="size-4" /> Class note</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/academics?tab=assignments"><CalendarPlus className="size-4" /> Assignment</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/mcat?tab=mistakes"><Brain className="size-4" /> MCAT mistake</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/clinical"><Stethoscope className="size-4" /> Clinical hours</Link></DropdownMenuItem>
-      <DropdownMenuItem asChild><Link to="/settings"><Plus className="size-4" /> Resource</Link></DropdownMenuItem>
-      <DropdownMenuItem disabled><Contact className="size-4" /> Contact <span className="ml-auto text-[10px] text-muted-foreground">soon</span></DropdownMenuItem>
-    </>
   )
 }

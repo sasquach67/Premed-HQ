@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
   AlertTriangle, Calculator, CalendarDays, CheckCircle2, ChevronDown,
@@ -42,6 +42,7 @@ const COURSE_COLUMNS: ColumnDef[] = [
 
 export function Academics() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { classId } = useParams()
   const courses = useStore((s) => s.courses)
   const addItem = useStore((s) => s.addItem)
   const route = ROUTE_MAP.academics
@@ -60,6 +61,10 @@ export function Academics() {
       id: uid(), term, code: '', title: '', credits: 3, grade: '', bcpm: false,
       status: 'planned', inResidence: true, satisfies: [], order: 0,
     } as Course)
+  }
+
+  if (classId) {
+    return <ClassCenter />
   }
 
   return (

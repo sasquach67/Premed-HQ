@@ -5,18 +5,44 @@ import type { LetterEntry } from '@/lib/types'
 import { uid } from '@/lib/id'
 import { PageHeader } from '@/components/common/PageHeader'
 import { TrackerTable, type ColumnDef } from '@/components/common/TrackerTable'
-import { ResourceGrid } from '@/components/common/ResourceGrid'
 import { EmptyState } from '@/components/common/EmptyState'
 import { StatTile } from '@/components/common/StatTile'
 import { Button } from '@/components/ui/button'
 
 const COLUMNS: ColumnDef[] = [
-  { key: 'recommender', header: 'Recommender', type: 'text', width: '160px', placeholder: 'Name' },
-  { key: 'role', header: 'Their role', type: 'text', width: '160px', placeholder: 'Gen Chem professor…' },
-  { key: 'type', header: 'Type', type: 'select', width: '150px', options: ['Science faculty', 'Non-science faculty', 'Research PI', 'Physician', 'Committee', 'Other'] },
-  { key: 'status', header: 'Status', type: 'select', width: '130px', options: ['identified', 'asked', 'agreed', 'submitted', 'declined'] },
-  { key: 'dateAsked', header: 'Asked', type: 'date', width: '140px' },
-  { key: 'notes', header: 'Notes', type: 'longtext', placeholder: 'Context, deadline, thank-you sent…' },
+  { key: 'recommender', header: 'Recommender', type: 'text', width: '180px', placeholder: 'Name', wrap: true },
+  { key: 'role', header: 'Role', type: 'text', width: '180px', placeholder: 'Professor, PI, advisor…', wrap: true },
+  {
+    key: 'type',
+    header: 'Type',
+    type: 'select',
+    width: '190px',
+    options: ['Science faculty', 'Non-science faculty', 'Research PI', 'Physician', 'Committee', 'Other'],
+    optionDots: {
+      'Science faculty': 'bg-primary',
+      'Non-science faculty': 'bg-violet-400',
+      'Research PI': 'bg-success',
+      Physician: 'bg-cyan-400',
+      Committee: 'bg-warning',
+      Other: 'bg-muted-foreground',
+    },
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    type: 'select',
+    width: '135px',
+    options: ['identified', 'asked', 'agreed', 'submitted', 'declined'],
+    optionDots: {
+      identified: 'bg-muted-foreground',
+      asked: 'bg-warning',
+      agreed: 'bg-success',
+      submitted: 'bg-primary',
+      declined: 'bg-destructive',
+    },
+  },
+  { key: 'dateAsked', header: 'Asked', type: 'date', width: '132px' },
+  { key: 'notes', header: 'Notes', type: 'longtext', width: '300px', placeholder: 'Context or follow-up…', wrap: true },
 ]
 
 export function Letters() {
@@ -39,13 +65,13 @@ export function Letters() {
         <StatTile icon={Mail} label="Agreed" value={String(agreed)} sub="committed to write" accent="var(--cat-volunteer)" />
         <StatTile icon={Mail} label="Submitted" value={String(submitted)} sub="letters in hand" accent="var(--success)" />
       </div>
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
+        <h3 className="text-sm font-bold">Recommender tracker</h3>
         <TrackerTable
           collection="letters" rows={letters} columns={COLUMNS}
           empty={<EmptyState icon={Mail} title="No recommenders yet" hint="Most schools want science faculty + others; some want a committee letter. Build relationships early — a letter writer needs to actually know you." action={<Button size="sm" onClick={add}><Plus className="size-4" /> Add your first</Button>} />}
         />
       </div>
-      <ResourceGrid pillar="letters" />
     </div>
   )
 }
