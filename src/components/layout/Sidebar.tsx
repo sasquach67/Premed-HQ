@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Bell, BookOpenText, Crown, LogOut, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from 'lucide-react'
+import { Bell, BookOpenText, ChevronsUpDown, Crown, LogOut, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from 'lucide-react'
 import { NAV_GROUPS } from '@/app/routes'
 import { useStore } from '@/store/store'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -145,9 +145,18 @@ export function Sidebar({
       <div className="border-t border-sidebar-border px-3 py-2.5">
         <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
           <DropdownMenuTrigger asChild>
-            <button type="button" className={cn('grid w-full items-center overflow-hidden rounded-xl p-1 text-left hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring', expanded ? 'grid-cols-[2.25rem_minmax(0,1fr)] gap-2' : 'grid-cols-[2.25rem] justify-center')} aria-label="Open account menu">
+            <button
+              type="button"
+              className={cn(
+                'grid w-full items-center overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-accent/45 p-2 text-left shadow-sm transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                accountOpen && 'bg-sidebar-accent',
+                expanded ? 'grid-cols-[2.25rem_minmax(0,1fr)_1.25rem] gap-2' : 'grid-cols-[2.25rem] justify-center'
+              )}
+              aria-label="Open account menu"
+            >
               <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{profile.name.slice(0, 1)}</div>
               {expanded && <div className="min-w-0 leading-tight"><p className="truncate text-sm font-bold">{profile.name}</p><p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Local profile'}</p></div>}
+              {expanded && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-64">
