@@ -42,6 +42,7 @@ import { StatStrip } from '@/components/ecs/StatStrip'
 import { OrgPeek } from '@/components/ecs/OrgPeek'
 import { RecordOpenWorkspace } from '@/components/common/RecordOpenWorkspace'
 import type { RecordOpenMode } from '@/components/common/CenterPeek'
+import { DateField, MonthField } from '@/components/common/DateField'
 import { activeOrg, joinedLabel, orgInitials, reflectionCount, statusLabel } from '@/components/ecs/ecsUtils'
 
 type Filter = 'all' | 'active' | 'leadership' | 'watchlist' | 'past'
@@ -719,7 +720,7 @@ function EcsOrgWorkspace({
               </label>
               <label className="space-y-1 text-sm font-bold">
                 Joined
-                <Input type="month" value={org.joinedAt ?? ''} onChange={(event) => onPatch({ joinedAt: event.target.value })} />
+                <MonthField value={org.joinedAt ?? ''} onChange={(joinedAt) => onPatch({ joinedAt })} />
               </label>
               <label className="space-y-1 text-sm font-bold">
                 Status
@@ -772,11 +773,10 @@ function EcsOrgWorkspace({
                     )}
                   >
                     <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
-                      <Input
-                        type="date"
+                      <DateField
                         value={reflection.date}
-                        onChange={(event) => onPatch({
-                          reflections: (org.reflections ?? []).map((item) => item.id === reflection.id ? { ...item, date: event.target.value } : item),
+                        onChange={(date) => onPatch({
+                          reflections: (org.reflections ?? []).map((item) => item.id === reflection.id ? { ...item, date } : item),
                         })}
                       />
                       <Input

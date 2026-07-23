@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Activity, FileText, Link2, ListChecks, NotebookPen, ShieldCheck } from 'lucide-react'
 import { Collapsible } from '@/components/common/Collapsible'
 import { cn } from '@/lib/utils'
+import { AutosaveStatus, type SaveStatus } from '@/components/common/AutosaveStatus'
 
 export interface InspectorSection {
   content?: ReactNode
@@ -24,17 +25,22 @@ export function ObjectInspector({
   subtitle,
   config,
   className,
+  saveStatus = 'saved',
 }: {
   title: ReactNode
   subtitle?: ReactNode
   config: ObjectInspectorConfig
   className?: string
+  saveStatus?: SaveStatus
 }) {
   return (
     <article className={cn('min-w-0', className)} aria-label="Object inspector">
-      <header className="border-b border-border px-5 py-4 md:px-6">
-        <h1 className="truncate font-display text-xl font-extrabold">{title}</h1>
-        {subtitle && <div className="mt-1 text-sm font-semibold text-muted-foreground">{subtitle}</div>}
+      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4 md:px-6">
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-xl font-extrabold">{title}</h1>
+          {subtitle && <div className="mt-1 text-sm font-semibold text-muted-foreground">{subtitle}</div>}
+        </div>
+        <AutosaveStatus status={saveStatus} />
       </header>
 
       <div className="space-y-4 p-4 md:p-6">

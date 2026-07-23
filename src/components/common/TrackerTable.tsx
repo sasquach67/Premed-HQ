@@ -23,6 +23,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { AutosaveStatus, type SaveStatus } from '@/components/common/AutosaveStatus'
+import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
 
 export type CellType = 'text' | 'number' | 'date' | 'select' | 'longtext' | 'link' | 'toggle' | 'read' | 'custom'
 
@@ -46,6 +48,7 @@ export interface ColumnDef {
   wrap?: boolean
   read?: (row: Row) => ReactNode
   render?: (ctx: { row: Row; value: unknown; checked: boolean; onChange: (v: unknown) => void }) => ReactNode
+  validate?: (value: unknown, row: Row) => string | undefined
 }
 
 /** TrackerTable accepts any row with an id; cells read fields by key name. */
@@ -82,39 +85,59 @@ interface TrackerTableProps {
   rowActions?: (row: Row) => ReactNode
   onDelete?: (id: string) => void
   empty?: ReactNode
+  state?: CollectionLoadState
+  errorMessage?: string
+  onRetry?: () => void
+  onOpen?: (id: string) => void
+  selectedIds?: Set<string>
+  onToggleSelected?: (id: string) => void
 }
 
 /** The detailed editable TABLE behind every pillar tracker.
  *  Inline edit · check-off · drag-reorder · delete (Notion-like). */
 export function TrackerTable({
   collection, rows, columns, checkKey, reorder = true, rowActions, onDelete, empty,
+  state = 'ready', errorMessage, onRetry, onOpen, selectedIds, onToggleSelected,
 }: TrackerTableProps) {
   const patchItem = useStore((s) => s.patchItem)
   const removeItem = useStore((s) => s.removeItem)
   const reorderItems = useStore((s) => s.reorderItems)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
+
+  function patch(id: string, key: string, value: unknown) {
+    setSaveStatus('saving')
+    patchItem(collection, id, { [key]: value })
+    window.setTimeout(() => setSaveStatus('saved'), 350)
+  }
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (over && active.id !== over.id) reorderItems(collection, String(active.id), String(over.id))
   }
 
+  if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
   if (!rows.length && empty) return <>{empty}</>
 
   const ids = rows.map((r) => r.id)
-  const minWidth = columns.reduce((sum, column) => sum + columnWidthPx(column.width), 80 + (reorder ? 32 : 0) + (checkKey ? 40 : 0))
+  const minWidth = columns.reduce((sum, column) => sum + columnWidthPx(column.width), 80 + (reorder ? 32 : 0) + (checkKey ? 40 : 0) + (onToggleSelected ? 40 : 0))
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card/70 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card/70 shadow-sm">
+        <div className="flex min-h-10 items-center justify-end border-b border-border px-3">
+          <AutosaveStatus status={saveStatus} />
+        </div>
+        <div className="hidden max-h-[42rem] overflow-auto md:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
-          <thead>
+          <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
             {reorder && (
               <th className="w-8 px-1 py-3">
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
               </th>
             )}
+            {onToggleSelected && <th className="w-10 px-2 py-3"><span className="sr-only">Select</span></th>}
             {checkKey && (
               <th className="w-10 px-2 py-3">
                 <CheckSquare2 className="size-3.5 opacity-60" aria-hidden="true" />
@@ -144,20 +167,45 @@ export function TrackerTable({
                   checkKey={checkKey}
                   reorder={reorder}
                   rowActions={rowActions}
-                  onChange={(k, v) => patchItem(collection, row.id, { [k]: v })}
+                  onChange={(k, v) => patch(row.id, k, v)}
                   onDelete={() => (onDelete ? onDelete(row.id) : removeItem(collection, row.id))}
+                  onOpen={onOpen ? () => onOpen(row.id) : undefined}
+                  selected={selectedIds?.has(row.id)}
+                  onToggleSelected={onToggleSelected ? () => onToggleSelected(row.id) : undefined}
                 />
               ))}
             </tbody>
           </SortableContext>
         </table>
+        </div>
+        <div className="max-h-[42rem] space-y-3 overflow-y-auto p-3 md:hidden">
+          {rows.map((row) => (
+            <article key={row.id} className="rounded-xl border border-border bg-card p-3">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                {onToggleSelected && <Checkbox checked={selectedIds?.has(row.id)} onCheckedChange={() => onToggleSelected(row.id)} aria-label="Select record" />}
+                {onOpen && <button type="button" className="ml-auto text-sm font-bold text-primary" onClick={() => onOpen(row.id)}>Open</button>}
+              </div>
+              <dl className="space-y-3">
+                {columns.map((column) => (
+                  <div key={column.key}>
+                    <dt className="mb-1 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{column.header}</dt>
+                    <dd>
+                      <Cell row={row} column={column} value={field(row, column.key)} checked={checkKey ? Boolean(field(row, checkKey)) : false} onChange={(value) => patch(row.id, column.key, value)} />
+                      {column.validate?.(field(row, column.key), row) && <p className="mt-1 text-xs font-semibold text-destructive" role="alert">{column.validate(field(row, column.key), row)}</p>}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))}
+        </div>
       </div>
     </DndContext>
   )
 }
 
 function TableRow({
-  row, columns, checkKey, reorder, rowActions, onChange, onDelete,
+  row, columns, checkKey, reorder, rowActions, onChange, onDelete, onOpen, selected, onToggleSelected,
 }: {
   row: Row
   columns: ColumnDef[]
@@ -166,6 +214,9 @@ function TableRow({
   rowActions?: (row: Row) => ReactNode
   onChange: (key: string, value: unknown) => void
   onDelete: () => void
+  onOpen?: () => void
+  selected?: boolean
+  onToggleSelected?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
   const checked = checkKey ? Boolean(field(row, checkKey)) : false
@@ -183,6 +234,11 @@ function TableRow({
           </button>
         </td>
       )}
+      {onToggleSelected && (
+        <td className="px-2">
+          <Checkbox checked={selected} onCheckedChange={onToggleSelected} aria-label="Select record" />
+        </td>
+      )}
       {checkKey && (
         <td className="px-2">
           <Checkbox checked={checked} onCheckedChange={(v) => onChange(checkKey, Boolean(v))} />
@@ -191,11 +247,13 @@ function TableRow({
       {columns.map((c) => (
         <td key={c.key} className={cn('px-3 py-3 align-top', c.align === 'right' && 'text-right')}>
           <Cell row={row} column={c} value={field(row, c.key)} checked={checked} onChange={(v) => onChange(c.key, v)} />
+          {c.validate?.(field(row, c.key), row) && <p className="mt-1 text-xs font-semibold text-destructive" role="alert">{c.validate(field(row, c.key), row)}</p>}
         </td>
       ))}
       <td className="px-2 text-right">
         <div className="flex items-center justify-end gap-1">
           {rowActions?.(row)}
+          {onOpen && <button type="button" onClick={onOpen} className="min-h-8 rounded-md px-2 text-xs font-bold text-primary hover:bg-primary/10">Open</button>}
           <button onClick={onDelete} className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-45 transition hover:bg-muted hover:text-destructive hover:opacity-100 group-hover:opacity-100" aria-label="Delete row">
             <Trash2 className="size-3.5" />
           </button>
@@ -290,9 +348,9 @@ function Cell({
     return (
       <div className="flex items-center gap-1">
         <input
-          defaultValue={url}
+          value={url}
           placeholder={column.placeholder || 'Paste URL…'}
-          onBlur={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           className={cn(base, 'min-w-[6rem]')}
         />
         {url && (
@@ -322,9 +380,9 @@ function Cell({
   return (
     <input
       type={column.type === 'number' ? 'number' : 'text'}
-      defaultValue={value == null ? '' : String(value)}
+      value={value == null ? '' : String(value)}
       placeholder={column.placeholder}
-      onBlur={(e) => onChange(column.type === 'number' ? Number(e.target.value) || 0 : e.target.value)}
+      onChange={(e) => onChange(column.type === 'number' ? Number(e.target.value) || 0 : e.target.value)}
       className={cn(base, column.align === 'right' && 'text-right', checked && 'line-through')}
     />
   )
@@ -334,23 +392,20 @@ function AutoGrowTextarea({
   value, placeholder, checked, onChange,
 }: { value: string; placeholder?: string; checked: boolean; onChange: (v: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null)
-  const [draft, setDraft] = useState(value)
-
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     el.style.height = '0px'
     el.style.height = `${Math.max(36, el.scrollHeight)}px`
-  }, [draft])
+  }, [value])
 
   return (
     <textarea
       ref={ref}
       rows={1}
-      value={draft}
+      value={value}
       placeholder={placeholder}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => onChange(draft)}
+      onChange={(e) => onChange(e.target.value)}
       className={cn(
         'w-full resize-none overflow-hidden rounded-md bg-transparent px-1.5 py-1 text-sm leading-snug outline-none transition-colors hover:bg-muted/45 focus:bg-card focus:ring-2 focus:ring-ring/35 placeholder:text-muted-foreground/70',
         checked && 'line-through'
@@ -380,8 +435,10 @@ function LongText({ column, value, onChange }: { column: ColumnDef; value: strin
           autoFocus
           value={text}
           placeholder={column.placeholder}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={() => onChange(text)}
+          onChange={(e) => {
+            setText(e.target.value)
+            onChange(e.target.value)
+          }}
           className="min-h-32"
         />
         {max != null && (

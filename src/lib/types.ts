@@ -674,6 +674,7 @@ export interface Settings {
   dismissedAlertKey: string
   northStarExpanded: boolean
   overviewTaskMode: 'today' | 'all'
+  academicsMode: 'daily' | 'planning'
 }
 
 export interface ActivityEvent {

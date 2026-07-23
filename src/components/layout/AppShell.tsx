@@ -9,6 +9,7 @@ import { useTheme } from '@/store/useTheme'
 import { useBackup } from '@/store/useBackup'
 import { useCloudSync } from '@/store/useCloudSync'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ToastProvider } from '@/components/common/ToastProvider'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -34,6 +35,7 @@ export function AppShell() {
 
   return (
     <TooltipProvider delayDuration={200}>
+      <ToastProvider>
       <div className="flex h-svh overflow-hidden">
         {/* desktop sidebar — the aside reserves the real layout gutter; hover preview overlays smoothly */}
         <aside
@@ -71,6 +73,7 @@ export function AppShell() {
           </main>
         </div>
       </div>
+      </ToastProvider>
     </TooltipProvider>
   )
 }

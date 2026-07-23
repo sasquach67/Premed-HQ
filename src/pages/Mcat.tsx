@@ -32,6 +32,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateField } from '@/components/common/DateField'
 import { cn } from '@/lib/utils'
 
 type SectionKey = 'bb' | 'cp' | 'cars' | 'ps'
@@ -293,7 +295,7 @@ function McatSetupDialog() {
             <div className="grid gap-4 md:grid-cols-3">
               <Label className="space-y-1.5">
                 <span>Sit date</span>
-                <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+                <DateField value={targetDate} onChange={setTargetDate} ariaLabel="Sit date" />
               </Label>
               <Label className="space-y-1.5">
                 <span>Goal score</span>
@@ -318,14 +320,7 @@ function McatSetupDialog() {
               </Label>
               <Label className="space-y-1.5">
                 <span>Current phase</span>
-                <select value={currentPhase} onChange={(e) => setCurrentPhase(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <option value="">Choose phase</option>
-                  <option value="Foundation">Foundation</option>
-                  <option value="Content Review">Content Review</option>
-                  <option value="Practice">Practice</option>
-                  <option value="Full Lengths">Full Lengths</option>
-                  <option value="Polish">Polish</option>
-                </select>
+                <Select value={currentPhase || '__none__'} onValueChange={(value) => setCurrentPhase(value === '__none__' ? '' : value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['Choose phase', 'Foundation', 'Content Review', 'Practice', 'Full Lengths', 'Polish'].map((label, index) => <SelectItem key={label} value={index === 0 ? '__none__' : label}>{label}</SelectItem>)}</SelectContent></Select>
               </Label>
             </div>
           </section>
@@ -334,18 +329,11 @@ function McatSetupDialog() {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Label className="space-y-1.5">
                 <span>Plan intensity</span>
-                <select value={planIntensity} onChange={(e) => setPlanIntensity(e.target.value as 'light' | 'balanced' | 'aggressive')} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <option value="light">Light</option>
-                  <option value="balanced">Balanced</option>
-                  <option value="aggressive">Aggressive</option>
-                </select>
+                <Select value={planIntensity} onValueChange={(value) => setPlanIntensity(value as 'light' | 'balanced' | 'aggressive')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['light', 'balanced', 'aggressive'].map((value) => <SelectItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</SelectItem>)}</SelectContent></Select>
               </Label>
               <Label className="space-y-1.5">
                 <span>Priority section</span>
-                <select value={focusSection} onChange={(e) => setFocusSection(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <option value="">Auto from scores</option>
-                  {Object.values(SECTION_META).map((section) => <option key={section.label} value={section.label}>{section.label}</option>)}
-                </select>
+                <Select value={focusSection || '__auto__'} onValueChange={(value) => setFocusSection(value === '__auto__' ? '' : value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__auto__">Auto from scores</SelectItem>{Object.values(SECTION_META).map((section) => <SelectItem key={section.label} value={section.label}>{section.label}</SelectItem>)}</SelectContent></Select>
               </Label>
             </div>
           </details>
@@ -742,20 +730,18 @@ function MistakeMap() {
           {shown.map((er) => (
             <div key={er.id} className={cn('rounded-xl border border-border bg-card p-3.5 card-soft', er.resolved && 'opacity-60')}>
               <div className="mb-2 flex items-center gap-2">
-                <select
+                <Select
                   value={er.section}
-                  onChange={(e) => patch(er.id, {
-                    section: e.target.value,
-                    topic: er.section === 'Needs classification' && er.topic === 'Screenshot pending analysis' ? '' : er.topic,
-                    whyMissed: er.section === 'Needs classification' && er.whyMissed === 'Screenshot saved. Classify it after OCR or manual review.' ? '' : er.whyMissed,
-                    fix: er.section === 'Needs classification' && er.fix === 'Identify the MCAT section/topic, then add the fix and drill it again.' ? '' : er.fix,
+                  onValueChange={(section) => patch(er.id, {
+                    section,
+                    topic: section !== 'Needs classification' && er.topic === 'Screenshot pending analysis' ? '' : er.topic,
+                    whyMissed: section !== 'Needs classification' && er.whyMissed === 'Screenshot saved. Classify it after OCR or manual review.' ? '' : er.whyMissed,
+                    fix: section !== 'Needs classification' && er.fix === 'Identify the MCAT section/topic, then add the fix and drill it again.' ? '' : er.fix,
                   })}
-                  className="rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground outline-none"
-                  style={{ background: sectionColorByLabel(er.section) }}
                 >
-                  {er.section === 'Needs classification' && <option value="Needs classification" className="bg-card text-foreground">Needs classification</option>}
-                  {Object.values(SECTION_META).map((s) => <option key={s.label} value={s.label} className="bg-card text-foreground">{s.label}</option>)}
-                </select>
+                  <SelectTrigger className="h-8 w-44 rounded-full border-0 px-2 text-xs font-bold text-primary-foreground" style={{ background: sectionColorByLabel(er.section) }}><SelectValue /></SelectTrigger>
+                  <SelectContent>{er.section === 'Needs classification' && <SelectItem value="Needs classification">Needs classification</SelectItem>}{Object.values(SECTION_META).map((section) => <SelectItem key={section.label} value={section.label}>{section.label}</SelectItem>)}</SelectContent>
+                </Select>
                 <Input defaultValue={er.section === 'Needs classification' ? '' : er.topic} placeholder={er.section === 'Needs classification' ? 'Choose a section to classify this screenshot' : 'Topic (e.g. amino acid pKa)'} onBlur={(e) => patch(er.id, { topic: e.target.value || (er.section === 'Needs classification' ? 'Screenshot pending analysis' : '') })} className="h-7 flex-1 border-0 px-1 text-sm font-bold shadow-none focus-visible:ring-0" />
                 <label className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
                   <Checkbox checked={er.resolved} onCheckedChange={(v) => patch(er.id, { resolved: Boolean(v) })} /> Got it

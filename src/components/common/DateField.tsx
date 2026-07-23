@@ -10,7 +10,7 @@ import {
   addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay,
   isSameMonth, parseISO, startOfMonth, startOfWeek, subMonths,
 } from 'date-fns'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
@@ -108,6 +108,113 @@ export function DateField({
             </button>
           )}
         </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+export function MonthField({
+  value,
+  onChange,
+  placeholder = 'Pick a month',
+  ariaLabel,
+  className,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  ariaLabel?: string
+  className?: string
+}) {
+  const parsedYear = Number(value.slice(0, 4)) || new Date().getFullYear()
+  const [year, setYear] = useState(parsedYear)
+  const [open, setOpen] = useState(false)
+  const months = Array.from({ length: 12 }, (_, index) => format(new Date(year, index, 1), 'MMM'))
+
+  return (
+    <Popover open={open} onOpenChange={(next) => { setOpen(next); if (next) setYear(parsedYear) }}>
+      <PopoverTrigger
+        aria-label={ariaLabel ?? placeholder}
+        className={cn(
+          'inline-flex min-h-9 w-full items-center gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm shadow-sm',
+          !value && 'text-muted-foreground',
+          className
+        )}
+      >
+        <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+        <span>{value ? format(new Date(`${value}-01T12:00:00`), 'MMMM yyyy') : placeholder}</span>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 rounded-2xl p-3">
+        <div className="mb-3 flex items-center justify-between">
+          <button type="button" className="grid size-8 place-items-center rounded-lg hover:bg-muted" onClick={() => setYear((current) => current - 1)} aria-label="Previous year"><ChevronLeft className="size-4" /></button>
+          <strong className="text-sm">{year}</strong>
+          <button type="button" className="grid size-8 place-items-center rounded-lg hover:bg-muted" onClick={() => setYear((current) => current + 1)} aria-label="Next year"><ChevronRight className="size-4" /></button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {months.map((month, index) => {
+            const next = `${year}-${String(index + 1).padStart(2, '0')}`
+            return (
+              <button
+                key={month}
+                type="button"
+                onClick={() => { onChange(next); setOpen(false) }}
+                className={cn('min-h-10 rounded-lg text-sm font-bold hover:bg-muted', value === next && 'bg-primary text-primary-foreground')}
+              >
+                {month}
+              </button>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+export function TimeField({
+  value,
+  onChange,
+  placeholder = 'Pick a time',
+  ariaLabel,
+  className,
+  stepMinutes = 30,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  ariaLabel?: string
+  className?: string
+  stepMinutes?: number
+}) {
+  const [open, setOpen] = useState(false)
+  const times = Array.from({ length: Math.ceil((24 * 60) / stepMinutes) }, (_, index) => {
+    const minutes = index * stepMinutes
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+  })
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        aria-label={ariaLabel ?? placeholder}
+        className={cn(
+          'inline-flex min-h-9 w-full items-center gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm shadow-sm',
+          !value && 'text-muted-foreground',
+          className
+        )}
+      >
+        <Clock3 className="size-4 shrink-0" aria-hidden="true" />
+        <span>{value ? format(new Date(`2000-01-01T${value}`), 'h:mm a') : placeholder}</span>
+      </PopoverTrigger>
+      <PopoverContent className="max-h-72 w-52 overflow-y-auto rounded-2xl p-1.5">
+        {times.map((time) => (
+          <button
+            key={time}
+            type="button"
+            onClick={() => { onChange(time); setOpen(false) }}
+            className={cn('block min-h-10 w-full rounded-lg px-3 text-left text-sm font-bold hover:bg-muted', value === time && 'bg-primary/10 text-primary')}
+          >
+            {format(new Date(`2000-01-01T${time}`), 'h:mm a')}
+          </button>
+        ))}
       </PopoverContent>
     </Popover>
   )

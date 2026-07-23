@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { TimeField } from '@/components/common/DateField'
 
 export function Settings() {
   const route = ROUTE_MAP.settings
@@ -381,19 +382,11 @@ function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) =>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-bold">
               Timeline start
-              <Input
-                type="time"
-                defaultValue={calendar.timelineStart}
-                onBlur={(e) => update((d) => { d.settings.calendar.timelineStart = e.target.value || '06:00' })}
-              />
+              <TimeField value={calendar.timelineStart} onChange={(value) => update((d) => { d.settings.calendar.timelineStart = value || '06:00' })} ariaLabel="Timeline start" />
             </label>
             <label className="block text-sm font-bold">
               Timeline end
-              <Input
-                type="time"
-                defaultValue={calendar.timelineEnd}
-                onBlur={(e) => update((d) => { d.settings.calendar.timelineEnd = e.target.value || '23:00' })}
-              />
+              <TimeField value={calendar.timelineEnd} onChange={(value) => update((d) => { d.settings.calendar.timelineEnd = value || '23:00' })} ariaLabel="Timeline end" />
             </label>
           </div>
 

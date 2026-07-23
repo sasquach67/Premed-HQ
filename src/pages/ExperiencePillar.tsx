@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { DateField } from '@/components/common/DateField'
 
 type ExperiencePatch = Partial<ExperienceEntry> & Record<string, unknown>
 type PillarTab = { id: string; label: string; icon: ComponentType<{ className?: string }>; count?: number }
@@ -805,7 +806,7 @@ function ExpandableEntryRow({
         <div className="grid gap-3 border-t border-border p-3 md:grid-cols-2">
           <Field label="Site / org"><Input value={entry.org} onChange={(event) => onPatch({ org: event.target.value })} /></Field>
           <Field label="Role"><Input value={entry.role} onChange={(event) => onPatch({ role: event.target.value })} /></Field>
-          <Field label="Date"><Input type="date" value={entry.startDate ?? ''} onChange={(event) => onPatch({ startDate: event.target.value })} /></Field>
+          <Field label="Date"><DateField value={entry.startDate ?? ''} onChange={(startDate) => onPatch({ startDate })} /></Field>
           <Field label="Hours"><Input type="number" value={entry.hours} onChange={(event) => onPatch({ hours: Number(event.target.value || 0) })} /></Field>
           <Field label="Supervisor"><Input value={entry.supervisor ?? ''} onChange={(event) => onPatch({ supervisor: event.target.value })} /></Field>
           <Field label="Theme tags"><Input value={entry.tags.join(', ')} onChange={(event) => onPatch({ tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) })} /></Field>
@@ -1059,7 +1060,7 @@ function EventsView({ rows, onAdd, onPatch, onDraftStory }: { rows: ExperienceEn
       <CardContent className="space-y-2">
         {dated.length ? dated.map((entry) => (
           <div key={entry.id} className="grid gap-3 rounded-xl border bg-card/70 p-3 md:grid-cols-[9rem_1fr_auto] md:items-center">
-            <Input type="date" value={entry.startDate ?? ''} onChange={(event) => onPatch(entry.id, { startDate: event.target.value })} />
+            <DateField value={entry.startDate ?? ''} onChange={(startDate) => onPatch(entry.id, { startDate })} />
             <div>
               <Input value={entry.org} onChange={(event) => onPatch(entry.id, { org: event.target.value })} placeholder="Organization or event" className="h-8 border-0 bg-transparent px-0 font-bold" />
               <p className="text-xs font-semibold text-muted-foreground">{entry.hours || 0}h · {(entry.tags ?? []).join(', ') || 'service'}</p>

@@ -29,10 +29,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { ModeSwitch } from '@/components/common/ModeSwitch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/components/common/useToast'
 
 const GRADES: LetterGrade[] = ['', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'P', 'IP']
 const COURSE_COLUMNS: ColumnDef[] = [
-  { key: 'code', header: 'Course', type: 'text', width: '120px', placeholder: 'CHEM 241' },
+  { key: 'code', header: 'Course', type: 'text', width: '120px', placeholder: 'CHEM 241', validate: (value) => String(value ?? '').trim() ? undefined : 'Course code is required.' },
   { key: 'title', header: 'Title', type: 'text', placeholder: 'Course title' },
   { key: 'credits', header: 'Cr', type: 'number', width: '60px', align: 'right' },
   { key: 'grade', header: 'Grade', type: 'select', width: '80px', options: GRADES as string[] },
@@ -45,7 +48,11 @@ export function Academics() {
   const { classId } = useParams()
   const courses = useStore((s) => s.courses)
   const addItem = useStore((s) => s.addItem)
+  const removeItem = useStore((s) => s.removeItem)
+  const storedMode = useStore((s) => s.settings.academicsMode)
+  const update = useStore((s) => s.update)
   const route = ROUTE_MAP.academics
+  const toast = useToast()
 
   const gpa = useMemo(() => gpaStats(courses), [courses])
 
@@ -57,30 +64,67 @@ export function Academics() {
   }, [courses])
 
   function addCourse(term: string) {
+    const id = uid()
     addItem('courses', {
-      id: uid(), term, code: '', title: '', credits: 3, grade: '', bcpm: false,
+      id, term, code: '', title: '', credits: 3, grade: '', bcpm: false,
       status: 'planned', inResidence: true, satisfies: [], order: 0,
     } as Course)
+    toast({
+      title: 'Course created',
+      description: `Added to ${term}.`,
+      onOpen: () => setSearchParams({ mode: 'planning', tab: 'planner' }),
+      onUndo: () => removeItem('courses', id),
+    })
   }
 
   if (classId) {
     return <ClassCenter />
   }
 
+  const mode = searchParams.get('mode') === 'planning' || searchParams.get('mode') === 'daily'
+    ? searchParams.get('mode') as 'daily' | 'planning'
+    : storedMode ?? 'daily'
+  const tabsByMode = {
+    daily: ['class-center', 'assignments'],
+    planning: ['planner', 'tracker', 'archive'],
+  } as const
+  const requestedTab = searchParams.get('tab')
+  const activeTab = tabsByMode[mode].includes(requestedTab as never) ? requestedTab! : tabsByMode[mode][0]
+
+  function changeMode(nextMode: 'daily' | 'planning') {
+    update((draft) => { draft.settings.academicsMode = nextMode })
+    setSearchParams({ mode: nextMode, tab: tabsByMode[nextMode][0] })
+  }
+
   return (
     <div>
       <PageHeader title={route.label} />
+      <div className="mb-4">
+        <ModeSwitch
+          value={mode}
+          options={[{ id: 'daily', label: 'Daily' }, { id: 'planning', label: 'Planning' }]}
+          onChange={changeMode}
+          label="Academics mode"
+        />
+      </div>
 
       <Tabs
-        value={searchParams.get('tab') || 'class-center'}
-        onValueChange={(tab) => setSearchParams(tab === 'class-center' ? {} : { tab })}
+        value={activeTab}
+        onValueChange={(tab) => setSearchParams({ mode, tab })}
       >
         <TabsList>
-          <TabsTrigger value="class-center"><GraduationCap className="size-4" /> Class Center</TabsTrigger>
-          <TabsTrigger value="assignments"><CalendarDays className="size-4" /> Assignments</TabsTrigger>
-          <TabsTrigger value="planner"><Calculator className="size-4" /> Planner & GPA</TabsTrigger>
-          <TabsTrigger value="tracker"><ListChecks className="size-4" /> Tar Heel Tracker</TabsTrigger>
-          <TabsTrigger value="archive"><Archive className="size-4" /> Archive</TabsTrigger>
+          {mode === 'daily' ? (
+            <>
+              <TabsTrigger value="class-center"><GraduationCap className="size-4" /> Class Center</TabsTrigger>
+              <TabsTrigger value="assignments"><CalendarDays className="size-4" /> Assignments</TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="planner"><Calculator className="size-4" /> Planner & GPA</TabsTrigger>
+              <TabsTrigger value="tracker"><ListChecks className="size-4" /> Tar Heel Tracker</TabsTrigger>
+              <TabsTrigger value="archive"><Archive className="size-4" /> Archive</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         {/* ---- Class Center (daily academic workflow) ---- */}
@@ -190,13 +234,7 @@ function WhatIf({ baseline }: { baseline: Course[] }) {
               onChange={(e) => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, credits: Number(e.target.value) || 0 } : x))}
               className="h-8 w-14 rounded-md border border-input bg-card px-2 text-sm"
             />
-            <select
-              value={r.grade}
-              onChange={(e) => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, grade: e.target.value as LetterGrade } : x))}
-              className="h-8 rounded-md border border-input bg-card px-1 text-sm"
-            >
-              {Object.keys(GRADE_POINTS).map((g) => <option key={g}>{g}</option>)}
-            </select>
+            <InlineSelect value={r.grade} options={Object.keys(GRADE_POINTS)} onChange={(grade) => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, grade: grade as LetterGrade } : x))} className="h-8 w-20" />
             <button
               onClick={() => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, bcpm: !x.bcpm } : x))}
               className={`rounded-full px-2 py-0.5 text-xs font-bold ${r.bcpm ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
@@ -506,9 +544,7 @@ function TarHeelTracker() {
           </div>
           <div className="space-y-3">
             <FieldLabel label="Catalog Year">
-              <select value={catalogYear} onChange={(e) => setCatalogYear(e.target.value)} className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm">
-                {['2026-2027', '2025-2026', '2024-2025'].map((year) => <option key={year}>{year}</option>)}
-              </select>
+              <InlineSelect value={catalogYear} options={['2026-2027', '2025-2026', '2024-2025']} onChange={setCatalogYear} />
               <p className="mt-1 text-[11px] text-muted-foreground">Major/minor requirements follow the catalog year you entered under.</p>
             </FieldLabel>
             <FieldLabel label="Major">
@@ -529,7 +565,7 @@ function TarHeelTracker() {
               {!modeledProgram?.modeled && <p className="mt-1 text-[11px] text-warning-foreground">Only Neuroscience B.S. is modeled. Other programs are UI placeholders until official rules are seeded.</p>}
             </FieldLabel>
             <FieldLabel label="Second Major / Minor">
-              <select className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"><option>None</option></select>
+              <InlineSelect value="None" options={['None']} onChange={() => undefined} />
             </FieldLabel>
           </div>
 
@@ -603,7 +639,7 @@ function TarHeelTracker() {
                   <span className="text-sm font-bold text-muted-foreground">{termCredits(yearCourses)} credits</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid items-stretch gap-4 md:grid-cols-2 2xl:grid-cols-3">
                   {year.terms.map((term) => (
                     <TermCard
                       key={term}
@@ -637,12 +673,8 @@ function TarHeelTracker() {
                 <input value={courseQuery} onChange={(e) => setCourseQuery(e.target.value)} placeholder="Search code or title..." className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <select value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className="h-9 rounded-lg border border-input bg-background px-2 text-sm">
-                  {['Any term', 'Fall', 'Spring', 'Summer'].map((term) => <option key={term}>{term}</option>)}
-                </select>
-                <select value={selectedTerm} onChange={(e) => setSelectedTerm(e.target.value)} className="h-9 rounded-lg border border-input bg-background px-2 text-sm">
-                  {TERM_PLAN.flatMap((plan) => plan.terms).map((term) => <option key={term}>{term}</option>)}
-                </select>
+                <InlineSelect value={termFilter} options={['Any term', 'Fall', 'Spring', 'Summer']} onChange={setTermFilter} />
+                <InlineSelect value={selectedTerm} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={setSelectedTerm} />
               </div>
               <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} /> Required only</label>
               <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={remainingOnly} onChange={(e) => setRemainingOnly(e.target.checked)} /> Show only remaining requirements</label>
@@ -736,7 +768,7 @@ function TermCard({
   const isSummer = /Summer/.test(term)
   const credits = termCredits(courses)
   return (
-    <Card className="overflow-hidden">
+    <Card className="flex max-h-[38rem] h-full flex-col overflow-hidden">
       <div className={cn(
         'flex items-center justify-between px-4 py-3',
         isFall && 'bg-orange-50 text-orange-950 dark:bg-orange-950/20 dark:text-orange-100',
@@ -752,7 +784,7 @@ function TermCard({
           credits === 0 ? 'text-muted-foreground' : credits < 12 && !isSummer ? 'text-warning-foreground' : 'text-primary'
         )}>{credits} cr</span>
       </div>
-      <CardContent className="space-y-2 p-3">
+      <CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {courses.length === 0 ? (
           <button onClick={onOpenLibrary} className="grid min-h-20 w-full place-items-center rounded-xl border border-dashed border-border text-sm font-bold text-muted-foreground transition hover:border-primary/40 hover:bg-primary/5">
             <span><Plus className="mx-auto mb-1 size-4" /> Plan {term.replace(/\s\d{4}/, '')}</span>
@@ -784,9 +816,7 @@ function CoursePlanCard({ course, requirements, allTerms, onMove, onRemove }: { 
         {tags.slice(0, 2).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{tag}</span>)}
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <select value={course.term} onChange={(e) => onMove(course, e.target.value)} className="h-8 min-w-0 flex-1 rounded-md border border-input bg-card px-2 text-xs">
-          {[...allTerms, 'Unscheduled', 'Transfer / AP Credit'].map((term) => <option key={term}>{term}</option>)}
-        </select>
+        <InlineSelect value={course.term} options={[...allTerms, 'Unscheduled', 'Transfer / AP Credit']} onChange={(term) => onMove(course, term)} className="h-8 min-w-0 flex-1 text-xs" />
         <Button size="icon" variant="ghost" className="size-8" onClick={() => onRemove(course)}><Trash2 className="size-3.5" /></Button>
       </div>
     </div>
@@ -842,9 +872,7 @@ function CourseDetailDialog({ course, requirements, selectedTerm, onTerm, onClos
               <div className="flex flex-wrap gap-1">{tags.length ? tags.map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{tag}</span>) : <span className="text-xs text-muted-foreground">No mapped requirement tags.</span>}</div>
               <div className="rounded-xl bg-muted/45 p-3">
                 <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Add to schedule</p>
-                <select value={selectedTerm} onChange={(e) => onTerm(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm">
-                  {TERM_PLAN.flatMap((plan) => plan.terms).map((term) => <option key={term}>{term}</option>)}
-                </select>
+                <InlineSelect value={selectedTerm} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={onTerm} className="h-10" />
               </div>
             </div>
             <DialogFooter>
@@ -905,7 +933,7 @@ function CustomCourseDialog({ open, onOpenChange, selectedTerm, onAdd }: { open:
           <FieldInput label="Course code" value={code} onChange={setCode} />
           <FieldInput label="Title" value={title} onChange={setTitle} />
           <label className="text-sm font-bold">Credits<input type="number" min={0} value={credits} onChange={(e) => setCredits(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
-          <label className="text-sm font-bold">Term<select value={term} onChange={(e) => setTerm(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2">{TERM_PLAN.flatMap((plan) => plan.terms).map((x) => <option key={x}>{x}</option>)}</select></label>
+          <label className="text-sm font-bold">Term<InlineSelect value={term} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={setTerm} className="mt-1 h-10" /></label>
           <label className="sm:col-span-2 text-sm font-bold">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-2 py-2" /></label>
         </div>
         <DialogFooter>
@@ -919,4 +947,23 @@ function CustomCourseDialog({ open, onOpenChange, selectedTerm, onAdd }: { open:
 
 function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <label className="text-sm font-bold">{label}<input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
+}
+
+function InlineSelect({
+  value,
+  options,
+  onChange,
+  className,
+}: {
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+  className?: string
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className={className}><SelectValue /></SelectTrigger>
+      <SelectContent>{options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+    </Select>
+  )
 }

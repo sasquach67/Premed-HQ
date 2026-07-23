@@ -24,6 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateField } from '@/components/common/DateField'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -630,16 +632,12 @@ function AddTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         <form onSubmit={submit} className="space-y-3">
           <label className="block text-sm font-bold">Task name<Input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></label>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block text-sm font-bold">Date<Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></label>
+            <label className="block text-sm font-bold">Date<DateField value={deadline} onChange={setDeadline} /></label>
             <label className="block text-sm font-bold">Category
-              <select value={type} onChange={(e) => setType(e.target.value as TaskType)} className="mt-1 h-10 w-full rounded-md border border-input bg-card px-3 text-sm">
-                {(['Assignment', 'Exam', 'Application', 'Meeting', 'Advising', 'Personal', 'Other'] as TaskType[]).map((x) => <option key={x}>{x}</option>)}
-              </select>
+              <Select value={type} onValueChange={(value) => setType(value as TaskType)}><SelectTrigger className="mt-1 h-10"><SelectValue /></SelectTrigger><SelectContent>{(['Assignment', 'Exam', 'Application', 'Meeting', 'Advising', 'Personal', 'Other'] as TaskType[]).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
             </label>
             <label className="block text-sm font-bold">Status
-              <select value={progress} onChange={(e) => setProgress(e.target.value as TaskProgress)} className="mt-1 h-10 w-full rounded-md border border-input bg-card px-3 text-sm">
-                {(['Not started', 'Working on', 'Finished'] as TaskProgress[]).map((x) => <option key={x}>{x}</option>)}
-              </select>
+              <Select value={progress} onValueChange={(value) => setProgress(value as TaskProgress)}><SelectTrigger className="mt-1 h-10"><SelectValue /></SelectTrigger><SelectContent>{(['Not started', 'Working on', 'Finished'] as TaskProgress[]).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
             </label>
           </div>
           <label className="block text-sm font-bold">Notes<Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></label>

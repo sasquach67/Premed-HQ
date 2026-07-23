@@ -4,6 +4,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
+import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
 
 export interface KanbanItem {
   id: string
@@ -20,12 +21,16 @@ export interface KanbanColumnDef {
 
 /** Reusable To-Do / In-Progress / Done board with drag between columns. */
 export function Kanban({
-  columns, items, onMove, footer,
+  columns, items, onMove, footer, state = 'ready', errorMessage, onRetry, onOpen,
 }: {
   columns: KanbanColumnDef[]
   items: KanbanItem[]
   onMove: (id: string, column: string) => void
   footer?: (columnId: string) => ReactNode
+  state?: CollectionLoadState
+  errorMessage?: string
+  onRetry?: () => void
+  onOpen?: (id: string) => void
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
@@ -34,12 +39,14 @@ export function Kanban({
     if (over) onMove(String(active.id), String(over.id))
   }
 
+  if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
+
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid max-h-[42rem] items-stretch gap-3 overflow-y-auto md:grid-cols-3">
         {columns.map((col) => (
           <Column key={col.id} col={col} count={items.filter((i) => i.column === col.id).length} footer={footer}>
-            {items.filter((i) => i.column === col.id).map((i) => <Card key={i.id} item={i} />)}
+            {items.filter((i) => i.column === col.id).map((i) => <Card key={i.id} item={i} onOpen={onOpen ? () => onOpen(i.id) : undefined} />)}
           </Column>
         ))}
       </div>
@@ -66,7 +73,7 @@ function Column({
   )
 }
 
-function Card({ item }: { item: KanbanItem }) {
+function Card({ item, onOpen }: { item: KanbanItem; onOpen?: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id })
   return (
     <div
@@ -75,7 +82,7 @@ function Card({ item }: { item: KanbanItem }) {
       {...listeners}
       style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
       className={cn(
-        'cursor-grab rounded-lg border border-border bg-card p-2.5 text-sm card-soft active:cursor-grabbing',
+        'cursor-grab rounded-lg border border-border bg-card p-2.5 text-sm card-soft active:cursor-grabbing motion-reduce:transition-none',
         isDragging && 'opacity-50 shadow-lg'
       )}
     >
@@ -84,6 +91,7 @@ function Card({ item }: { item: KanbanItem }) {
         {item.badge}
       </div>
       {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
+      {onOpen && <button type="button" className="mt-2 min-h-8 text-xs font-bold text-primary" onClick={onOpen}>Open</button>}
     </div>
   )
 }

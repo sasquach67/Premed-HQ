@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Archive, ExternalLink, FileText, Link2, Plus, Users } from 'lucide-react'
 import type { Org, OrgReflection } from '@/lib/types'
 import { uid } from '@/lib/id'
@@ -7,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { MonthField } from '@/components/common/DateField'
+import type { SaveStatus } from '@/components/common/AutosaveStatus'
 import { ORG_STATUSES, ORG_TYPES, statusLabel } from './ecsUtils'
 
 export function OrgPeek({
@@ -20,6 +23,7 @@ export function OrgPeek({
   onPatch: (patch: Partial<Org>) => void
   onOpenRelation: (id: string) => void
 }) {
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const reflections = org.reflections ?? []
   const warnings = [
     !org.joinedAt && 'Joined date is missing.',
@@ -28,6 +32,12 @@ export function OrgPeek({
     !org.verifierEmail?.trim() && 'Verifier email is missing.',
   ].filter(Boolean) as string[]
 
+  function patch(next: Partial<Org>) {
+    setSaveStatus('saving')
+    onPatch(next)
+    window.setTimeout(() => setSaveStatus('saved'), 350)
+  }
+
   function addReflection() {
     const reflection: OrgReflection = {
       id: uid(),
@@ -35,41 +45,42 @@ export function OrgPeek({
       title: 'New reflection',
       body: '',
     }
-    onPatch({ reflections: [reflection, ...reflections] })
+    patch({ reflections: [reflection, ...reflections] })
   }
 
   return (
     <ObjectInspector
       title={org.name || 'Untitled organization'}
       subtitle={`${org.type || 'Organization'} · ${org.role || 'Role not set'} · ${statusLabel(org.status)}`}
+      saveStatus={saveStatus}
       config={{
         overview: {
           emptyLabel: 'No details yet.',
           content: (
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Name">
-                <Input value={org.name} onChange={(event) => onPatch({ name: event.target.value })} />
+                <Input value={org.name} onChange={(event) => patch({ name: event.target.value })} />
               </Field>
               <Field label="Type">
-                <Select value={org.type} onValueChange={(type) => onPatch({ type })}>
+                <Select value={org.type} onValueChange={(type) => patch({ type })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{ORG_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Role">
-                <Input value={org.role} onChange={(event) => onPatch({ role: event.target.value })} />
+                <Input value={org.role} onChange={(event) => patch({ role: event.target.value })} />
               </Field>
               <Field label="Status">
-                <Select value={org.status} onValueChange={(status: Org['status']) => onPatch({ status })}>
+                <Select value={org.status} onValueChange={(status: Org['status']) => patch({ status })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{ORG_STATUSES.map((status) => <SelectItem key={status} value={status}>{statusLabel(status)}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Joined">
-                <Input type="month" value={org.joinedAt ?? ''} onChange={(event) => onPatch({ joinedAt: event.target.value })} />
+                <MonthField value={org.joinedAt ?? ''} onChange={(joinedAt) => patch({ joinedAt })} ariaLabel="Joined month" />
               </Field>
               <Field label="Meetings">
-                <Input value={org.meetingInfo} onChange={(event) => onPatch({ meetingInfo: event.target.value })} />
+                <Input value={org.meetingInfo} onChange={(event) => patch({ meetingInfo: event.target.value })} />
               </Field>
             </div>
           ),
@@ -133,7 +144,7 @@ export function OrgPeek({
           content: (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={addReflection}><Plus className="size-4" /> New reflection</Button>
-              <Button size="sm" variant="outline" onClick={() => onPatch({ status: 'inactive' })}>
+              <Button size="sm" variant="outline" onClick={() => patch({ status: 'inactive' })}>
                 <Archive className="size-4" /> Archive
               </Button>
               {org.link && (
@@ -151,7 +162,7 @@ export function OrgPeek({
           content: (
             <Textarea
               value={org.opportunities}
-              onChange={(event) => onPatch({ opportunities: event.target.value })}
+              onChange={(event) => patch({ opportunities: event.target.value })}
               placeholder="Opportunities, context, or a next step…"
               className="min-h-32"
             />

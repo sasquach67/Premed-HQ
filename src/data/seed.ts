@@ -678,6 +678,7 @@ export function createSeedData(): AppData {
       dismissedAlertKey: '',
       northStarExpanded: false,
       overviewTaskMode: 'today',
+      academicsMode: 'daily',
     },
     meta: {
       recentRoutes: [],

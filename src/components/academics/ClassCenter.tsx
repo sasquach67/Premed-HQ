@@ -30,6 +30,8 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateField } from '@/components/common/DateField'
 
 const COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'yellow', 'red', 'pink', 'gray', 'brown']
 const CLASS_ICONS: { id: string; label: string; Icon: LucideIcon }[] = [
@@ -872,14 +874,8 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
               <Input className="pl-9" placeholder="Search notes..." value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="all">All types</option>
-                {NOTE_TYPES.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}
-              </select>
-              <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)}>
-                <option value="all">All topics</option>
-                {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
-              </select>
+              <TinySelect value={type} options={['all', ...NOTE_TYPES]} labels={{ all: 'All types' }} onChange={setType} />
+              <TinySelect value={topicFilter} options={['all', ...topics.map((topic) => topic.id)]} labels={{ all: 'All topics', ...Object.fromEntries(topics.map((topic) => [topic.id, topic.title])) }} onChange={setTopicFilter} />
             </div>
           </div>
         </CardHeader>
@@ -908,10 +904,8 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
               </Badge>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <select className="h-9 rounded-md border border-input bg-card px-3 text-sm" value={selected.type} onChange={(e) => patchNote(selected.id, { type: e.target.value as ClassNoteType }, mutate)}>
-                {NOTE_TYPES.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}
-              </select>
-              <Input type="date" value={selected.date ?? ''} onChange={(e) => patchNote(selected.id, { date: e.target.value }, mutate)} />
+              <TinySelect value={selected.type} options={NOTE_TYPES} onChange={(type) => patchNote(selected.id, { type: type as ClassNoteType }, mutate)} />
+              <DateField value={selected.date ?? ''} onChange={(date) => patchNote(selected.id, { date }, mutate)} />
               <Input placeholder="Unit" value={selected.unit ?? ''} onChange={(e) => patchNote(selected.id, { unit: e.target.value }, mutate)} />
             </div>
             <TopicPicker
@@ -1424,10 +1418,7 @@ function ClassEditorDialog({
               </Field>
               <BannerField value={form.background ?? ''} onChange={(background) => onChange({ background })} />
               <Field label="Status">
-                <select className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm" value={form.status} onChange={(e) => onChange({ status: e.target.value as ClassCenterClass['status'] })}>
-                  <option value="active">Active</option>
-                  <option value="archived">Archived</option>
-                </select>
+                <TinySelect value={form.status} options={['active', 'archived']} onChange={(status) => onChange({ status: status as ClassCenterClass['status'] })} />
               </Field>
             </div>
           </section>
@@ -1906,11 +1897,12 @@ function InlineInput({ value, onChange, placeholder }: { value: string; onChange
   )
 }
 
-function TinySelect({ value, options, onChange }: { value: string; options: string[]; onChange: (value: string) => void }) {
+function TinySelect({ value, options, labels, onChange }: { value: string; options: readonly string[]; labels?: Record<string, string>; onChange: (value: string) => void }) {
   return (
-    <select className="h-8 max-w-full rounded-full border border-border bg-card px-2 text-xs font-bold outline-none focus:ring-2 focus:ring-ring/40" value={value} onChange={(event) => onChange(event.target.value)}>
-      {options.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}
-    </select>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-8 max-w-full rounded-full text-xs font-bold"><SelectValue /></SelectTrigger>
+      <SelectContent>{options.map((item) => <SelectItem key={item} value={item}>{labels?.[item] ?? statusLabel(item)}</SelectItem>)}</SelectContent>
+    </Select>
   )
 }
 

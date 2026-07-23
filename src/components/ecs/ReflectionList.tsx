@@ -3,6 +3,7 @@ import type { OrgReflection } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { DateField } from '@/components/common/DateField'
 
 export function ReflectionList({
   reflections, activeId, onOpen, onBack, onNew, onPatch,
@@ -21,7 +22,7 @@ export function ReflectionList({
       <div className="space-y-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2"><ArrowLeft className="size-4" /> Back to reflections</Button>
         <Input value={active.title} onChange={(event) => onPatch(active.id, { title: event.target.value })} placeholder="Reflection title" />
-        <Input type="date" value={active.date} onChange={(event) => onPatch(active.id, { date: event.target.value })} />
+        <DateField value={active.date} onChange={(date) => onPatch(active.id, { date })} />
         <Textarea
           value={active.body}
           onChange={(event) => onPatch(active.id, { body: event.target.value })}
@@ -66,4 +67,3 @@ export function ReflectionList({
     </div>
   )
 }
-
