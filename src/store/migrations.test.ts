@@ -1,7 +1,7 @@
 /* Tests for the data-migration functions that run on every load/import.
    These are the functions most likely to corrupt user data if broken. */
 import { describe, expect, it } from 'vitest'
-import { migrateAcademicTags, migrateOrgReflections, migrateRequirementMetadata } from '@/store/store'
+import { migrateAcademicTags, migrateOrgReflections, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
 import { createSeedData } from '@/data/seed'
 import type { AppData, ClassTopic, ClassWeakArea, Org, RequirementItem, TaskItem } from '@/lib/types'
 
@@ -72,6 +72,26 @@ describe('migrateAcademicTags', () => {
     const once = migrateAcademicTags(freshData())
     const twice = migrateAcademicTags(JSON.parse(JSON.stringify(once)) as AppData)
     expect(JSON.stringify(twice.academics)).toBe(JSON.stringify(once.academics))
+  })
+})
+
+describe('migrateSafetyNets', () => {
+  it('adds recovery and per-list view containers to legacy data without changing records', () => {
+    const data = freshData()
+    const courseIds = data.courses.map((course) => course.id)
+    delete (data as Partial<AppData>).trash
+    delete (data.settings as Partial<AppData['settings']>).listPreferences
+    delete (data.settings as Partial<AppData['settings']>).savedViews
+    delete (data.settings as Partial<AppData['settings']>).activeSavedViewIds
+    delete (data.meta as Partial<AppData['meta']>).recoveryStack
+
+    const out = migrateSafetyNets(data)
+    expect(out.trash).toEqual([])
+    expect(out.settings.listPreferences).toEqual({})
+    expect(out.settings.savedViews).toEqual({})
+    expect(out.settings.activeSavedViewIds).toEqual({})
+    expect(out.meta.recoveryStack).toEqual([])
+    expect(out.courses.map((course) => course.id)).toEqual(courseIds)
   })
 })
 

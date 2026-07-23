@@ -679,12 +679,17 @@ export function createSeedData(): AppData {
       northStarExpanded: false,
       overviewTaskMode: 'today',
       academicsMode: 'daily',
+      listPreferences: {},
+      savedViews: {},
+      activeSavedViewIds: {},
     },
     meta: {
       recentRoutes: [],
       activity: [],
       lastOpenedAt: now,
       seedVersion: 1,
+      recoveryStack: [],
     },
+    trash: [],
   }
 }

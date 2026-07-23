@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { TimeField } from '@/components/common/DateField'
+import { TrashRecovery } from '@/components/common/TrashRecovery'
 
 export function Settings() {
   const route = ROUTE_MAP.settings
@@ -482,6 +483,9 @@ function ArchiveSettingsSection({ highlight }: { highlight: boolean }) {
             </section>
           </div>
         )}
+        <div className="mt-6 border-t border-border pt-6">
+          <TrashRecovery />
+        </div>
       </CardContent>
     </Card>
   )

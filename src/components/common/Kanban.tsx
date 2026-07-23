@@ -1,10 +1,14 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import {
   DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
+import type { CollectionKey } from '@/lib/types'
+import { Checkbox } from '@/components/ui/checkbox'
+import { BulkActionBar } from '@/components/common/BulkActionBar'
+import { useToast } from '@/components/common/useToast'
 
 export interface KanbanItem {
   id: string
@@ -21,7 +25,7 @@ export interface KanbanColumnDef {
 
 /** Reusable To-Do / In-Progress / Done board with drag between columns. */
 export function Kanban({
-  columns, items, onMove, footer, state = 'ready', errorMessage, onRetry, onOpen,
+  columns, items, onMove, footer, state = 'ready', errorMessage, onRetry, onOpen, collection,
 }: {
   columns: KanbanColumnDef[]
   items: KanbanItem[]
@@ -31,12 +35,32 @@ export function Kanban({
   errorMessage?: string
   onRetry?: () => void
   onOpen?: (id: string) => void
+  collection?: CollectionKey
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const toast = useToast()
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e
-    if (over) onMove(String(active.id), String(over.id))
+    const item = items.find((candidate) => candidate.id === String(active.id))
+    if (over && item && item.column !== String(over.id)) {
+      onMove(String(active.id), String(over.id))
+      toast({
+        title: 'Card moved',
+        description: `Moved to ${columns.find((column) => column.id === String(over.id))?.title ?? 'another column'}.`,
+        onUndo: () => onMove(item.id, item.column),
+      })
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
@@ -46,10 +70,26 @@ export function Kanban({
       <div className="grid max-h-[42rem] items-stretch gap-3 overflow-y-auto md:grid-cols-3">
         {columns.map((col) => (
           <Column key={col.id} col={col} count={items.filter((i) => i.column === col.id).length} footer={footer}>
-            {items.filter((i) => i.column === col.id).map((i) => <Card key={i.id} item={i} onOpen={onOpen ? () => onOpen(i.id) : undefined} />)}
+            {items.filter((i) => i.column === col.id).map((i) => (
+              <Card
+                key={i.id}
+                item={i}
+                onOpen={onOpen ? () => onOpen(i.id) : undefined}
+                selected={selectedIds.has(i.id)}
+                onToggleSelected={collection ? () => toggleSelected(i.id) : undefined}
+              />
+            ))}
           </Column>
         ))}
       </div>
+      {collection && (
+        <BulkActionBar
+          collection={collection}
+          rows={items}
+          selectedIds={selectedIds}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
     </DndContext>
   )
 }
@@ -73,7 +113,14 @@ function Column({
   )
 }
 
-function Card({ item, onOpen }: { item: KanbanItem; onOpen?: () => void }) {
+function Card({
+  item, onOpen, selected, onToggleSelected,
+}: {
+  item: KanbanItem
+  onOpen?: () => void
+  selected?: boolean
+  onToggleSelected?: () => void
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id })
   return (
     <div
@@ -87,7 +134,14 @@ function Card({ item, onOpen }: { item: KanbanItem; onOpen?: () => void }) {
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium leading-snug">{item.title}</span>
+        <div className="flex min-w-0 items-start gap-2">
+          {onToggleSelected && (
+            <span onPointerDown={(event) => event.stopPropagation()}>
+              <Checkbox checked={selected} onCheckedChange={onToggleSelected} aria-label={`Select ${item.title}`} />
+            </span>
+          )}
+          <span className="font-medium leading-snug">{item.title}</span>
+        </div>
         {item.badge}
       </div>
       {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}

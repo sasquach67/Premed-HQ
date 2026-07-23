@@ -68,7 +68,7 @@ export function Letters() {
       <div className="mb-6 space-y-3">
         <h3 className="text-sm font-bold">Recommender tracker</h3>
         <TrackerTable
-          collection="letters" rows={letters} columns={COLUMNS}
+          collection="letters" rows={letters} columns={COLUMNS} listId="letters.tracker"
           empty={<EmptyState icon={Mail} title="No recommenders yet" hint="Most schools want science faculty + others; some want a committee letter. Build relationships early — a letter writer needs to actually know you." action={<Button size="sm" onClick={add}><Plus className="size-4" /> Add your first</Button>} />}
         />
       </div>

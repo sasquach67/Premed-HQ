@@ -149,6 +149,7 @@ function Secondaries() {
       </div>
       <TrackerTable
         collection="secondaries"
+        listId="essays.secondaries"
         rows={secondaries}
         columns={SECONDARY_COLUMNS}
         empty={<p className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">Pre-write common prompts (diversity, adversity, “why us”) in June — it’s a known timing edge.</p>}

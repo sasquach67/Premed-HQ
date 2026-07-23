@@ -10,7 +10,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type {
   AcademicCourseOption, AcademicTagColor, AcademicTypeOption,
-  AppData, CollectionKey, ActivityEvent, RequirementItem,
+  AppData, CollectionKey, ActivityEvent, RequirementItem, RecoveryEntry,
 } from '@/lib/types'
 import { createSeedData } from '@/data/seed'
 import { uid } from '@/lib/id'
@@ -18,7 +18,7 @@ import { uid } from '@/lib/id'
 export const STORAGE_KEY = 'premed_hq_v1'
 const SEED_VERSION = 1
 
-type AnyRow = { id: string; order: number }
+type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
 interface Actions {
   /** generic escape hatch — mutate the whole tree with immer semantics */
@@ -28,6 +28,12 @@ interface Actions {
   addItem: <K extends CollectionKey>(key: K, item: AppData[K][number]) => void
   patchItem: <K extends CollectionKey>(key: K, id: string, patch: Partial<AppData[K][number]>) => void
   removeItem: (key: CollectionKey, id: string) => void
+  softDeleteItems: (key: CollectionKey, ids: string[], label?: string) => string | null
+  restoreTrashItems: (trashIds: string[]) => void
+  permanentlyDeleteTrashItems: (trashIds: string[]) => void
+  bulkPatchItems: (key: CollectionKey, ids: string[], patch: Record<string, unknown>, label: string) => string | null
+  bulkTransformItems: (key: CollectionKey, ids: string[], updater: (row: Record<string, unknown>) => void, label: string) => string | null
+  undoRecovery: (id: string) => void
   /** drag-reorder: move `fromId` to occupy `toId`'s slot */
   reorderItems: (key: CollectionKey, fromId: string, toId: string) => void
   setCollection: <K extends CollectionKey>(key: K, items: AppData[K]) => void
@@ -49,6 +55,7 @@ const DATA_KEYS: (keyof AppData)[] = [
   'academics', 'letters', 'stories', 'secondaries', 'interviewQs', 'mcat', 'schools',
   'resources', 'tips', 'focusTargets', 'quarterlyGoals', 'advisingQs',
   'notePages', 'orgs', 'notes', 'settings', 'meta',
+  'trash',
 ]
 
 const TAG_COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'yellow', 'red', 'pink', 'gray']
@@ -71,6 +78,16 @@ function normalizeLabel(value: string) {
 
 function classCenterDefaults() {
   return createSeedData().academics.classCenter
+}
+
+/** Additive L4 migration: legacy backups gain recovery containers without reshaping records. */
+export function migrateSafetyNets(data: AppData): AppData {
+  data.trash ??= []
+  data.settings.listPreferences ??= {}
+  data.settings.savedViews ??= {}
+  data.settings.activeSavedViewIds ??= {}
+  data.meta.recoveryStack ??= []
+  return data
 }
 
 export function migrateAcademicTags(data: AppData): AppData {
@@ -319,6 +336,30 @@ function nextOrder(arr: AnyRow[]): number {
   return arr.reduce((m, x) => Math.max(m, x.order ?? 0), -1) + 1
 }
 
+function plain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function pushRecovery(
+  state: AppData,
+  collection: CollectionKey,
+  label: string,
+  before: AnyRow[],
+  after: AnyRow[],
+) {
+  const entry: RecoveryEntry = {
+    id: uid(),
+    at: Date.now(),
+    label,
+    collection,
+    before: plain(before),
+    after: plain(after),
+  }
+  state.meta.recoveryStack.unshift(entry)
+  state.meta.recoveryStack = state.meta.recoveryStack.slice(0, 30)
+  return entry.id
+}
+
 export const useStore = create<Store>()(
   persist(
     immer((set) => ({
@@ -332,6 +373,7 @@ export const useStore = create<Store>()(
           const row = item as unknown as AnyRow
           if (row.order == null) row.order = nextOrder(arr)
           arr.push(row)
+          pushRecovery(s as unknown as AppData, key, 'Created record', [], [row])
         }),
 
       patchItem: (key, id, patch) =>
@@ -345,7 +387,99 @@ export const useStore = create<Store>()(
         set((s) => {
           const arr = s[key] as unknown as AnyRow[]
           const i = arr.findIndex((r) => r.id === id)
-          if (i >= 0) arr.splice(i, 1)
+          if (i < 0) return
+          const before = plain(arr[i])
+          const deletedAt = Date.now()
+          const [record] = arr.splice(i, 1)
+          record.deletedAt = deletedAt
+          s.trash.unshift({ id: uid(), collection: key, deletedAt, record: { ...plain(record), deletedAt } })
+          pushRecovery(s as unknown as AppData, key, 'Moved record to trash', [before], [record])
+        }),
+
+      softDeleteItems: (key, ids, label = 'Moved records to trash') => {
+        let recoveryId: string | null = null
+        set((s) => {
+          const wanted = new Set(ids)
+          const arr = s[key] as unknown as AnyRow[]
+          const before = arr.filter((row) => wanted.has(row.id)).map(plain)
+          if (!before.length) return
+          const deletedAt = Date.now()
+          const after = before.map((row) => ({ ...row, deletedAt }))
+          ;(s as unknown as Record<string, unknown>)[key] = arr.filter((row) => !wanted.has(row.id))
+          for (const record of after) {
+            s.trash.unshift({ id: uid(), collection: key, deletedAt, record: { ...plain(record), deletedAt } })
+          }
+          recoveryId = pushRecovery(s as unknown as AppData, key, label, before, after)
+        })
+        return recoveryId
+      },
+
+      restoreTrashItems: (trashIds) =>
+        set((s) => {
+          const wanted = new Set(trashIds)
+          const restoring = s.trash.filter((entry) => wanted.has(entry.id))
+          for (const entry of restoring) {
+            const arr = s[entry.collection] as unknown as AnyRow[]
+            if (arr.some((row) => row.id === entry.record.id)) continue
+            const record = plain(entry.record) as AnyRow
+            delete record.deletedAt
+            arr.push(record)
+          }
+          s.trash = s.trash.filter((entry) => !wanted.has(entry.id))
+        }),
+
+      permanentlyDeleteTrashItems: (trashIds) =>
+        set((s) => {
+          const wanted = new Set(trashIds)
+          s.trash = s.trash.filter((entry) => !wanted.has(entry.id))
+        }),
+
+      bulkPatchItems: (key, ids, patch, label) => {
+        let recoveryId: string | null = null
+        set((s) => {
+          const wanted = new Set(ids)
+          const arr = s[key] as unknown as AnyRow[]
+          const rows = arr.filter((row) => wanted.has(row.id))
+          if (!rows.length) return
+          const before = rows.map(plain)
+          for (const row of rows) Object.assign(row, patch)
+          recoveryId = pushRecovery(s as unknown as AppData, key, label, before, rows.map(plain))
+        })
+        return recoveryId
+      },
+
+      bulkTransformItems: (key, ids, updater, label) => {
+        let recoveryId: string | null = null
+        set((s) => {
+          const wanted = new Set(ids)
+          const arr = s[key] as unknown as AnyRow[]
+          const rows = arr.filter((row) => wanted.has(row.id))
+          if (!rows.length) return
+          const before = rows.map(plain)
+          for (const row of rows) updater(row)
+          recoveryId = pushRecovery(s as unknown as AppData, key, label, before, rows.map(plain))
+        })
+        return recoveryId
+      },
+
+      undoRecovery: (id) =>
+        set((s) => {
+          const entry = s.meta.recoveryStack.find((candidate) => candidate.id === id)
+          if (!entry) return
+          const beforeIds = new Set(entry.before.map((row) => row.id))
+          const afterIds = new Set(entry.after.map((row) => row.id))
+          const affectedIds = new Set([...beforeIds, ...afterIds])
+          const arr = s[entry.collection] as unknown as AnyRow[]
+          ;(s as unknown as Record<string, unknown>)[entry.collection] = arr.filter((row) => !affectedIds.has(row.id))
+          s.trash = s.trash.filter((trash) => trash.collection !== entry.collection || !affectedIds.has(trash.record.id))
+          const target = s[entry.collection] as unknown as AnyRow[]
+          for (const row of entry.before) {
+            const restored = plain(row) as AnyRow
+            delete restored.deletedAt
+            target.push(restored)
+          }
+          target.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          s.meta.recoveryStack = s.meta.recoveryStack.filter((candidate) => candidate.id !== id)
         }),
 
       reorderItems: (key, fromId, toId) =>
@@ -354,9 +488,11 @@ export const useStore = create<Store>()(
           const from = arr.findIndex((r) => r.id === fromId)
           const to = arr.findIndex((r) => r.id === toId)
           if (from < 0 || to < 0 || from === to) return
+          const before = arr.map(plain)
           const [moved] = arr.splice(from, 1)
           arr.splice(to, 0, moved)
           arr.forEach((r, i) => (r.order = i))
+          pushRecovery(s as unknown as AppData, key, 'Moved record', before, arr.map(plain))
         }),
 
       setCollection: (key, items) =>
@@ -384,7 +520,9 @@ export const useStore = create<Store>()(
           s.meta.activity = s.meta.activity.slice(0, 30)
         }),
 
-      replaceAll: (data) => set(() => ({ ...migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags({ ...createSeedData(), ...data } as AppData))) })),
+      replaceAll: (data) => set(() => ({
+        ...migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags({ ...createSeedData(), ...data } as AppData)))),
+      })),
 
       resetToSeed: () => set(() => ({ ...createSeedData() })),
     })),
@@ -410,14 +548,22 @@ export const useStore = create<Store>()(
             ...p.settings,
             backup: { ...current.settings.backup, ...p.settings?.backup },
             calendar: { ...current.settings.calendar, ...p.settings?.calendar },
+            listPreferences: p.settings?.listPreferences ?? current.settings.listPreferences,
+            savedViews: p.settings?.savedViews ?? current.settings.savedViews,
+            activeSavedViewIds: p.settings?.activeSavedViewIds ?? current.settings.activeSavedViewIds,
           },
           mcat: { ...current.mcat, ...p.mcat },
-          meta: { ...current.meta, ...p.meta },
+          meta: {
+            ...current.meta,
+            ...p.meta,
+            recoveryStack: p.meta?.recoveryStack ?? current.meta.recoveryStack,
+          },
+          trash: p.trash ?? current.trash,
           notes: { ...current.notes, ...p.notes },
           profile: { ...current.profile, ...p.profile },
           goals: { ...current.goals, ...p.goals },
         }
-        return migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags(merged as AppData))) as unknown as Store
+        return migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags(merged as AppData)))) as unknown as Store
       },
     }
   )

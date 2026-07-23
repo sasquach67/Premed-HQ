@@ -25,6 +25,10 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { AutosaveStatus, type SaveStatus } from '@/components/common/AutosaveStatus'
 import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
+import { BulkActionBar } from '@/components/common/BulkActionBar'
+import { SavedViewControls } from '@/components/common/SavedViewControls'
+import { useSavedViews } from '@/components/common/useSavedViews'
+import { useToast } from '@/components/common/useToast'
 
 export type CellType = 'text' | 'number' | 'date' | 'select' | 'longtext' | 'link' | 'toggle' | 'read' | 'custom'
 
@@ -91,42 +95,106 @@ interface TrackerTableProps {
   onOpen?: (id: string) => void
   selectedIds?: Set<string>
   onToggleSelected?: (id: string) => void
+  listId?: string
 }
 
 /** The detailed editable TABLE behind every pillar tracker.
  *  Inline edit · check-off · drag-reorder · delete (Notion-like). */
 export function TrackerTable({
   collection, rows, columns, checkKey, reorder = true, rowActions, onDelete, empty,
-  state = 'ready', errorMessage, onRetry, onOpen, selectedIds, onToggleSelected,
+  state = 'ready', errorMessage, onRetry, onOpen, selectedIds, onToggleSelected, listId,
 }: TrackerTableProps) {
   const patchItem = useStore((s) => s.patchItem)
-  const removeItem = useStore((s) => s.removeItem)
   const reorderItems = useStore((s) => s.reorderItems)
+  const undoRecovery = useStore((s) => s.undoRecovery)
+  const toast = useToast()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(() => new Set())
+  const views = useSavedViews(listId ?? collection, { visibleColumns: columns.map((column) => column.key) })
+  const effectiveSelectedIds = selectedIds ?? internalSelectedIds
+  const visibleColumns = views.state.visibleColumns.length
+    ? columns.filter((column) => views.state.visibleColumns.includes(column.key))
+    : columns
+  const activeRows = rows.filter((row) => !field(row, 'deletedAt') && !field(row, 'archived'))
+
+  function toggleSelected(id: string) {
+    if (onToggleSelected) {
+      onToggleSelected(id)
+      return
+    }
+    setInternalSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function clearSelection() {
+    if (selectedIds && onToggleSelected) {
+      for (const id of selectedIds) onToggleSelected(id)
+      return
+    }
+    setInternalSelectedIds(new Set())
+  }
+
+  function selectAll() {
+    const allSelected = activeRows.length > 0 && activeRows.every((row) => effectiveSelectedIds.has(row.id))
+    if (selectedIds && onToggleSelected) {
+      for (const row of activeRows) {
+        if (allSelected === effectiveSelectedIds.has(row.id)) onToggleSelected(row.id)
+      }
+      return
+    }
+    setInternalSelectedIds(allSelected ? new Set() : new Set(activeRows.map((row) => row.id)))
+  }
 
   function patch(id: string, key: string, value: unknown) {
+    const previous = field(rows.find((row) => row.id === id) ?? { id }, key)
     setSaveStatus('saving')
     patchItem(collection, id, { [key]: value })
+    if (key === checkKey && previous !== value) {
+      toast({
+        title: value ? 'Marked complete' : 'Reopened',
+        onUndo: () => patchItem(collection, id, { [key]: previous }),
+      })
+    }
     window.setTimeout(() => setSaveStatus('saved'), 350)
   }
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e
-    if (over && active.id !== over.id) reorderItems(collection, String(active.id), String(over.id))
+    if (over && active.id !== over.id) {
+      reorderItems(collection, String(active.id), String(over.id))
+      const recoveryId = useStore.getState().meta.recoveryStack[0]?.id
+      toast({ title: 'Record moved', onUndo: recoveryId ? () => undoRecovery(recoveryId) : undefined })
+    }
   }
 
   if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
-  if (!rows.length && empty) return <>{empty}</>
+  if (!activeRows.length && empty) return <>{empty}</>
 
-  const ids = rows.map((r) => r.id)
-  const minWidth = columns.reduce((sum, column) => sum + columnWidthPx(column.width), 80 + (reorder ? 32 : 0) + (checkKey ? 40 : 0) + (onToggleSelected ? 40 : 0))
+  const ids = activeRows.map((r) => r.id)
+  const minWidth = visibleColumns.reduce((sum, column) => sum + columnWidthPx(column.width), 120 + (reorder ? 32 : 0) + (checkKey ? 40 : 0))
+  const allSelected = activeRows.length > 0 && activeRows.every((row) => effectiveSelectedIds.has(row.id))
+  const someSelected = activeRows.some((row) => effectiveSelectedIds.has(row.id))
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="overflow-hidden rounded-2xl border border-border bg-card/70 shadow-sm">
-        <div className="flex min-h-10 items-center justify-end border-b border-border px-3">
+        <div className="flex min-h-10 flex-wrap items-center justify-end gap-3 border-b border-border px-3 py-1.5">
           <AutosaveStatus status={saveStatus} />
+          <SavedViewControls
+            state={views.state}
+            savedViews={views.savedViews}
+            activeId={views.activeId}
+            columns={columns.map((column) => ({ key: column.key, label: column.header }))}
+            onChange={views.setState}
+            onSave={views.save}
+            onRestore={views.restore}
+            onRemove={views.remove}
+          />
         </div>
         <div className="hidden max-h-[42rem] overflow-auto md:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
@@ -137,13 +205,15 @@ export function TrackerTable({
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
               </th>
             )}
-            {onToggleSelected && <th className="w-10 px-2 py-3"><span className="sr-only">Select</span></th>}
+            <th className="w-10 px-2 py-3">
+              <Checkbox checked={allSelected ? true : someSelected ? 'indeterminate' : false} onCheckedChange={selectAll} aria-label="Select all records" />
+            </th>
             {checkKey && (
               <th className="w-10 px-2 py-3">
                 <CheckSquare2 className="size-3.5 opacity-60" aria-hidden="true" />
               </th>
             )}
-            {columns.map((c) => (
+            {visibleColumns.map((c) => (
               <th key={c.key} className={cn('px-3 py-3', c.align === 'right' && 'text-right')} style={{ width: c.width }}>
                 <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap', c.align === 'right' && 'justify-end')}>
                   {(() => {
@@ -159,34 +229,35 @@ export function TrackerTable({
           </thead>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <tbody>
-              {rows.map((row) => (
+              {activeRows.map((row) => (
                 <TableRow
                   key={row.id}
                   row={row}
-                  columns={columns}
+                  columns={visibleColumns}
                   checkKey={checkKey}
                   reorder={reorder}
                   rowActions={rowActions}
                   onChange={(k, v) => patch(row.id, k, v)}
-                  onDelete={() => (onDelete ? onDelete(row.id) : removeItem(collection, row.id))}
+                  onDelete={() => (onDelete ? onDelete(row.id) : toggleSelected(row.id))}
                   onOpen={onOpen ? () => onOpen(row.id) : undefined}
-                  selected={selectedIds?.has(row.id)}
-                  onToggleSelected={onToggleSelected ? () => onToggleSelected(row.id) : undefined}
+                  selected={effectiveSelectedIds.has(row.id)}
+                  onToggleSelected={() => toggleSelected(row.id)}
+                  density={views.state.density}
                 />
               ))}
             </tbody>
           </SortableContext>
         </table>
         </div>
-        <div className="max-h-[42rem] space-y-3 overflow-y-auto p-3 md:hidden">
-          {rows.map((row) => (
-            <article key={row.id} className="rounded-xl border border-border bg-card p-3">
+        <div className={cn('max-h-[42rem] overflow-y-auto p-3 md:hidden', views.state.density === 'compact' ? 'space-y-1.5' : 'space-y-3')}>
+          {activeRows.map((row) => (
+            <article key={row.id} className={cn('rounded-xl border border-border bg-card', views.state.density === 'compact' ? 'p-2' : 'p-3')}>
               <div className="mb-3 flex items-center justify-between gap-2">
-                {onToggleSelected && <Checkbox checked={selectedIds?.has(row.id)} onCheckedChange={() => onToggleSelected(row.id)} aria-label="Select record" />}
+                <Checkbox checked={effectiveSelectedIds.has(row.id)} onCheckedChange={() => toggleSelected(row.id)} aria-label="Select record" />
                 {onOpen && <button type="button" className="ml-auto text-sm font-bold text-primary" onClick={() => onOpen(row.id)}>Open</button>}
               </div>
               <dl className="space-y-3">
-                {columns.map((column) => (
+                {visibleColumns.map((column) => (
                   <div key={column.key}>
                     <dt className="mb-1 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{column.header}</dt>
                     <dd>
@@ -199,13 +270,14 @@ export function TrackerTable({
             </article>
           ))}
         </div>
+        <BulkActionBar collection={collection} rows={activeRows as Row[]} selectedIds={effectiveSelectedIds} onClear={clearSelection} />
       </div>
     </DndContext>
   )
 }
 
 function TableRow({
-  row, columns, checkKey, reorder, rowActions, onChange, onDelete, onOpen, selected, onToggleSelected,
+  row, columns, checkKey, reorder, rowActions, onChange, onDelete, onOpen, selected, onToggleSelected, density,
 }: {
   row: Row
   columns: ColumnDef[]
@@ -217,6 +289,7 @@ function TableRow({
   onOpen?: () => void
   selected?: boolean
   onToggleSelected?: () => void
+  density: 'comfortable' | 'compact'
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
   const checked = checkKey ? Boolean(field(row, checkKey)) : false
@@ -225,7 +298,7 @@ function TableRow({
     <tr
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('group min-h-14 border-b border-border/70 last:border-0 hover:bg-muted/35', isDragging && 'opacity-60', checked && 'opacity-55')}
+      className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
     >
       {reorder && (
         <td className="px-1 text-muted-foreground">
@@ -234,18 +307,16 @@ function TableRow({
           </button>
         </td>
       )}
-      {onToggleSelected && (
-        <td className="px-2">
-          <Checkbox checked={selected} onCheckedChange={onToggleSelected} aria-label="Select record" />
-        </td>
-      )}
+      <td className="px-2">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelected} aria-label="Select record" />
+      </td>
       {checkKey && (
         <td className="px-2">
           <Checkbox checked={checked} onCheckedChange={(v) => onChange(checkKey, Boolean(v))} />
         </td>
       )}
       {columns.map((c) => (
-        <td key={c.key} className={cn('px-3 py-3 align-top', c.align === 'right' && 'text-right')}>
+        <td key={c.key} className={cn('px-3 align-top', density === 'compact' ? 'py-1.5' : 'py-3', c.align === 'right' && 'text-right')}>
           <Cell row={row} column={c} value={field(row, c.key)} checked={checked} onChange={(v) => onChange(c.key, v)} />
           {c.validate?.(field(row, c.key), row) && <p className="mt-1 text-xs font-semibold text-destructive" role="alert">{c.validate(field(row, c.key), row)}</p>}
         </td>
@@ -254,7 +325,7 @@ function TableRow({
         <div className="flex items-center justify-end gap-1">
           {rowActions?.(row)}
           {onOpen && <button type="button" onClick={onOpen} className="min-h-8 rounded-md px-2 text-xs font-bold text-primary hover:bg-primary/10">Open</button>}
-          <button onClick={onDelete} className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-45 transition hover:bg-muted hover:text-destructive hover:opacity-100 group-hover:opacity-100" aria-label="Delete row">
+          <button onClick={onDelete} className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-45 transition hover:bg-muted hover:text-destructive hover:opacity-100 group-hover:opacity-100 motion-reduce:transition-none" aria-label="Select row for removal">
             <Trash2 className="size-3.5" />
           </button>
         </div>

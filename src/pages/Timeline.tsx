@@ -82,6 +82,7 @@ function TaskBoard() {
 
   return (
     <Kanban
+      collection="tasks"
       columns={[
         { id: 'todo', title: 'To-Do', accent: 'var(--muted-foreground)' },
         { id: 'doing', title: 'In-Progress', accent: 'var(--cat-shadow)' },

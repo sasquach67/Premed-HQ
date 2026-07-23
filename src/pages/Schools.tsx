@@ -53,7 +53,7 @@ export function Schools() {
 
       <div className="mb-6">
         <TrackerTable
-          collection="schools" rows={schools} columns={COLUMNS}
+          collection="schools" rows={schools} columns={COLUMNS} listId="schools.list"
           empty={<EmptyState icon={School} title="Your list is empty" hint="It's early — that's fine. Use AAMC MSAR to add target schools and track each one against your stats, mission fit, and in-state status." action={<Button size="sm" onClick={add}><Plus className="size-4" /> Add a school</Button>} />}
         />
       </div>

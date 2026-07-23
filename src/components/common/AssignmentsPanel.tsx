@@ -167,6 +167,7 @@ export function AssignmentsPanel() {
       </div>
       <TrackerTable
         collection="tasks"
+        listId="assignments.active"
         rows={active}
         columns={columns}
         checkKey="archived"

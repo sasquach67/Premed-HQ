@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Pause, Play, Plus, Square, X } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { uid } from '@/lib/id'
@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { FocusModeLayout } from '@/components/common/FocusModeLayout'
 
 const DEFAULT_SESSION_MINUTES = 90
 
@@ -77,21 +78,24 @@ export function McatFocusSession() {
   const progress = useMemo(() => ((sessionSeconds - remaining) / sessionSeconds) * 100, [remaining, sessionSeconds])
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-slate-950 text-white">
-      <img src={homeBanner(visualTheme)} alt="" className={cn('absolute inset-0 size-full object-cover', !reducedMotion && 'scale-105')} />
-      <div className="absolute inset-0 bg-slate-950/48" />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-transparent to-slate-950/72" />
-
-      <div className="relative flex min-h-svh flex-col p-5 sm:p-8">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <Button asChild variant="outline" className="rounded-full border-white/20 bg-slate-950/55 text-white backdrop-blur hover:bg-white hover:text-slate-950">
-            <Link to="/mcat">← Back to plan</Link>
-          </Button>
+    <FocusModeLayout
+      exitTo="/mcat"
+      exitLabel="Back to plan"
+      className="bg-slate-950 text-white"
+      background={(
+        <>
+          <img src={homeBanner(visualTheme)} alt="" className={cn('absolute inset-0 size-full object-cover', !reducedMotion && 'scale-105')} />
+          <div className="absolute inset-0 bg-slate-950/48" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-transparent to-slate-950/72" />
+        </>
+      )}
+      headerEnd={(
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-white/15 bg-slate-950/58 px-4 py-2 text-sm font-extrabold backdrop-blur">MCAT · {sessionSection}</span>
             <span className="rounded-full border border-leaf/55 bg-leaf/20 px-4 py-2 text-sm font-extrabold text-leaf backdrop-blur">Session 2 of 3 today</span>
           </div>
-        </header>
+      )}
+    >
 
         <section className="grid flex-1 place-items-center py-12 text-center">
           <div>
@@ -153,8 +157,6 @@ export function McatFocusSession() {
             />
           </div>
         </footer>
-      </div>
-
       <MissedQuestionDialog
         open={missOpen}
         onOpenChange={setMissOpen}
@@ -172,7 +174,7 @@ export function McatFocusSession() {
           })
         })}
       />
-    </main>
+    </FocusModeLayout>
   )
 }
 

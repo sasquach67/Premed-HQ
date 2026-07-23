@@ -12,6 +12,17 @@ export interface EntitySource {
   externalId?: string
 }
 
+/** Additive launch envelope for legacy collection rows. */
+export interface LegacyEntityEnvelope {
+  ownerId?: ID
+  createdAt?: number
+  updatedAt?: number
+  archived?: boolean
+  deletedAt?: number
+}
+
+export type CollectionRecord<T> = T & LegacyEntityEnvelope
+
 /** Target envelope for canonical records introduced after the local-first baseline. */
 export interface EntityEnvelope {
   id: ID
@@ -663,6 +674,28 @@ export interface CalendarSettings {
   useMockPreview: boolean
 }
 
+export type ListDensity = 'comfortable' | 'compact'
+
+export interface ListViewState {
+  filters: Record<string, string | string[] | boolean>
+  sort?: { key: string; direction: 'asc' | 'desc' }
+  groupBy?: string
+  visibleColumns: string[]
+  density: ListDensity
+  dateRange?: { start?: string; end?: string }
+  view?: string
+}
+
+export interface SavedListView {
+  id: ID
+  listId: string
+  name: string
+  ownerId?: ID
+  createdAt: number
+  updatedAt: number
+  state: ListViewState
+}
+
 export interface Settings {
   theme: 'light' | 'dark' | 'system'
   visualTheme: 'ghibli' | 'doraemon'
@@ -675,6 +708,9 @@ export interface Settings {
   northStarExpanded: boolean
   overviewTaskMode: 'today' | 'all'
   academicsMode: 'daily' | 'planning'
+  listPreferences: Record<string, ListViewState>
+  savedViews: Record<string, SavedListView[]>
+  activeSavedViewIds: Record<string, ID | undefined>
 }
 
 export interface ActivityEvent {
@@ -684,37 +720,55 @@ export interface ActivityEvent {
   label: string
 }
 
+export interface TrashRecord {
+  id: ID
+  collection: CollectionKey
+  deletedAt: number
+  record: Record<string, unknown> & { id: ID; deletedAt: number }
+}
+
+export interface RecoveryEntry {
+  id: ID
+  at: number
+  label: string
+  collection: CollectionKey
+  before: Array<Record<string, unknown> & { id: ID }>
+  after: Array<Record<string, unknown> & { id: ID }>
+}
+
 export interface Meta {
   recentRoutes: string[]
   activity: ActivityEvent[]
   lastOpenedAt: number
   seedVersion: number
+  recoveryStack: RecoveryEntry[]
 }
 
 /** The single persisted root object. */
 export interface AppData {
   profile: Profile
   goals: Goals
-  courses: Course[]
+  courses: CollectionRecord<Course>[]
   academics: AcademicTagSettings
-  requirements: RequirementItem[]
-  experiences: ExperienceEntry[]
-  persons: Person[]
-  organizations: Organization[]
-  tasks: TaskItem[]
-  letters: LetterEntry[]
-  stories: StoryEntry[]
-  secondaries: SecondaryEntry[]
-  interviewQs: InterviewQA[]
+  requirements: CollectionRecord<RequirementItem>[]
+  experiences: CollectionRecord<ExperienceEntry>[]
+  persons: CollectionRecord<Person>[]
+  organizations: CollectionRecord<Organization>[]
+  tasks: CollectionRecord<TaskItem>[]
+  letters: CollectionRecord<LetterEntry>[]
+  stories: CollectionRecord<StoryEntry>[]
+  secondaries: CollectionRecord<SecondaryEntry>[]
+  interviewQs: CollectionRecord<InterviewQA>[]
   mcat: McatState
-  schools: SchoolEntry[]
-  resources: ResourceLink[]
-  tips: TipEntry[]
-  focusTargets: FocusTarget[]
-  quarterlyGoals: QuarterlyGoal[]
-  advisingQs: AdvisingQuestion[]
-  notePages: NotePage[]
-  orgs: Org[]
+  schools: CollectionRecord<SchoolEntry>[]
+  resources: CollectionRecord<ResourceLink>[]
+  tips: CollectionRecord<TipEntry>[]
+  focusTargets: CollectionRecord<FocusTarget>[]
+  quarterlyGoals: CollectionRecord<QuarterlyGoal>[]
+  advisingQs: CollectionRecord<AdvisingQuestion>[]
+  notePages: CollectionRecord<NotePage>[]
+  orgs: CollectionRecord<Org>[]
+  trash: TrashRecord[]
   notes: Record<string, string>   // free-text scratchpads keyed by id (e.g. "research-drive", "ps-doc")
   settings: Settings
   meta: Meta

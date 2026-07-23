@@ -48,7 +48,7 @@ export function Academics() {
   const { classId } = useParams()
   const courses = useStore((s) => s.courses)
   const addItem = useStore((s) => s.addItem)
-  const removeItem = useStore((s) => s.removeItem)
+  const undoRecovery = useStore((s) => s.undoRecovery)
   const storedMode = useStore((s) => s.settings.academicsMode)
   const update = useStore((s) => s.update)
   const route = ROUTE_MAP.academics
@@ -69,11 +69,12 @@ export function Academics() {
       id, term, code: '', title: '', credits: 3, grade: '', bcpm: false,
       status: 'planned', inResidence: true, satisfies: [], order: 0,
     } as Course)
+    const recoveryId = useStore.getState().meta.recoveryStack[0]?.id
     toast({
       title: 'Course created',
       description: `Added to ${term}.`,
       onOpen: () => setSearchParams({ mode: 'planning', tab: 'planner' }),
-      onUndo: () => removeItem('courses', id),
+      onUndo: recoveryId ? () => undoRecovery(recoveryId) : undefined,
     })
   }
 
@@ -168,7 +169,7 @@ export function Academics() {
                   title={term}
                   badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{rows.length} courses · {credits} cr</span>}
                 >
-                  <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} />
+                  <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} listId={`academics.${activeTab}.${term}`} />
                 </Collapsible>
               )
             }
@@ -178,7 +179,7 @@ export function Academics() {
                   <h3 className="text-sm font-bold">{term} <span className="ml-1 font-normal text-muted-foreground">· {credits} cr</span></h3>
                   <Button size="sm" variant="outline" onClick={() => addCourse(term)}><Plus className="size-4" /> Add course</Button>
                 </div>
-                <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} />
+                <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} listId={`academics.${activeTab}.${term}`} />
               </div>
             )
           })}
