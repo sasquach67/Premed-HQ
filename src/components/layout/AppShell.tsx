@@ -17,6 +17,7 @@ import { MascotLayer } from '@/components/mascot/MascotLayer'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const collapsed = useStore((s) => s.settings.sidebarCollapsed)
   const update = useStore((s) => s.update)
   useTheme()
   useBackup() // wires daily-on-open check + debounced auto-backup
@@ -41,9 +42,11 @@ export function AppShell() {
       <ToastProvider>
       <ShellActionsProvider>
       <div className="flex h-svh overflow-hidden">
-        {/* The compact rail always owns the same gutter. The full sidebar reveals
-            over the page so opening it never reflows or re-centers page content. */}
-        <aside className="relative hidden w-[4.75rem] shrink-0 lg:block">
+        {/* desktop sidebar — compact icons when collapsed, full navigation when open */}
+        <aside
+          className="relative hidden shrink-0 transition-[width] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none lg:block"
+          style={{ width: collapsed ? '4.75rem' : '16rem' }}
+        >
           <Sidebar collapsible signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
         </aside>
 
