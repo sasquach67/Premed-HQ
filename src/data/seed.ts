@@ -630,6 +630,8 @@ export function createSeedData(): AppData {
     academics,
     requirements,
     experiences: [],
+    persons: [],
+    organizations: [],
     tasks,
     letters: [],
     stories,

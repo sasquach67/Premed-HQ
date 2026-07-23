@@ -45,6 +45,7 @@ export type Store = AppData & Actions
 /** keys that hold the persisted data (functions are never serialized) */
 const DATA_KEYS: (keyof AppData)[] = [
   'profile', 'goals', 'courses', 'requirements', 'experiences', 'tasks',
+  'persons', 'organizations',
   'academics', 'letters', 'stories', 'secondaries', 'interviewQs', 'mcat', 'schools',
   'resources', 'tips', 'focusTargets', 'quarterlyGoals', 'advisingQs',
   'notePages', 'orgs', 'notes', 'settings', 'meta',

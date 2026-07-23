@@ -6,6 +6,47 @@
 
 export type ID = string
 
+export interface EntitySource {
+  type: 'manual' | 'import' | 'sync'
+  provider?: string
+  externalId?: string
+}
+
+/** Target envelope for canonical records introduced after the local-first baseline. */
+export interface EntityEnvelope {
+  id: ID
+  createdAt: number
+  updatedAt: number
+  archived: boolean
+  ownerId?: ID
+  deletedAt?: number
+  source?: EntitySource
+  /** Retained for compatibility with the store's generic ordered collection CRUD. */
+  order: number
+}
+
+export interface Person extends EntityEnvelope {
+  name: string
+  email?: string
+  phone?: string
+  role?: string
+  title?: string
+  organizationId?: ID
+  tags?: string[]
+  notes?: string
+}
+
+export type OrganizationType = 'hospital' | 'clinic' | 'lab' | 'nonprofit' | 'club' | 'school' | 'other'
+
+/** Canonical shared organization; intentionally distinct from the EC-specific Org record. */
+export interface Organization extends EntityEnvelope {
+  name: string
+  type?: OrganizationType
+  location?: string
+  website?: string
+  notes?: string
+}
+
 /** Letter grades on the AMCAS 4.0 scale (no +/- on AMCAS, but we keep them
  *  for display; the engine maps each to a 4.0 quality-point value). */
 export type LetterGrade =
@@ -66,6 +107,7 @@ export interface ExperienceEntry {
   id: ID
   category: ExperienceCategory
   org: string             // who/where — site, lab, org
+  organizationId?: ID     // canonical Organization link; org remains the display fallback
   role: string
   startDate?: string      // ISO date
   endDate?: string
@@ -74,6 +116,7 @@ export interface ExperienceEntry {
   /** AMCAS "Most Meaningful" reflection (per-activity click-in). */
   mostMeaningful?: string
   supervisor?: string     // verification-ready contact
+  supervisorId?: ID       // canonical Person link; supervisor remains the display fallback
   contact?: string
   status: 'active' | 'completed' | 'planned'
   fileUrl?: string        // Drive link
@@ -224,6 +267,7 @@ export interface ClassContact {
   notes?: string
   lastContactedAt?: number
   followUpTaskId?: ID
+  personId?: ID
   createdAt: number
   updatedAt: number
   order: number
@@ -334,6 +378,7 @@ export type LetterStatus = 'identified' | 'asked' | 'agreed' | 'submitted' | 'de
 export interface LetterEntry {
   id: ID
   recommender: string
+  recommenderId?: ID
   role: string            // "Gen Chem professor", "Research PI"
   relationship: string
   type: string            // "Science faculty", "Committee", "Other"
@@ -549,6 +594,7 @@ export interface Org {
   memberCount?: number
   eventsWorked?: number
   verifierName?: string
+  verifierId?: ID
   verifierRole?: string
   verifierEmail?: string
   verifierPhone?: string
@@ -652,6 +698,8 @@ export interface AppData {
   academics: AcademicTagSettings
   requirements: RequirementItem[]
   experiences: ExperienceEntry[]
+  persons: Person[]
+  organizations: Organization[]
   tasks: TaskItem[]
   letters: LetterEntry[]
   stories: StoryEntry[]
@@ -673,7 +721,7 @@ export interface AppData {
 
 /** Array-typed collections eligible for generic CRUD. */
 export type CollectionKey =
-  | 'courses' | 'requirements' | 'experiences' | 'tasks' | 'letters'
+  | 'courses' | 'requirements' | 'experiences' | 'persons' | 'organizations' | 'tasks' | 'letters'
   | 'stories' | 'secondaries' | 'interviewQs' | 'schools' | 'resources'
   | 'tips' | 'focusTargets' | 'quarterlyGoals' | 'advisingQs'
   | 'notePages' | 'orgs'

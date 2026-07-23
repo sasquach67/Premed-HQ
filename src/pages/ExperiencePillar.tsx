@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { ApprovedExperienceLayout } from '@/components/experiences/ApprovedPillarLayouts'
 import { DocEmbed } from '@/components/common/DocEmbed'
 import { EmptyState } from '@/components/common/EmptyState'
+import { CreateExperienceDialog } from '@/components/common/CreateExperienceDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -92,6 +93,7 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
     [notePages, routeId]
   )
   const [selectedEntityKey, setSelectedEntityKey] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const selectedEntity = entities.find((entity) => entity.key === selectedEntityKey) ?? entities[0] ?? null
 
   const totals = hourTotals(experiences)
@@ -127,6 +129,7 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
     addItem('letters', {
       id: uid(),
       recommender: entry.supervisor || entry.contact || entry.org || 'New recommender',
+      recommenderId: entry.supervisorId,
       role: `${route.label} contact`,
       relationship: entry.org || entry.role || route.label,
       type: routeId === 'research' ? 'Research PI' : routeId === 'shadowing' ? 'Physician' : 'Other',
@@ -168,27 +171,36 @@ export function ExperiencePillar({ category }: { category: ExperienceCategory })
   }
 
   return (
-    <ApprovedPillarPage
-      category={category}
-      title={route.label}
-      rows={rows}
-      entities={entities}
-      selectedEntity={selectedEntity}
-      goal={goal}
-      totalHours={totalHours}
-      notes={notes}
-      onSelect={(entity) => setSelectedEntityKey(entity.key)}
-      onAddEntity={() => {
-        const created = addEntry({ org: entityFallbackName(category), role: defaultRoleForCategory(category) })
-        setSelectedEntityKey(entityKeyFor(created, category))
-      }}
-      onAddEntry={addEntry}
-      onPatchEntry={patchEntry}
-      onRemoveEntry={(id) => removeItem('experiences', id)}
-      onRequestLetter={requestLetter}
-      onDraftStory={draftStory}
-      onAddLabNote={addLabNote}
-    />
+    <>
+      <ApprovedPillarPage
+        category={category}
+        title={route.label}
+        rows={rows}
+        entities={entities}
+        selectedEntity={selectedEntity}
+        goal={goal}
+        totalHours={totalHours}
+        notes={notes}
+        onSelect={(entity) => setSelectedEntityKey(entity.key)}
+        onAddEntity={() => setCreateOpen(true)}
+        onAddEntry={addEntry}
+        onPatchEntry={patchEntry}
+        onRemoveEntry={(id) => removeItem('experiences', id)}
+        onRequestLetter={requestLetter}
+        onDraftStory={draftStory}
+        onAddLabNote={addLabNote}
+      />
+      <CreateExperienceDialog
+        open={createOpen}
+        category={category}
+        defaultRole={defaultRoleForCategory(category)}
+        onOpenChange={setCreateOpen}
+        onCreate={(patch) => {
+          const created = addEntry(patch)
+          setSelectedEntityKey(entityKeyFor(created, category))
+        }}
+      />
+    </>
   )
 }
 
@@ -306,7 +318,18 @@ function ApprovedEntityWorkspace({ category, entity, notes, onAddEntry, onPatchE
 
   const addLog = (values: string[]) => {
     const [date, hours, description] = values
-    onAddEntry({ org: entity.name, role: entity.role, startDate: date || new Date().toISOString().slice(0, 10), hours: Number(hours) || 0, description, supervisor: base?.supervisor, contact: base?.contact, status: 'active' })
+    onAddEntry({
+      org: entity.name,
+      organizationId: base?.organizationId,
+      role: entity.role,
+      startDate: date || new Date().toISOString().slice(0, 10),
+      hours: Number(hours) || 0,
+      description,
+      supervisor: base?.supervisor,
+      supervisorId: base?.supervisorId,
+      contact: base?.contact,
+      status: 'active',
+    })
   }
 
   return (
