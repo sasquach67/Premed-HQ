@@ -42,8 +42,8 @@ export function Sidebar({
       className={cn(
         'flex h-full w-64 origin-left flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[transform,clip-path,box-shadow] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] will-change-transform motion-reduce:transition-none',
         collapsible && 'absolute inset-y-0 left-0 z-30',
-        collapsible && collapsed && !hoverPreview && '-translate-x-1 [clip-path:inset(0_11.25rem_0_0)]',
-        (!collapsible || !collapsed || hoverPreview) && 'translate-x-0 [clip-path:inset(0_0_0_0)]',
+        collapsible && collapsed && !hoverPreview && '[clip-path:inset(0_11.25rem_0_0)]',
+        (!collapsible || !collapsed || hoverPreview) && '[clip-path:inset(0_0_0_0)]',
         collapsible && collapsed && hoverPreview && 'z-40 shadow-2xl'
       )}
     >

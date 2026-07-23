@@ -13,23 +13,25 @@ export function AlertsStrip() {
   if (!alerts.length || dismissedAlertKey === alertKey) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-[color-mix(in_srgb,var(--warning)_8%,var(--card))] px-4 py-2 md:px-6">
-      <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[color-mix(in_srgb,var(--warning)_55%,var(--foreground))]">
-        <AlertTriangle className="size-3.5" /> Needs attention
-      </span>
-      {alerts.map((a) => (
-        <AlertChip key={a.id} a={a} />
-      ))}
-      <Link to="/timeline" className="ml-auto text-xs font-semibold text-primary hover:underline">
-        View all →
-      </Link>
-      <button
-        onClick={() => update((d) => { d.settings.dismissedAlertKey = alertKey })}
-        className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Dismiss urgent alerts"
-      >
-        <X className="size-3.5" />
-      </button>
+    <div className="border-b border-border bg-[color-mix(in_srgb,var(--warning)_8%,var(--card))]">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-2 md:px-8">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[color-mix(in_srgb,var(--warning)_55%,var(--foreground))]">
+          <AlertTriangle className="size-3.5" /> Needs attention
+        </span>
+        {alerts.map((a) => (
+          <AlertChip key={a.id} a={a} />
+        ))}
+        <Link to="/timeline" className="ml-auto text-xs font-semibold text-primary hover:underline">
+          View all →
+        </Link>
+        <button
+          onClick={() => update((d) => { d.settings.dismissedAlertKey = alertKey })}
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Dismiss urgent alerts"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
     </div>
   )
 }
