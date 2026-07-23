@@ -13,7 +13,6 @@ import { ToastProvider } from '@/components/common/ToastProvider'
 import { ShellActionsProvider } from './ShellActionsProvider'
 import { QuickAddDialog } from './QuickAddDialog'
 import { HelpFeedbackLauncher } from './HelpFeedbackLauncher'
-import { MascotLayer } from '@/components/mascot/MascotLayer'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -79,7 +78,6 @@ export function AppShell() {
         </div>
         <QuickAddDialog />
         <HelpFeedbackLauncher />
-        <MascotLayer />
       </div>
       </ShellActionsProvider>
       </ToastProvider>

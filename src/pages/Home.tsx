@@ -12,7 +12,8 @@ import { formatClock, formatEventTimeRange, normalizeTimedEvents } from '@/lib/s
 import { MCAT_QOTD } from '@/data/mcatQotd'
 import { uid } from '@/lib/id'
 import { homeBanner, type VisualTheme } from '@/lib/themeAssets'
-import type { TaskItem, TaskProgress, TaskType } from '@/lib/types'
+import type { TaskItem, TaskProgress, TaskType, TipEntry } from '@/lib/types'
+import { Ram } from '@/components/mascot/Ram'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { SegmentedBar } from '@/components/common/SegmentedBar'
 import { InfoTip } from '@/components/common/InfoTip'
@@ -94,10 +95,16 @@ export function Home() {
 }
 
 function Hero() {
+  const tips = useStore((s) => s.tips)
   const visualTheme = useStore((s) => s.settings.visualTheme)
   const name = useStore((s) => s.profile.name)
   const schedule = useHeroScheduleSource()
   const now = useNow(1000)
+  const heroTips = useMemo(() => {
+    const generalTips = tips.filter((tip) => !tip.pillar)
+    return generalTips.length ? generalTips : tips
+  }, [tips])
+  const nudge = pickDaily(heroTips, 5)
   const dateLine = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
@@ -115,10 +122,23 @@ function Hero() {
             Good to see you again, {firstName(name)}!
           </h1>
           <HeroLiveStatus schedule={schedule} now={now} />
+          {nudge && <HeroMascotNudge tip={nudge} />}
         </div>
         <TodaySchedulePanel schedule={schedule} now={now} />
       </div>
     </section>
+  )
+}
+
+function HeroMascotNudge({ tip }: { tip: TipEntry }) {
+  return (
+    <div className="hidden max-w-xl items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/34 px-3 py-2 shadow-sm backdrop-blur-sm sm:inline-flex">
+      <Ram size={38} className="pointer-events-none shrink-0 drop-shadow-md" />
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold leading-snug text-white/68">{tip.text}</p>
+        <p className="mt-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white/42">{tip.source}</p>
+      </div>
+    </div>
   )
 }
 
