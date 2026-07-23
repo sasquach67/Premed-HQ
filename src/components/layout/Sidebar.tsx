@@ -79,65 +79,67 @@ export function Sidebar({
 
       {/* groups */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-3">
-        {NAV_GROUPS.map(({ group, items }) => (
-          <div key={group} className="mb-2.5">
-            <div className="h-6 overflow-hidden">
-              {group === 'Home' ? null : (
-                <p className={cn(
-                  'px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 transition-[opacity,transform] duration-200 motion-reduce:transition-none',
-                  labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
-                )}>{group}</p>
-              )}
-              {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
-            </div>
-            <ul className="space-y-0.5">
-              {items.map((r) => {
-                const to = r.id === 'home' ? '/' : `/${r.id}`
-                const isActive = r.id === 'home' ? location.pathname === '/' : location.pathname === to
-                const link = (
-                  <Link
-                    to={to}
-                    onClick={() => { touchRoute(r.id); onNavigate?.() }}
-                    className={cn(
-                      'group relative grid h-9 grid-cols-[2.25rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                      expanded ? 'px-1.5' : 'mx-auto w-9 px-0',
-                      r.id === 'home' && expanded && 'mb-2 h-10 border border-sidebar-border bg-card/70 text-base shadow-sm',
-                      expanded
-                        ? isActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--sidebar-primary)]'
-                          : 'text-sidebar-foreground/85 hover:bg-sidebar-accent/60'
-                        : isActive
-                          ? 'text-sidebar-primary'
-                          : 'text-muted-foreground hover:text-sidebar-primary'
-                    )}
-                  >
-                    <span className="grid size-9 place-items-center">
-                      <r.icon className={cn('size-[18px] shrink-0 transition-colors duration-200', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
-                    </span>
-                    <span
+        <div className="flex min-h-full flex-col justify-between">
+          {NAV_GROUPS.map(({ group, items }) => (
+            <div key={group} className="mb-2.5">
+              <div className="h-6 overflow-hidden">
+                {group === 'Home' ? null : (
+                  <p className={cn(
+                    'px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 transition-[opacity,transform] duration-200 motion-reduce:transition-none',
+                    labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
+                  )}>{group}</p>
+                )}
+                {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
+              </div>
+              <ul className="space-y-0.5">
+                {items.map((r) => {
+                  const to = r.id === 'home' ? '/' : `/${r.id}`
+                  const isActive = r.id === 'home' ? location.pathname === '/' : location.pathname === to
+                  const link = (
+                    <Link
+                      to={to}
+                      onClick={() => { touchRoute(r.id); onNavigate?.() }}
                       className={cn(
-                        'min-w-0 truncate transition-[opacity,transform] duration-200 motion-reduce:transition-none',
-                        labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
+                        'group relative grid h-9 grid-cols-[2.25rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                        expanded ? 'px-1.5' : 'mx-auto w-9 px-0',
+                        r.id === 'home' && expanded && 'mb-2 h-10 border border-sidebar-border bg-card/70 text-base shadow-sm',
+                        expanded
+                          ? isActive
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--sidebar-primary)]'
+                            : 'text-sidebar-foreground/85 hover:bg-sidebar-accent/60'
+                          : isActive
+                            ? 'text-sidebar-primary'
+                            : 'text-muted-foreground hover:text-sidebar-primary'
                       )}
                     >
-                      {r.label}
-                    </span>
-                  </Link>
-                )
-                return (
-                  <li key={r.id}>
-                    {expanded ? link : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>{link}</TooltipTrigger>
-                        <TooltipContent side="right">{r.label}</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+                      <span className="grid size-9 place-items-center">
+                        <r.icon className={cn('size-[18px] shrink-0 transition-colors duration-200', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
+                      </span>
+                      <span
+                        className={cn(
+                          'min-w-0 truncate transition-[opacity,transform] duration-200 motion-reduce:transition-none',
+                          labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
+                        )}
+                      >
+                        {r.label}
+                      </span>
+                    </Link>
+                  )
+                  return (
+                    <li key={r.id}>
+                      {expanded ? link : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>{link}</TooltipTrigger>
+                          <TooltipContent side="right">{r.label}</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="border-t border-sidebar-border px-3 py-2.5">
@@ -148,7 +150,7 @@ export function Sidebar({
               {expanded && <div className="min-w-0 leading-tight"><p className="truncate text-sm font-bold">{profile.name}</p><p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Local profile'}</p></div>}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-64">
+          <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-64">
             <DropdownMenuItem asChild><Link to="/profile" onClick={onNavigate}><UserRound className="size-4" /> Profile & CV</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/settings" onClick={onNavigate}><Settings className="size-4" /> Settings</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/upgrade" onClick={onNavigate}><Crown className="size-4" /> Upgrade plan</Link></DropdownMenuItem>
