@@ -47,6 +47,7 @@ function App() {
             <Route path="shadowing" element={<ExperiencePillar key="shadowing" category="shadowing" />} />
             <Route path="research" element={<ExperiencePillar key="research" category="research" />} />
             <Route path="ecs" element={<Extracurriculars />} />
+            <Route path="ecs/org/:orgId" element={<Extracurriculars />} />
             <Route path="essays" element={<Essays />} />
             <Route path="schools" element={<Schools />} />
             <Route path="timeline" element={<Timeline />} />

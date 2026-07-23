@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Award,
@@ -38,6 +39,9 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { OrgCard } from '@/components/ecs/OrgCard'
 import { StatStrip } from '@/components/ecs/StatStrip'
+import { OrgPeek } from '@/components/ecs/OrgPeek'
+import { RecordOpenWorkspace } from '@/components/common/RecordOpenWorkspace'
+import type { RecordOpenMode } from '@/components/common/CenterPeek'
 import { activeOrg, joinedLabel, orgInitials, reflectionCount, statusLabel } from '@/components/ecs/ecsUtils'
 
 type Filter = 'all' | 'active' | 'leadership' | 'watchlist' | 'past'
@@ -59,17 +63,23 @@ const ECS_TABS: { id: EcsTab; label: string; icon: typeof Users }[] = [
 /** Extracurriculars = organization board + reflection journal, not an hours tracker. */
 export function Extracurriculars() {
   const route = ROUTE_MAP.ecs
+  const navigate = useNavigate()
+  const { orgId } = useParams<{ orgId?: string }>()
   const orgs = useStore((s) => s.orgs)
   const notePages = useStore((s) => s.notePages)
   const addItem = useStore((s) => s.addItem)
   const patchItem = useStore((s) => s.patchItem)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(orgId ?? null)
+  const [openMode, setOpenMode] = useState<RecordOpenMode>(orgId ? 'expanded' : 'peek')
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, 160)
   const [focusReflectionId, setFocusReflectionId] = useState<string | null>(null)
 
   const visibleOrgs = useMemo(() => filterOrgs(orgs, 'all', debouncedQuery), [orgs, debouncedQuery])
-  const active = orgs.find((org) => org.id === openId) ?? visibleOrgs[0] ?? orgs[0] ?? null
+  const resolvedOpenId = orgId ?? openId
+  const resolvedOpenMode: RecordOpenMode = orgId ? 'expanded' : openMode
+  const selectedRecord = resolvedOpenId ? orgs.find((org) => org.id === resolvedOpenId) ?? null : null
+  const active = selectedRecord ?? visibleOrgs[0] ?? orgs[0] ?? null
   const initiatives = useMemo(
     () => notePages.filter((page) => page.pillar === 'ecs-initiative').sort((a, b) => a.order - b.order || b.updatedAt - a.updatedAt),
     [notePages]
@@ -95,6 +105,76 @@ export function Extracurriculars() {
 
   function patchOrg(id: string, patch: Partial<Org>) {
     patchItem('orgs', id, patch)
+  }
+
+  function openOrg(id: string) {
+    setFocusReflectionId(null)
+    setOpenId(id)
+    setOpenMode('peek')
+  }
+
+  function changeOpenMode(mode: RecordOpenMode) {
+    if (!openId) return
+    if (mode === 'expanded') {
+      setOpenMode('expanded')
+      navigate(`/ecs/org/${openId}`)
+      return
+    }
+    if (resolvedOpenMode === 'expanded') navigate('/ecs')
+    setOpenMode(mode)
+  }
+
+  const recordWorkspace = resolvedOpenId ? (
+    <RecordOpenWorkspace
+      records={orgs.map((org) => ({
+        id: org.id,
+        label: org.name || 'Untitled organization',
+        description: `${org.type || 'Organization'} · ${org.role || 'Role not set'}`,
+      }))}
+      activeId={resolvedOpenId}
+      open={resolvedOpenId !== null}
+      mode={resolvedOpenMode}
+      parentLabel={route.label}
+      onOpenChange={(next) => {
+        if (next) return
+        if (resolvedOpenMode === 'expanded') navigate('/ecs')
+        setOpenId(null)
+        setOpenMode('peek')
+      }}
+      onModeChange={changeOpenMode}
+      onSelect={(id) => {
+        setOpenId(id)
+        if (resolvedOpenMode === 'expanded') navigate(`/ecs/org/${id}`, { replace: true })
+      }}
+      renderRecord={(id) => {
+        const record = orgs.find((org) => org.id === id)
+        if (!record) return null
+        return (
+          <OrgPeek
+            org={record}
+            relatedOrgs={relatedOrgsFor(record, orgs)}
+            onPatch={(patch) => patchOrg(record.id, patch)}
+            onOpenRelation={(relationId) => {
+              setOpenId(relationId)
+              if (resolvedOpenMode === 'expanded') navigate(`/ecs/org/${relationId}`, { replace: true })
+            }}
+          />
+        )
+      }}
+    />
+  ) : null
+
+  if (resolvedOpenMode === 'expanded') {
+    return (
+      <div className="space-y-4">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <button type="button" className="hover:text-foreground" onClick={() => navigate('/ecs')}>{route.label}</button>
+          <span aria-hidden="true">/</span>
+          <span className="truncate text-foreground">{selectedRecord?.name || 'Record unavailable'}</span>
+        </nav>
+        {recordWorkspace}
+      </div>
+    )
   }
 
   function addReflection(org: Org) {
@@ -149,7 +229,7 @@ export function Extracurriculars() {
         <EcsEntityTabs
           orgs={visibleOrgs}
           activeId={active?.id ?? null}
-          onOpen={(org) => { setFocusReflectionId(null); setOpenId(org.id) }}
+          onOpen={(org) => openOrg(org.id)}
           onAdd={() => add()}
         />
 
@@ -163,6 +243,7 @@ export function Extracurriculars() {
           onPatchInitiative={(id, patch) => patchItem('notePages', id, { ...patch, updatedAt: Date.now() })}
         />
       </div>
+      {recordWorkspace}
     </div>
   )
 }
@@ -993,4 +1074,4 @@ function relatedOrgsFor(org: Org, orgs: Org[]) {
 
 // Retain the previous workspace implementation while the approved design is
 // validated; these references keep it available for a low-risk rollback.
-void [PillarTabStrip, OrganizationsView, EcsOrgWorkspace, InitiativesView]
+void [PillarTabStrip, OrganizationsView, EcsOrgWorkspace, InitiativesView, buildSections]
