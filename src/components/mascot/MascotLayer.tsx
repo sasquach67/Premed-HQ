@@ -8,7 +8,7 @@ export function MascotLayer() {
   const tips = useMemo(() => allTips.filter((tip) => !tip.pillar), [allTips])
 
   return (
-    <div className="pointer-events-none fixed bottom-3 right-4 z-30 hidden lg:block">
+    <div className="pointer-events-none fixed bottom-16 right-4 z-30 hidden lg:block">
       <div className="pointer-events-auto">
         <MascotBubble tips={tips.length ? tips : allTips} side="left" ramSize={52} floating />
       </div>
