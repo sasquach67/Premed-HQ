@@ -79,7 +79,7 @@ export function Sidebar({
 
       {/* groups */}
       <div className="flex-1 overflow-hidden px-2.5 pb-3 [@media(max-height:950px)]:pb-6">
-        <div className="flex min-h-full flex-col justify-between">
+        <div className="flex min-h-full flex-col justify-between [@media(max-height:950px)]:py-2">
           {NAV_GROUPS.map(({ group, items }) => (
             <div key={group} className="mb-2.5 [@media(max-height:950px)]:mb-2">
               <div className="h-7 overflow-hidden [@media(max-height:950px)]:h-6">
