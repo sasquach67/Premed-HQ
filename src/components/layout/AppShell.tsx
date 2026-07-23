@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { X } from 'lucide-react'
+import { AnimatePresence, m } from 'motion/react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { AlertsStrip } from './AlertsStrip'
@@ -13,6 +14,7 @@ import { ToastProvider } from '@/components/common/ToastProvider'
 import { ShellActionsProvider } from './ShellActionsProvider'
 import { QuickAddDialog } from './QuickAddDialog'
 import { HelpFeedbackLauncher } from './HelpFeedbackLauncher'
+import { MOTION_TRANSITION } from '@/lib/motion'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -42,18 +44,21 @@ export function AppShell() {
       <ShellActionsProvider>
       <div className="flex h-svh overflow-hidden">
         {/* desktop sidebar — compact icons when collapsed, full navigation when open */}
-        <aside
-          className="relative hidden shrink-0 transition-[width] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none lg:block"
+        <m.aside
+          layout="size"
+          transition={MOTION_TRANSITION.standard}
+          className="relative hidden shrink-0 lg:block"
           style={{ width: collapsed ? '4.75rem' : '16rem' }}
         >
           <Sidebar collapsible signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
-        </aside>
+        </m.aside>
 
         {/* mobile drawer */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="absolute inset-0 bg-foreground/35 backdrop-blur-[2px]" onClick={() => setMobileOpen(false)} />
-            <div className="absolute inset-y-0 left-0 animate-pop-in">
+        <AnimatePresence>
+          {mobileOpen && (
+          <m.div className="fixed inset-0 z-40 lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={MOTION_TRANSITION.micro}>
+            <m.div className="absolute inset-0 bg-foreground/35 backdrop-blur-[2px]" onClick={() => setMobileOpen(false)} />
+            <m.div className="absolute inset-y-0 left-0" initial={{ x: -16 }} animate={{ x: 0 }} exit={{ x: -16 }} transition={MOTION_TRANSITION.standard}>
               <Sidebar onNavigate={() => setMobileOpen(false)} signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
               <button
                 onClick={() => setMobileOpen(false)}
@@ -62,9 +67,10 @@ export function AppShell() {
               >
                 <X className="size-5" />
               </button>
-            </div>
-          </div>
-        )}
+            </m.div>
+          </m.div>
+          )}
+        </AnimatePresence>
 
         {/* main column */}
         <div className="flex min-w-0 flex-1 flex-col">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Bell, BookOpenText, ChevronsUpDown, Crown, LogOut, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from 'lucide-react'
+import { AnimatePresence, m } from 'motion/react'
 import { NAV_GROUPS } from '@/app/routes'
 import { useStore } from '@/store/store'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -9,6 +10,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { MOTION_DISTANCE, MOTION_TRANSITION } from '@/lib/motion'
 
 /** MedCoach-style grouped nav. Collapsible on desktop; always full-width inside the mobile drawer. */
 export function Sidebar({
@@ -29,7 +31,9 @@ export function Sidebar({
   const labelsShown = expanded
 
   return (
-    <nav
+    <m.nav
+      layout="size"
+      transition={MOTION_TRANSITION.standard}
       onMouseEnter={() => { if (collapsible && collapsed) setHoverPreview(true) }}
       onMouseMove={() => { if (collapsible && collapsed && !hoverPreview) setHoverPreview(true) }}
       onMouseLeave={() => setHoverPreview(false)}
@@ -41,7 +45,7 @@ export function Sidebar({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHoverPreview(false)
       }}
       className={cn(
-        'flex h-full origin-left flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,box-shadow] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none',
+        'flex h-full origin-left flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground',
         expanded ? 'w-64' : 'w-[4.75rem]',
         collapsible && 'absolute inset-y-0 left-0 z-30',
         collapsible && collapsed && hoverPreview && 'z-40 shadow-2xl'
@@ -50,14 +54,16 @@ export function Sidebar({
       {/* brand + collapse toggle (no school subtitle — minimalist) */}
       <div
         className={cn(
-          'grid h-[4.25rem] items-center overflow-hidden transition-[padding] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none',
+          'grid h-[4.25rem] items-center overflow-hidden',
           expanded ? 'grid-cols-[2.25rem_minmax(0,1fr)_1.75rem] gap-2 px-3.5' : 'grid-cols-[2.25rem] justify-center px-0'
         )}
       >
         <AppMark />
-        {expanded && (
-          <p className={cn('min-w-0 font-display text-lg font-bold transition-[opacity,transform] duration-300 motion-reduce:transition-none', labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0')}>Premed HQ</p>
-        )}
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <m.p className="min-w-0 font-display text-lg font-bold" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>Premed HQ</m.p>
+          )}
+        </AnimatePresence>
         {collapsible && expanded && (
           <button
             onClick={() => {
@@ -84,10 +90,9 @@ export function Sidebar({
             <div key={group} className="mb-2.5 [@media(max-height:950px)]:mb-2">
               <div className="h-7 overflow-hidden [@media(max-height:950px)]:h-6">
                 {group === 'Home' ? null : (
-                  <p className={cn(
-                    'px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 transition-[opacity,transform] duration-200 motion-reduce:transition-none [@media(max-height:950px)]:text-[10px]',
-                    labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
-                  )}>{group}</p>
+                  <AnimatePresence initial={false}>
+                    {labelsShown && <m.p className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 [@media(max-height:950px)]:text-[10px]" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{group}</m.p>}
+                  </AnimatePresence>
                 )}
                 {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
               </div>
@@ -98,6 +103,7 @@ export function Sidebar({
                   const link = (
                     <Link
                       to={to}
+                      aria-label={r.label}
                       onClick={() => { touchRoute(r.id); onNavigate?.() }}
                       className={cn(
                         'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg border border-transparent text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [@media(max-height:950px)]:h-10 [@media(max-height:950px)]:grid-cols-[2.5rem_minmax(0,1fr)] [@media(max-height:950px)]:text-sm',
@@ -115,24 +121,19 @@ export function Sidebar({
                       <span className="grid size-12 place-items-center [@media(max-height:950px)]:size-10">
                         <r.icon className={cn('size-5 shrink-0 transition-colors duration-200 [@media(max-height:950px)]:size-[18px]', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
                       </span>
-                      <span
-                        className={cn(
-                          'min-w-0 truncate transition-[opacity,transform] duration-200 motion-reduce:transition-none',
-                          labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
-                        )}
-                      >
-                        {r.label}
-                      </span>
+                      <AnimatePresence initial={false}>
+                        {labelsShown && <m.span className="min-w-0 truncate" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{r.label}</m.span>}
+                      </AnimatePresence>
                     </Link>
                   )
                   return (
                     <li key={r.id}>
-                      {expanded ? link : (
+                      {collapsible && collapsed ? (
                         <Tooltip>
                           <TooltipTrigger asChild>{link}</TooltipTrigger>
                           <TooltipContent side="right">{r.label}</TooltipContent>
                         </Tooltip>
-                      )}
+                      ) : link}
                     </li>
                   )
                 })}
@@ -182,7 +183,7 @@ export function Sidebar({
           </div>
         </DialogContent>
       </Dialog>
-    </nav>
+    </m.nav>
   )
 }
 
