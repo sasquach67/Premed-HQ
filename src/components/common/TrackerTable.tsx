@@ -1,4 +1,4 @@
-import { type ReactNode, useLayoutEffect, useRef, useState } from 'react'
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -8,9 +8,13 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  AlignLeft, CalendarDays, CheckSquare2, ExternalLink, GripVertical, Hash, Link2,
-  ListFilter, StickyNote, ToggleLeft, Trash2, Type,
+  AlignLeft, ArrowUpDown, CalendarDays, CheckSquare2, ChevronLeft, ChevronRight,
+  ExternalLink, GripVertical, Hash, Link2, ListFilter, Search, StickyNote, ToggleLeft, Trash2, Type,
 } from 'lucide-react'
+import {
+  getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel,
+  useReactTable, type ColumnDef as TanStackColumnDef, type PaginationState, type SortingState,
+} from '@tanstack/react-table'
 import type { CollectionKey } from '@/lib/types'
 import { useStore } from '@/store/store'
 import { cn } from '@/lib/utils'
@@ -23,6 +27,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { AutosaveStatus, type SaveStatus } from '@/components/common/AutosaveStatus'
 import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
 import { BulkActionBar } from '@/components/common/BulkActionBar'
@@ -111,12 +117,40 @@ export function TrackerTable({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(() => new Set())
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const views = useSavedViews(listId ?? collection, { visibleColumns: columns.map((column) => column.key) })
   const effectiveSelectedIds = selectedIds ?? internalSelectedIds
   const visibleColumns = views.state.visibleColumns.length
     ? columns.filter((column) => views.state.visibleColumns.includes(column.key))
     : columns
   const activeRows = rows.filter((row) => !field(row, 'deletedAt') && !field(row, 'archived'))
+  const tableColumns = useMemo<TanStackColumnDef<Row>[]>(
+    () => columns.map((column) => ({
+      id: column.key,
+      accessorFn: (row) => field(row, column.key),
+    })),
+    [columns]
+  )
+  const dataTable = useReactTable({
+    data: activeRows,
+    columns: tableColumns,
+    state: { sorting, globalFilter, pagination },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const query = String(filterValue).trim().toLocaleLowerCase()
+      if (!query) return true
+      return columns.some((column) => String(field(row.original, column.key) ?? '').toLocaleLowerCase().includes(query))
+    },
+  })
+  const displayedRows = dataTable.getRowModel().rows.map((row) => row.original)
 
   function toggleSelected(id: string) {
     if (onToggleSelected) {
@@ -140,14 +174,14 @@ export function TrackerTable({
   }
 
   function selectAll() {
-    const allSelected = activeRows.length > 0 && activeRows.every((row) => effectiveSelectedIds.has(row.id))
+    const allSelected = displayedRows.length > 0 && displayedRows.every((row) => effectiveSelectedIds.has(row.id))
     if (selectedIds && onToggleSelected) {
-      for (const row of activeRows) {
+      for (const row of displayedRows) {
         if (allSelected === effectiveSelectedIds.has(row.id)) onToggleSelected(row.id)
       }
       return
     }
-    setInternalSelectedIds(allSelected ? new Set() : new Set(activeRows.map((row) => row.id)))
+    setInternalSelectedIds(allSelected ? new Set() : new Set(displayedRows.map((row) => row.id)))
   }
 
   function patch(id: string, key: string, value: unknown) {
@@ -175,15 +209,19 @@ export function TrackerTable({
   if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
   if (!activeRows.length && empty) return <>{empty}</>
 
-  const ids = activeRows.map((r) => r.id)
+  const ids = displayedRows.map((r) => r.id)
   const minWidth = visibleColumns.reduce((sum, column) => sum + columnWidthPx(column.width), 120 + (reorder ? 32 : 0) + (checkKey ? 40 : 0))
-  const allSelected = activeRows.length > 0 && activeRows.every((row) => effectiveSelectedIds.has(row.id))
-  const someSelected = activeRows.some((row) => effectiveSelectedIds.has(row.id))
+  const allSelected = displayedRows.length > 0 && displayedRows.every((row) => effectiveSelectedIds.has(row.id))
+  const someSelected = displayedRows.some((row) => effectiveSelectedIds.has(row.id))
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="overflow-hidden rounded-2xl border border-border bg-card/70 shadow-sm">
         <div className="flex min-h-10 flex-wrap items-center justify-end gap-3 border-b border-border px-3 py-1.5">
+          <div className="relative mr-auto min-w-48 flex-1 sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="h-8 pl-8" placeholder="Filter records..." aria-label="Filter records" />
+          </div>
           <AutosaveStatus status={saveStatus} />
           <SavedViewControls
             state={views.state}
@@ -215,13 +253,14 @@ export function TrackerTable({
             )}
             {visibleColumns.map((c) => (
               <th key={c.key} className={cn('px-3 py-3', c.align === 'right' && 'text-right')} style={{ width: c.width }}>
-                <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap', c.align === 'right' && 'justify-end')}>
+                <button type="button" onClick={() => dataTable.getColumn(c.key)?.toggleSorting()} className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-md hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', c.align === 'right' && 'justify-end')}>
                   {(() => {
                     const Icon = CELL_TYPE_ICON[c.type]
                     return <Icon className="size-3.5 opacity-65" aria-hidden="true" />
                   })()}
                   {c.header}
-                </span>
+                  <ArrowUpDown className={cn('size-3 opacity-35', dataTable.getColumn(c.key)?.getIsSorted() && 'text-primary opacity-100')} aria-hidden="true" />
+                </button>
               </th>
             ))}
             <th className="w-16 px-2 py-3" />
@@ -229,7 +268,7 @@ export function TrackerTable({
           </thead>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <tbody>
-              {activeRows.map((row) => (
+              {displayedRows.map((row) => (
                 <TableRow
                   key={row.id}
                   row={row}
@@ -250,7 +289,7 @@ export function TrackerTable({
         </table>
         </div>
         <div className={cn('max-h-[42rem] overflow-y-auto p-3 md:hidden', views.state.density === 'compact' ? 'space-y-1.5' : 'space-y-3')}>
-          {activeRows.map((row) => (
+          {displayedRows.map((row) => (
             <article key={row.id} className={cn('rounded-xl border border-border bg-card', views.state.density === 'compact' ? 'p-2' : 'p-3')}>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Checkbox checked={effectiveSelectedIds.has(row.id)} onCheckedChange={() => toggleSelected(row.id)} aria-label="Select record" />
@@ -269,6 +308,13 @@ export function TrackerTable({
               </dl>
             </article>
           ))}
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span>{dataTable.getFilteredRowModel().rows.length} records · page {dataTable.getState().pagination.pageIndex + 1} of {Math.max(1, dataTable.getPageCount())}</span>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="size-8" onClick={() => dataTable.previousPage()} disabled={!dataTable.getCanPreviousPage()} aria-label="Previous page"><ChevronLeft className="size-4" /></Button>
+            <Button variant="ghost" size="icon" className="size-8" onClick={() => dataTable.nextPage()} disabled={!dataTable.getCanNextPage()} aria-label="Next page"><ChevronRight className="size-4" /></Button>
+          </div>
         </div>
         <BulkActionBar collection={collection} rows={activeRows as Row[]} selectedIds={effectiveSelectedIds} onClear={clearSelection} />
       </div>
