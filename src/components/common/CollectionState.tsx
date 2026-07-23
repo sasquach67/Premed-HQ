@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import { AlertCircle } from 'lucide-react'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export type CollectionLoadState = 'ready' | 'loading' | 'error'
 
@@ -22,7 +23,7 @@ export function CollectionState({
     return (
       <div className="space-y-2 rounded-2xl border border-border bg-card p-4" aria-label="Loading collection">
         {Array.from({ length: skeletonRows }, (_, index) => (
-          <div key={index} className="h-12 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
+          <Skeleton key={index} className="h-12 rounded-xl bg-muted motion-reduce:animate-none" />
         ))}
       </div>
     )

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronRight, Lightbulb, Menu, Plus } from 'lucide-react'
+import { Lightbulb, Menu, Plus } from 'lucide-react'
 import { CommandSearch } from './CommandSearch'
 import { AttentionBell } from './AttentionBell'
 import { buildAttention, attentionStatus } from './attention'
@@ -10,6 +10,9 @@ import { useBackup } from '@/store/useBackup'
 import { useStore } from '@/store/store'
 import { ROUTE_MAP } from '@/app/routes'
 import { Button } from '@/components/ui/button'
+import {
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
@@ -48,10 +51,23 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-[84rem] min-w-0 items-center gap-2 px-4 py-2.5 md:px-8">
         <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={onMenu} aria-label="Open menu"><Menu className="size-5" /></Button>
-        <div className="hidden h-9 min-w-0 items-center gap-1 text-xs font-bold text-muted-foreground xl:flex">
-          <Link to={activeRoute.id === 'home' ? '/' : `/${activeRoute.id}`} className="inline-flex h-9 max-w-32 items-center truncate hover:text-foreground">{activeRoute.label}</Link>
-          {deepLabel && <><ChevronRight className="size-3" /><span className="max-w-32 truncate capitalize text-foreground">{deepLabel}</span></>}
-        </div>
+        <Breadcrumb className="hidden min-w-0 xl:block">
+          <BreadcrumbList className="h-9 flex-nowrap gap-1 text-xs font-bold sm:gap-1">
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbLink asChild>
+                <Link to={activeRoute.id === 'home' ? '/' : `/${activeRoute.id}`} className="max-w-32 truncate">{activeRoute.label}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            {deepLabel && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbPage className="max-w-32 truncate capitalize font-bold">{deepLabel}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
         <CommandSearch />
         <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
           <LiveStatusChip label={status.label} tone={status.tone} />
