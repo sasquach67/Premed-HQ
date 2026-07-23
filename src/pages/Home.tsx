@@ -28,6 +28,7 @@ import { DateField } from '@/components/common/DateField'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
+import { ContributionHeatmap, NumberFlow } from '@/components/motion'
 import { cn } from '@/lib/utils'
 
 const ROADMAP = [
@@ -464,13 +465,13 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
             </div>
             <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">Missed Qs</p>
-              <p className="mt-1 text-sm font-bold">{misses} review</p>
+              <p className="mt-1 text-sm font-bold"><NumberFlow value={misses} /> review</p>
               <Link to="/mcat" className="text-xs font-bold text-primary">open bank</Link>
             </div>
             <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60 sm:col-span-2 xl:col-span-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-bold">Plan progress</span>
-                <span className="text-xs font-bold text-primary">{planProgress}%</span>
+                <span className="text-xs font-bold text-primary"><NumberFlow value={planProgress} />%</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
                 <span className="block h-full rounded-full bg-primary" style={{ width: `${planProgress}%` }} />
@@ -711,6 +712,20 @@ function LowerWidgets({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
   const goals = useStore((s) => s.quarterlyGoals)
   const [selected, setSelected] = useState<number | null>(null)
   const answered = selected !== null
+  const contributionValues = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of activity) {
+      const key = new Date(item.at).toISOString().slice(0, 10)
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return Array.from({ length: 35 }, (_, offset) => {
+      const date = new Date()
+      date.setHours(12, 0, 0, 0)
+      date.setDate(date.getDate() - (34 - offset))
+      const key = date.toISOString().slice(0, 10)
+      return { date: key, count: counts.get(key) ?? 0 }
+    })
+  }, [activity])
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       <Card>
@@ -754,6 +769,7 @@ function LowerWidgets({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="size-4 text-primary" /> Recent activity</CardTitle></CardHeader>
         <CardContent className="space-y-2">
+          <ContributionHeatmap values={contributionValues} className="mb-3" />
           {activity.length === 0 && <p className="text-sm text-muted-foreground">No recent edits yet.</p>}
           {activity.map((a) => <div key={a.id} className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{a.label}</span><span className="shrink-0 text-xs text-muted-foreground">{fmtTimeAgo(a.at)}</span></div>)}
         </CardContent>

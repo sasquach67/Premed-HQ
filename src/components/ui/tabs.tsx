@@ -1,6 +1,8 @@
 import * as React from 'react'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { m } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { MOTION_DISTANCE, MOTION_TRANSITION } from '@/lib/motion'
 
 const Tabs = TabsPrimitive.Root
 
@@ -22,32 +24,43 @@ TabsList.displayName = TabsPrimitive.List.displayName
 const TabsTrigger = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-all',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
-      'data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm',
-      className
-    )}
-    {...props}
-  />
+>(({ className, children, ...props }, ref) => (
+  <TabsPrimitive.Trigger asChild {...props}>
+    <m.button
+      ref={ref}
+      whileTap={{ scale: 0.98 }}
+      transition={MOTION_TRANSITION.micro}
+      className={cn(
+        'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+        'data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+        className
+      )}
+    >
+      {children}
+    </m.button>
+  </TabsPrimitive.Trigger>
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
 const TabsContent = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      'mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg animate-fade-up',
-      className
-    )}
-    {...props}
-  />
+>(({ className, children, ...props }, ref) => (
+  <TabsPrimitive.Content asChild {...props}>
+    <m.div
+      ref={ref}
+      initial={{ opacity: 0, y: MOTION_DISTANCE.small }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={MOTION_TRANSITION.entrance}
+      className={cn(
+        'mt-4 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className
+      )}
+    >
+      {children}
+    </m.div>
+  </TabsPrimitive.Content>
 ))
 TabsContent.displayName = TabsPrimitive.Content.displayName
 

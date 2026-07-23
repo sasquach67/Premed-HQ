@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateField } from '@/components/common/DateField'
+import { AnimatedFileUpload } from '@/components/motion'
 
 const COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'yellow', 'red', 'pink', 'gray', 'brown']
 const CLASS_ICONS: { id: string; label: string; Icon: LucideIcon }[] = [
@@ -945,6 +946,7 @@ function CourseKitTab({ row, data, mutate }: ClassTabProps) {
           <Button size="sm" variant="outline" onClick={() => addFile(row.id, mutate)}><Plus className="size-4" /> Resource</Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          <AnimatedFileUpload onFiles={(selectedFiles) => addUploadedFiles(row.id, selectedFiles, mutate)} />
           <div className="grid gap-2 md:grid-cols-2">
             {links.map(([label, value]) => (
               <a
@@ -1531,6 +1533,28 @@ function addFile(classId: string, mutate: ClassTabProps['mutate']) {
       updatedAt: now,
       order: draft.files.length,
     })
+  })
+}
+
+function addUploadedFiles(classId: string, selectedFiles: File[], mutate: ClassTabProps['mutate']) {
+  const now = Date.now()
+  mutate((draft) => {
+    for (const file of selectedFiles) {
+      draft.files.unshift({
+        id: uid(),
+        classId,
+        title: file.name.replace(/\.[^.]+$/, '') || file.name,
+        type: 'other',
+        url: '',
+        fileName: file.name,
+        mimeType: file.type,
+        notes: '',
+        linkedTopicIds: [],
+        createdAt: now,
+        updatedAt: now,
+        order: draft.files.length,
+      })
+    }
   })
 }
 
