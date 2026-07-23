@@ -71,7 +71,7 @@ export function AppShell() {
           <Topbar onMenu={() => setMobileOpen(true)} />
           <AlertsStrip />
           <main className="relative flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">
+            <div className="mx-auto w-full max-w-[84rem] px-4 py-6 md:px-8 md:py-8">
               <Outlet />
             </div>
           </main>

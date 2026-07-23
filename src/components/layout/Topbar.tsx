@@ -46,10 +46,10 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center gap-2 px-4 py-2.5 md:px-8">
+      <div className="mx-auto flex w-full max-w-[84rem] min-w-0 items-center gap-2 px-4 py-2.5 md:px-8">
         <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={onMenu} aria-label="Open menu"><Menu className="size-5" /></Button>
-        <div className="hidden min-w-0 items-center gap-1 text-xs font-bold text-muted-foreground xl:flex">
-          <Link to={activeRoute.id === 'home' ? '/' : `/${activeRoute.id}`} className="max-w-32 truncate hover:text-foreground">{activeRoute.label}</Link>
+        <div className="hidden h-9 min-w-0 items-center gap-1 text-xs font-bold text-muted-foreground xl:flex">
+          <Link to={activeRoute.id === 'home' ? '/' : `/${activeRoute.id}`} className="inline-flex h-9 max-w-32 items-center truncate hover:text-foreground">{activeRoute.label}</Link>
           {deepLabel && <><ChevronRight className="size-3" /><span className="max-w-32 truncate capitalize text-foreground">{deepLabel}</span></>}
         </div>
         <CommandSearch />

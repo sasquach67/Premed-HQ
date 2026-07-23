@@ -14,7 +14,7 @@ export function AlertsStrip() {
 
   return (
     <div className="border-b border-border bg-[color-mix(in_srgb,var(--warning)_8%,var(--card))]">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-2 md:px-8">
+      <div className="mx-auto flex w-full max-w-[84rem] flex-wrap items-center gap-2 px-4 py-2 md:px-8">
         <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[color-mix(in_srgb,var(--warning)_55%,var(--foreground))]">
           <AlertTriangle className="size-3.5" /> Needs attention
         </span>
