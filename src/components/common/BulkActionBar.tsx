@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { m } from 'motion/react'
 import {
   Archive, Building2, Download, FolderInput, MoreHorizontal, Tags, Trash2, X,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { MOTION_TRANSITION } from '@/lib/motion'
 
 type Row = { id: string }
 type ValueAction = 'tag' | 'status' | 'term' | 'organization'
@@ -110,7 +112,7 @@ export function BulkActionBar({
 
   return (
     <>
-      <div className="sticky bottom-3 z-20 mx-3 mb-3 flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-xl backdrop-blur" role="toolbar" aria-label="Bulk actions">
+      <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={MOTION_TRANSITION.standard} className="sticky bottom-3 z-20 mx-3 mb-3 flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-xl backdrop-blur" role="toolbar" aria-label="Bulk actions">
         <span className="mr-auto text-sm font-bold">{selectedIds.size} selected</span>
         {ARCHIVE_COLLECTIONS.has(collection) && <Button size="sm" variant="ghost" onClick={archiveSelected}><Archive className="size-4" /> Archive</Button>}
         <Button size="sm" variant="ghost" onClick={exportSelected}><Download className="size-4" /> Export</Button>
@@ -125,7 +127,7 @@ export function BulkActionBar({
           </DropdownMenuContent>
         </DropdownMenu>
         <button type="button" className="grid size-9 place-items-center rounded-md text-muted-foreground hover:bg-muted" onClick={onClear} aria-label="Clear selection"><X className="size-4" /></button>
-      </div>
+      </m.div>
 
       <BulkValueDialog
         action={valueAction}
