@@ -86,6 +86,7 @@ export function migrateSafetyNets(data: AppData): AppData {
   data.settings.listPreferences ??= {}
   data.settings.savedViews ??= {}
   data.settings.activeSavedViewIds ??= {}
+  data.settings.attentionSnoozedUntil ??= {}
   data.meta.recoveryStack ??= []
   return data
 }
@@ -551,6 +552,7 @@ export const useStore = create<Store>()(
             listPreferences: p.settings?.listPreferences ?? current.settings.listPreferences,
             savedViews: p.settings?.savedViews ?? current.settings.savedViews,
             activeSavedViewIds: p.settings?.activeSavedViewIds ?? current.settings.activeSavedViewIds,
+            attentionSnoozedUntil: p.settings?.attentionSnoozedUntil ?? current.settings.attentionSnoozedUntil,
           },
           mcat: { ...current.mcat, ...p.mcat },
           meta: {

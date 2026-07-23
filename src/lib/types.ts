@@ -711,6 +711,7 @@ export interface Settings {
   listPreferences: Record<string, ListViewState>
   savedViews: Record<string, SavedListView[]>
   activeSavedViewIds: Record<string, ID | undefined>
+  attentionSnoozedUntil: Record<string, number>
 }
 
 export interface ActivityEvent {

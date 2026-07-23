@@ -10,11 +10,9 @@ import { gpaStats, fmtGpa, hourTotals, bestMcat, percent, upcomingAlerts } from 
 import { daysUntil, fmtRelative, pickDaily, fmtTimeAgo } from '@/lib/date'
 import { formatClock, formatEventTimeRange, normalizeTimedEvents } from '@/lib/schedule'
 import { MCAT_QOTD } from '@/data/mcatQotd'
-import { PREPCAT_CONTENT_COUNTS } from '@/data/prepcatContent'
 import { uid } from '@/lib/id'
 import { homeBanner, type VisualTheme } from '@/lib/themeAssets'
-import type { TaskItem, TaskProgress, TaskType, TipEntry } from '@/lib/types'
-import { Ram } from '@/components/mascot/Ram'
+import type { TaskItem, TaskProgress, TaskType } from '@/lib/types'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { SegmentedBar } from '@/components/common/SegmentedBar'
 import { InfoTip } from '@/components/common/InfoTip'
@@ -40,50 +38,6 @@ const ROADMAP = [
   { id: 'primary', label: 'Primary submit', date: 'May-Jun 2029', route: 'timeline', detail: 'Submit early for rolling admissions.' },
   { id: 'interviews', label: 'Secondaries + interviews', date: 'Summer-Winter 2029', route: 'timeline', detail: 'Fast secondaries, prepared interviews.' },
   { id: 'matriculate', label: 'Matriculate', date: 'Fall 2030', route: 'profile', detail: 'No forced gap year on the default plan.' },
-]
-
-const OVERVIEW_GUIDE_TIPS: TipEntry[] = [
-  {
-    id: 'overview-tip-mcat-library',
-    text: `MCAT Content has the motherload: ${PREPCAT_CONTENT_COUNTS.guide} guides, ${PREPCAT_CONTENT_COUNTS['hack-sheet']} cheat sheets, pathways, and drills.`,
-    source: 'MCAT guide',
-    tag: 'andy',
-    pillar: 'mcat',
-  },
-  {
-    id: 'overview-tip-mistake-map',
-    text: 'Drop missed-question screenshots into Mistakes, then let the review queue point you back to weak topics.',
-    source: 'MCAT guide',
-    tag: 'andy',
-    pillar: 'mcat',
-  },
-  {
-    id: 'overview-tip-class-center',
-    text: 'Class Center is for daily execution: notes, topics, weak areas, and what to study next.',
-    source: 'Ultimate Guide',
-    tag: 'andy',
-    pillar: 'academics',
-  },
-  {
-    id: 'overview-tip-roadmap',
-    text: 'The roadmap is the big picture; Today and Class Center are where the next move actually happens.',
-    source: 'Ultimate Guide',
-    tag: 'andy',
-  },
-  {
-    id: 'overview-tip-school-list',
-    text: 'Use the school list for fit signals early, not just stats right before applications.',
-    source: 'Application guide',
-    tag: 'andy',
-    pillar: 'schools',
-  },
-  {
-    id: 'overview-tip-assignments',
-    text: 'Linked assignments can feed deadlines, revision, and the weekly plan.',
-    source: 'Class Center',
-    tag: 'andy',
-    pillar: 'academics',
-  },
 ]
 
 function useNow(intervalMs = 1000) {
@@ -140,17 +94,10 @@ export function Home() {
 }
 
 function Hero() {
-  const tips = useStore((s) => s.tips)
   const visualTheme = useStore((s) => s.settings.visualTheme)
   const name = useStore((s) => s.profile.name)
   const schedule = useHeroScheduleSource()
   const now = useNow(1000)
-  const heroTips = useMemo(() => {
-    const byId = new Map<string, TipEntry>()
-    ;[...tips, ...OVERVIEW_GUIDE_TIPS].forEach((tip) => byId.set(tip.id, tip))
-    return [...byId.values()]
-  }, [tips])
-  const nudge = pickDaily(heroTips, 5)
   const dateLine = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
@@ -168,23 +115,10 @@ function Hero() {
             Good to see you again, {firstName(name)}!
           </h1>
           <HeroLiveStatus schedule={schedule} now={now} />
-          {nudge && <HeroMascotNudge tip={nudge} />}
         </div>
         <TodaySchedulePanel schedule={schedule} now={now} />
       </div>
     </section>
-  )
-}
-
-function HeroMascotNudge({ tip }: { tip: TipEntry }) {
-  return (
-    <div className="hidden max-w-xl items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/34 px-3 py-2 shadow-sm backdrop-blur-sm sm:inline-flex">
-      <Ram size={38} className="pointer-events-none shrink-0 drop-shadow-md" />
-      <div className="min-w-0">
-        <p className="truncate text-xs font-semibold leading-snug text-white/68">{tip.text}</p>
-        <p className="mt-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white/42">{tip.source}</p>
-      </div>
-    </div>
   )
 }
 

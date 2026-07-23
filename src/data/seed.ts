@@ -682,6 +682,7 @@ export function createSeedData(): AppData {
       listPreferences: {},
       savedViews: {},
       activeSavedViewIds: {},
+      attentionSnoozedUntil: {},
     },
     meta: {
       recentRoutes: [],

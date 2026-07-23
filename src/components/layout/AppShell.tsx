@@ -10,6 +10,10 @@ import { useBackup } from '@/store/useBackup'
 import { useCloudSync } from '@/store/useCloudSync'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ToastProvider } from '@/components/common/ToastProvider'
+import { ShellActionsProvider } from './ShellActionsProvider'
+import { QuickAddDialog } from './QuickAddDialog'
+import { HelpFeedbackLauncher } from './HelpFeedbackLauncher'
+import { MascotLayer } from '@/components/mascot/MascotLayer'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -17,7 +21,7 @@ export function AppShell() {
   const update = useStore((s) => s.update)
   useTheme()
   useBackup() // wires daily-on-open check + debounced auto-backup
-  useCloudSync() // wires Supabase login + cross-device cloud sync (no-op until configured/signed in)
+  const cloud = useCloudSync() // wires Supabase login + cross-device cloud sync (no-op until configured/signed in)
 
   // ⌘B / Ctrl+B or "[" toggles the sidebar (⌘S is reserved by the browser).
   useEffect(() => {
@@ -36,13 +40,14 @@ export function AppShell() {
   return (
     <TooltipProvider delayDuration={200}>
       <ToastProvider>
+      <ShellActionsProvider>
       <div className="flex h-svh overflow-hidden">
         {/* desktop sidebar — the aside reserves the real layout gutter; hover preview overlays smoothly */}
         <aside
-          className="relative hidden shrink-0 transition-[width] duration-500 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none lg:block"
+          className="relative hidden shrink-0 transition-[width] duration-[220ms] ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none lg:block"
           style={{ width: collapsed ? '4.75rem' : '16rem' }}
         >
-          <Sidebar collapsible />
+          <Sidebar collapsible signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
         </aside>
 
         {/* mobile drawer */}
@@ -50,7 +55,7 @@ export function AppShell() {
           <div className="fixed inset-0 z-40 lg:hidden">
             <div className="absolute inset-0 bg-foreground/35 backdrop-blur-[2px]" onClick={() => setMobileOpen(false)} />
             <div className="absolute inset-y-0 left-0 animate-pop-in">
-              <Sidebar onNavigate={() => setMobileOpen(false)} />
+              <Sidebar onNavigate={() => setMobileOpen(false)} signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
               <button
                 onClick={() => setMobileOpen(false)}
                 className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted"
@@ -72,7 +77,11 @@ export function AppShell() {
             </div>
           </main>
         </div>
+        <QuickAddDialog />
+        <HelpFeedbackLauncher />
+        <MascotLayer />
       </div>
+      </ShellActionsProvider>
       </ToastProvider>
     </TooltipProvider>
   )

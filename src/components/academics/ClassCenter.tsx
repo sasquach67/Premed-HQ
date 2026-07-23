@@ -659,10 +659,7 @@ function ClassWorkspace({
                 <ClassRailTab value="kit" icon={FolderOpen} label="Course kit" />
               </TabsList>
             </div>
-            <div className="mt-3 hidden border-t border-border/70 px-2 pt-3 text-xs font-bold text-muted-foreground lg:flex lg:items-center lg:gap-2">
-              <img src={`${import.meta.env.BASE_URL}art/mascot.gif`} alt="" className="size-8 object-contain [image-rendering:pixelated]" />
-              <span>{assignmentCount || noteCount ? `${assignmentCount || noteCount} class item${(assignmentCount || noteCount) === 1 ? '' : 's'} active` : 'Class workspace'}</span>
-            </div>
+            <p className="mt-3 hidden border-t border-border/70 px-2 pt-3 text-xs font-bold text-muted-foreground lg:block">{assignmentCount || noteCount ? `${assignmentCount || noteCount} class item${(assignmentCount || noteCount) === 1 ? '' : 's'} active` : 'Class workspace'}</p>
           </aside>
           <div className="min-w-0 space-y-5">
             <TabsContent value="today" className="mt-0">
@@ -755,10 +752,7 @@ function OverviewTab({
       <div className="space-y-5">
         <Card className="border-leaf/30 bg-leaf/8">
           <CardContent className="space-y-2 p-4">
-            <h3 className="flex items-center gap-2 font-display text-lg font-bold">
-              <img src={`${import.meta.env.BASE_URL}art/mascot.gif`} alt="" className="size-8 object-contain [image-rendering:pixelated]" />
-              Do this next
-            </h3>
+            <h3 className="font-display text-lg font-bold">Do this next</h3>
             {(actionRows.length ? actionRows : [{ label: 'Pick one topic and make notes for it', meta: 'Open', onClick: undefined }]).map((item) => (
               <button
                 key={item.label}

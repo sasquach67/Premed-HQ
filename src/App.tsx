@@ -18,6 +18,8 @@ const Timeline = lazy(() => import('@/pages/Timeline').then((m) => ({ default: m
 const Profile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.Profile })))
 const Help = lazy(() => import('@/pages/Help').then((m) => ({ default: m.Help })))
 const Settings = lazy(() => import('@/pages/Settings').then((m) => ({ default: m.Settings })))
+const Atlas = lazy(() => import('@/pages/Atlas').then((m) => ({ default: m.Atlas })))
+const Upgrade = lazy(() => import('@/pages/Upgrade').then((m) => ({ default: m.Upgrade })))
 
 /** Quiet, theme-neutral loading state shown between page chunks. */
 function PageFallback() {
@@ -55,6 +57,8 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="atlas/*" element={<Atlas />} />
+            <Route path="upgrade" element={<Upgrade />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

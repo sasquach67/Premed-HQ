@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Pause, Play, Plus, Square, X } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { uid } from '@/lib/id'
-import { homeBanner, mascotGif } from '@/lib/themeAssets'
+import { homeBanner } from '@/lib/themeAssets'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -122,11 +122,8 @@ export function McatFocusSession() {
         </section>
 
         <footer className="grid gap-4 md:grid-cols-[minmax(0,1fr)_28rem] md:items-end">
-          <div className="flex items-end gap-3">
-            <img src={mascotGif(visualTheme)} alt="" className="size-16 object-contain" />
-            <div className="max-w-sm rounded-2xl border border-white/15 bg-slate-950/55 px-4 py-3 text-sm font-bold shadow-xl backdrop-blur">
-              Halfway or not, every miss goes straight into the review bank. Clean reps beat frantic reps.
-            </div>
+          <div className="max-w-sm rounded-2xl border border-white/15 bg-slate-950/55 px-4 py-3 text-sm font-bold shadow-xl backdrop-blur">
+            Every miss goes straight into the review bank. Clean reps beat frantic reps.
           </div>
           <div className="rounded-3xl border border-white/15 bg-slate-950/58 p-4 shadow-2xl backdrop-blur-md">
             <div className="mb-3 flex items-center justify-between gap-3">
