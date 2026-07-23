@@ -233,7 +233,7 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
         <button
           onClick={() => { void schedule.connect(new Date()) }}
           disabled={!schedule.configured || schedule.status === 'connecting'}
-          className="absolute right-4 top-3 z-20 rounded-full border border-white/10 bg-slate-950/62 px-2.5 py-1 text-[11px] font-extrabold text-primary/90 shadow-sm backdrop-blur transition hover:bg-white/8 disabled:opacity-45"
+          className="absolute right-7 top-7 z-20 rounded-full border border-white/10 bg-slate-950/62 px-2.5 py-1 text-[11px] font-extrabold text-primary/90 shadow-sm backdrop-blur transition hover:bg-white/8 disabled:opacity-45"
         >
           Connect
         </button>
