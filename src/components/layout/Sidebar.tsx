@@ -81,17 +81,17 @@ export function Sidebar({
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 pb-3">
         <div className="flex min-h-full flex-col justify-between">
           {NAV_GROUPS.map(({ group, items }) => (
-            <div key={group} className="mb-2.5">
-              <div className="h-7 overflow-hidden">
+            <div key={group} className="mb-2.5 [@media(max-height:950px)]:mb-2">
+              <div className="h-7 overflow-hidden [@media(max-height:950px)]:h-6">
                 {group === 'Home' ? null : (
                   <p className={cn(
-                    'px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 transition-[opacity,transform] duration-200 motion-reduce:transition-none',
+                    'px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 transition-[opacity,transform] duration-200 motion-reduce:transition-none [@media(max-height:950px)]:text-[10px]',
                     labelsShown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
                   )}>{group}</p>
                 )}
                 {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
               </div>
-              <ul className="space-y-1">
+              <ul className="space-y-1 [@media(max-height:950px)]:space-y-0.5">
                 {items.map((r) => {
                   const to = r.id === 'home' ? '/' : `/${r.id}`
                   const isActive = r.id === 'home' ? location.pathname === '/' : location.pathname === to
@@ -100,8 +100,8 @@ export function Sidebar({
                       to={to}
                       onClick={() => { touchRoute(r.id); onNavigate?.() }}
                       className={cn(
-                        'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                        expanded ? 'px-1.5' : 'mx-auto w-12 px-0',
+                        'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [@media(max-height:950px)]:h-10 [@media(max-height:950px)]:grid-cols-[2.5rem_minmax(0,1fr)] [@media(max-height:950px)]:text-sm',
+                        expanded ? 'px-1.5' : 'mx-auto w-12 px-0 [@media(max-height:950px)]:w-10',
                         r.id === 'home' && expanded && 'mb-2 border border-sidebar-border bg-card/70 shadow-sm',
                         expanded
                           ? isActive
@@ -112,8 +112,8 @@ export function Sidebar({
                             : 'text-muted-foreground hover:text-sidebar-primary'
                       )}
                     >
-                      <span className="grid size-12 place-items-center">
-                        <r.icon className={cn('size-5 shrink-0 transition-colors duration-200', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
+                      <span className="grid size-12 place-items-center [@media(max-height:950px)]:size-10">
+                        <r.icon className={cn('size-5 shrink-0 transition-colors duration-200 [@media(max-height:950px)]:size-[18px]', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
                       </span>
                       <span
                         className={cn(
