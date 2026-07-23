@@ -8,6 +8,7 @@ import type { ExperienceCategory, ExperienceEntry } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PillarSceneHeader } from './PillarSceneHeader'
 
 type AddExperience = (patch?: Partial<ExperienceEntry> & Record<string, unknown>) => ExperienceEntry
 
@@ -100,8 +101,9 @@ export function ApprovedExperienceLayout({ category, onAddEntity, onAddEntry }: 
 
   return (
     <div className="space-y-3.5 pb-10">
-      <PillarHeading category={category} title={meta.title} subtitle={meta.subtitle} />
-      <PillarSummary category={category} />
+      <PillarSceneHeader scene={category} accent={pillarAccent(category)} title={meta.title} addLabel={meta.add} onAdd={onAddEntity}>
+        <PillarSummary category={category} />
+      </PillarSceneHeader>
       {category === 'volunteering' && <VerificationLedger />}
       {category === 'shadowing' && <SpecialtyExposure />}
       {category === 'research' && <ResearchOutputs />}
@@ -116,16 +118,6 @@ export function ApprovedExperienceLayout({ category, onAddEntity, onAddEntry }: 
 
 function pillarAccent(category: ExperienceLayoutProps['category']) {
   return category === 'volunteering' ? 'var(--cat-volunteer)' : category === 'shadowing' ? 'var(--cat-shadow)' : category === 'clinical' ? 'var(--cat-clinical)' : 'var(--cat-research)'
-}
-
-function PillarHeading({ category, title, subtitle }: { category: ExperienceLayoutProps['category']; title: string; subtitle: string }) {
-  return (
-    <header className="flex flex-wrap items-center gap-2.5">
-      <span className="h-[26px] w-2.5 rounded-full" style={{ background: pillarAccent(category) }} />
-      <h1 className="font-display text-2xl font-extrabold">{title}</h1>
-      <p className="ml-auto text-[0.78rem] font-bold text-muted-foreground">{subtitle}</p>
-    </header>
-  )
 }
 
 function SummaryKpi({ value, label, valueClassName }: { value: ReactNode; label: string; valueClassName?: string }) {

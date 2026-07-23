@@ -14,6 +14,7 @@ import {
 import type { CollectionKey } from '@/lib/types'
 import { useStore } from '@/store/store'
 import { cn } from '@/lib/utils'
+import { DateField } from './DateField'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -108,7 +109,7 @@ export function TrackerTable({
       <div className="overflow-x-auto rounded-2xl border border-border bg-card/70 shadow-sm">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead>
-          <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-extrabold text-foreground/75">
+          <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
             {reorder && (
               <th className="w-8 px-1 py-3">
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
@@ -215,7 +216,7 @@ function Cell({
 
   if (column.type === 'read') {
     return (
-      <div className={cn('px-1.5 py-1 text-sm font-bold text-muted-foreground', column.align === 'right' && 'text-right')}>
+      <div className={cn('px-1.5 py-1 text-sm text-foreground', column.align === 'right' && 'text-right')}>
         {column.read?.(row)}
       </div>
     )
@@ -246,7 +247,7 @@ function Cell({
       <Select value={selected} onValueChange={(next) => onChange(next === emptyValue ? '' : next)}>
         <SelectTrigger
           className={cn(
-            'h-auto min-h-8 max-w-full rounded-full border-border/70 bg-transparent px-2.5 py-1 text-left text-sm font-semibold shadow-none hover:bg-muted/45 focus:ring-2 focus:ring-ring/35',
+            'h-auto min-h-8 max-w-full rounded-full border-border/70 bg-transparent px-2.5 py-1 text-left text-sm font-normal shadow-none hover:bg-muted/45 focus:ring-2 focus:ring-ring/35',
             dotOnly && 'w-fit min-w-12 justify-center px-2',
             !value && 'text-muted-foreground'
           )}
@@ -314,9 +315,13 @@ function Cell({
     )
   }
 
+  if (column.type === 'date') {
+    return <DateField value={value == null ? '' : String(value)} onChange={(iso) => onChange(iso)} placeholder={column.placeholder || 'Pick a date'} ariaLabel={column.header} />
+  }
+
   return (
     <input
-      type={column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'}
+      type={column.type === 'number' ? 'number' : 'text'}
       defaultValue={value == null ? '' : String(value)}
       placeholder={column.placeholder}
       onBlur={(e) => onChange(column.type === 'number' ? Number(e.target.value) || 0 : e.target.value)}
