@@ -20,11 +20,12 @@ export function Sidebar({
   const update = useStore((s) => s.update)
   const location = useLocation()
   const [hoverPreview, setHoverPreview] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [patchNotesOpen, setPatchNotesOpen] = useState(false)
   const [patchNotesSeen, setPatchNotesSeen] = useState(() => localStorage.getItem('premed_hq_patch_notes_seen') === 'foundation-l5-shell')
 
   // expanded view shows labels; collapsed + not-hovered shows icons only
-  const expanded = !collapsible || !collapsed || hoverPreview
+  const expanded = !collapsible || !collapsed || hoverPreview || accountOpen
   const labelsShown = expanded
 
   return (
@@ -140,7 +141,7 @@ export function Sidebar({
       </div>
 
       <div className="border-t border-sidebar-border px-3 py-2.5">
-        <DropdownMenu>
+        <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
           <DropdownMenuTrigger asChild>
             <button type="button" className={cn('grid w-full items-center overflow-hidden rounded-xl p-1 text-left hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring', expanded ? 'grid-cols-[2.25rem_minmax(0,1fr)] gap-2' : 'grid-cols-[2.25rem] justify-center')} aria-label="Open account menu">
               <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{profile.name.slice(0, 1)}</div>
