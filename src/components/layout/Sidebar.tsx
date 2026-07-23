@@ -159,7 +159,7 @@ export function Sidebar({
               {expanded && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-64">
+          <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-64">
             <DropdownMenuItem asChild><Link to="/profile" onClick={onNavigate}><UserRound className="size-4" /> Profile & CV</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/settings" onClick={onNavigate}><Settings className="size-4" /> Settings</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/upgrade" onClick={onNavigate}><Crown className="size-4" /> Upgrade plan</Link></DropdownMenuItem>
