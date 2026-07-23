@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
@@ -78,10 +78,6 @@ export function Academics() {
     })
   }
 
-  if (classId) {
-    return <ClassCenter />
-  }
-
   const mode = searchParams.get('mode') === 'planning' || searchParams.get('mode') === 'daily'
     ? searchParams.get('mode') as 'daily' | 'planning'
     : storedMode ?? 'daily'
@@ -91,9 +87,18 @@ export function Academics() {
   } as const
   const requestedTab = searchParams.get('tab')
   const activeTab = tabsByMode[mode].includes(requestedTab as never) ? requestedTab! : tabsByMode[mode][0]
+  const firstEditableTerm = terms.find((term) => !/transfer|ap credit/i.test(term))
+
+  useEffect(() => {
+    if (storedMode === mode) return
+    update((draft) => { draft.settings.academicsMode = mode })
+  }, [mode, storedMode, update])
+
+  if (classId) {
+    return <ClassCenter />
+  }
 
   function changeMode(nextMode: 'daily' | 'planning') {
-    update((draft) => { draft.settings.academicsMode = nextMode })
     setSearchParams({ mode: nextMode, tab: tabsByMode[nextMode][0] })
   }
 
@@ -160,27 +165,18 @@ export function Academics() {
           {terms.map((term) => {
             const rows = courses.filter((c) => c.term === term)
             const credits = rows.reduce((m, c) => m + (c.credits || 0), 0)
-            // Transfer/AP credit is long and rarely edited → tuck it behind a toggle (C3)
-            const isTransfer = /transfer|ap credit/i.test(term)
-            if (isTransfer) {
-              return (
-                <Collapsible
-                  key={term}
-                  title={term}
-                  badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{rows.length} courses · {credits} cr</span>}
-                >
-                  <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} listId={`academics.${activeTab}.${term}`} />
-                </Collapsible>
-              )
-            }
             return (
-              <div key={term} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold">{term} <span className="ml-1 font-normal text-muted-foreground">· {credits} cr</span></h3>
+              <Collapsible
+                key={term}
+                title={term}
+                defaultOpen={term === firstEditableTerm}
+                badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{rows.length} courses · {credits} cr</span>}
+              >
+                <div className="mb-2 flex justify-end">
                   <Button size="sm" variant="outline" onClick={() => addCourse(term)}><Plus className="size-4" /> Add course</Button>
                 </div>
                 <TrackerTable collection="courses" rows={rows} columns={COURSE_COLUMNS} listId={`academics.${activeTab}.${term}`} />
-              </div>
+              </Collapsible>
             )
           })}
           <Button variant="outline" onClick={() => addCourse('New term')}><Plus className="size-4" /> Add a term</Button>
