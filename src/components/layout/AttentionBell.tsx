@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Bell, BellRing, Clock3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useStore } from '@/store/store'
 import { buildAttention } from './attention'
 import { cn } from '@/lib/utils'
@@ -33,7 +34,8 @@ export function AttentionBell() {
           <p className="font-display text-base font-extrabold">Attention</p>
           <p className="text-xs text-muted-foreground">Deadlines that deserve a decision now.</p>
         </div>
-        <div className="max-h-[60vh] overflow-y-auto p-2">
+        <ScrollArea className="h-[min(60vh,30rem)]">
+          <div className="p-2">
           {!items.length && <div className="px-4 py-8 text-center"><Bell className="mx-auto size-6 text-primary" /><p className="mt-2 text-sm font-bold">Nothing needs attention</p><p className="mt-1 text-xs text-muted-foreground">You’re clear for now.</p></div>}
           {items.map((item) => (
             <div key={item.id} className="rounded-xl px-3 py-3 hover:bg-muted/55">
@@ -50,7 +52,8 @@ export function AttentionBell() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   )

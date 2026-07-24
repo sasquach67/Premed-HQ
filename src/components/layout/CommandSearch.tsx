@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CornerDownLeft, ExternalLink, Search, Zap } from 'lucide-react'
+import { ExternalLink, Search, Zap } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { ROUTES, ROUTE_MAP } from '@/app/routes'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Kbd } from '@/components/ui/kbd'
 import { useShellActions } from './shellActions'
 import { useTheme } from '@/store/useTheme'
 import type { QuickAddKind } from './shellActions'
@@ -19,7 +25,6 @@ function readRecents(): string[] {
 export function CommandSearch() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [active, setActive] = useState(0)
   const [recentIds, setRecentIds] = useState(readRecents)
   const navigate = useNavigate()
   const store = useStore()
@@ -89,26 +94,28 @@ export function CommandSearch() {
   return (
     <>
       <button onClick={() => setOpen(true)} className="flex h-9 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground card-soft hover:bg-muted sm:w-56 lg:w-72">
-        <Search className="size-4" /><span className="hidden truncate md:inline">Search or run a command...</span><kbd className="ml-auto hidden rounded border border-border px-1.5 text-[10px] font-semibold md:inline">⌘K</kbd>
+        <Search className="size-4" /><span className="hidden truncate md:inline">Search or run a command...</span><Kbd className="ml-auto hidden border border-border bg-transparent text-[10px] md:inline-flex">⌘K</Kbd>
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="top-[18%] max-w-xl translate-y-0 gap-0 p-0">
-          <div className="flex items-center gap-2 border-b border-border px-4"><Search className="size-4 text-muted-foreground" /><input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); setActive(0) }} onKeyDown={(event) => {
-            if (event.key === 'ArrowDown') { event.preventDefault(); setActive((value) => Math.min(value + 1, results.length - 1)) }
-            else if (event.key === 'ArrowUp') { event.preventDefault(); setActive((value) => Math.max(value - 1, 0)) }
-            else if (event.key === 'Enter') { event.preventDefault(); choose(results[active]) }
-          }} placeholder="Search records or type an action…" className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" /></div>
-          <div className="max-h-[24rem] overflow-y-auto p-2">
-            {!results.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No matches for “{query}”.</p>}
-            {results.map((hit, index) => <button key={hit.id} onMouseEnter={() => setActive(index)} onClick={() => choose(hit)} className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm', index === active ? 'bg-muted' : 'hover:bg-muted/60')}>
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Search Premed HQ"
+        description="Search records, navigate pages, or run an action."
+        className="top-[18%] max-w-xl translate-y-0 gap-0"
+      >
+        <CommandInput autoFocus value={query} onValueChange={setQuery} placeholder="Search records or type an action…" />
+        <CommandList className="max-h-[24rem] p-2">
+          <CommandEmpty>No matches for “{query}”.</CommandEmpty>
+          {results.map((hit) => (
+            <CommandItem key={hit.id} value={hit.id} onSelect={() => choose(hit)} className="gap-3 rounded-lg px-3 py-2">
               {hit.kind === 'action' && <Zap className="size-4 shrink-0 text-primary" />}
               <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{hit.label}</span><span className="block truncate text-xs text-muted-foreground">{hit.group} · {hit.sub}</span></span>
-              {hit.url ? <ExternalLink className="size-3.5 text-muted-foreground" /> : index === active && <CornerDownLeft className="size-3.5 text-muted-foreground" />}
-            </button>)}
-          </div>
-          <div className="border-t border-border px-4 py-2 text-[11px] font-semibold text-muted-foreground">↑↓ move · Enter open · Esc close</div>
-        </DialogContent>
-      </Dialog>
+              {hit.url && <ExternalLink className="size-3.5 text-muted-foreground" />}
+            </CommandItem>
+          ))}
+        </CommandList>
+        <div className="border-t border-border px-4 py-2 text-[11px] font-semibold text-muted-foreground">↑↓ move · Enter open · Esc close</div>
+      </CommandDialog>
     </>
   )
 }

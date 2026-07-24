@@ -5,6 +5,7 @@ import { AnimatePresence, m } from 'motion/react'
 import { NAV_GROUPS } from '@/app/routes'
 import { useStore } from '@/store/store'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -155,7 +156,9 @@ export function Sidebar({
               )}
               aria-label="Open account menu"
             >
-              <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{profile.name.slice(0, 1)}</div>
+              <Avatar>
+                <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">{profile.name.slice(0, 1)}</AvatarFallback>
+              </Avatar>
               {expanded && <div className="min-w-0 leading-tight"><p className="truncate text-sm font-bold">{profile.name}</p><p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Local profile'}</p></div>}
               {expanded && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
             </button>

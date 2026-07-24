@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { AlertCircle, Pin, PinOff } from 'lucide-react'
 import { CenterPeek, type RecordOpenMode } from '@/components/common/CenterPeek'
 import { Button } from '@/components/ui/button'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { cn } from '@/lib/utils'
 
 export interface OpenableRecord {
@@ -186,10 +187,13 @@ export function RecordOpenWorkspace({
               </button>
             ))}
           </div>
-          <div className="hidden h-full min-h-0 grid-cols-2 lg:grid">
-            {pinnedPane}
-            <section className="h-full overflow-y-auto" aria-label={`Active record: ${active.label}`}>{renderRecord(active.id)}</section>
-          </div>
+          <ResizablePanelGroup orientation="horizontal" className="hidden h-full min-h-0 lg:flex">
+            <ResizablePanel defaultSize={50} minSize={30}>{pinnedPane}</ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <section className="h-full overflow-y-auto" aria-label={`Active record: ${active.label}`}>{renderRecord(active.id)}</section>
+            </ResizablePanel>
+          </ResizablePanelGroup>
           <div className="h-full min-h-0 lg:hidden">
             {mobilePane === 'list' && listPane}
             {mobilePane === 'record' && <section className="h-full overflow-y-auto">{renderRecord(active.id)}</section>}
