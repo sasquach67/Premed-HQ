@@ -9,15 +9,13 @@ import { PILLAR_SCENES, type SceneKey } from '@/components/experiences/pillarSce
  *  `image` to supply/override art, `subtitle` for an optional line, and
  *  `actions` for top-right controls. No explainer copy by default. */
 export function PageHeader({
-  title, actions, image, imageFallback, scene, subtitle, children,
+  title, actions, image, scene, subtitle,
 }: {
   title: string
   actions?: ReactNode
   image?: string
-  imageFallback?: string
   scene?: SceneKey
   subtitle?: string
-  children?: ReactNode
 }) {
   const location = useLocation()
   const routeKey = location.pathname.replace(/^\/+/, '').split('/')[0] || 'home'
@@ -25,17 +23,7 @@ export function PageHeader({
 
   return (
     <div className="mb-6">
-      <PillarSceneHeader
-        scene={resolved}
-        title={title}
-        subtitle={subtitle}
-        actions={actions}
-        image={image}
-        imageFallback={imageFallback}
-        compact={!subtitle && !children}
-      >
-        {children}
-      </PillarSceneHeader>
+      <PillarSceneHeader scene={resolved} title={title} subtitle={subtitle} actions={actions} image={image} compact={!subtitle} />
     </div>
   )
 }
