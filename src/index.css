@@ -302,11 +302,6 @@
       radial-gradient(760px 640px at 50% 122%, rgba(224, 178, 96, 0.10), transparent 55%);
     background-attachment: fixed;
   }
-
-  strong,
-  b {
-    font-weight: 600;
-  }
   ::selection {
     background: color-mix(in srgb, var(--primary) 28%, transparent);
   }
