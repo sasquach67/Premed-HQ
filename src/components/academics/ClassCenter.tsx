@@ -521,11 +521,11 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
               <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
                 <CalendarDays className="size-4 text-primary" /> Due next
               </p>
-              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{upcoming.length} active</span>
+              <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{upcoming.length} active</span>
             </div>
             <div className="space-y-1.5">
               {upcoming.slice(0, 3).map((item) => (
-                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-background/65 px-3 py-2">
+                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-card px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-extrabold">{item.title}</p>
                     <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
@@ -535,7 +535,7 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
                   </span>
                 </div>
               ))}
-              {upcoming.length === 0 && <p className="rounded-xl bg-background/55 px-3 py-3 text-sm font-semibold text-muted-foreground">No dated assignments yet.</p>}
+              {upcoming.length === 0 && <p className="rounded-xl bg-card px-3 py-3 text-sm font-semibold text-muted-foreground">No dated assignments yet.</p>}
             </div>
           </section>
 
@@ -544,11 +544,11 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
               <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
                 <Target className="size-4 text-primary" /> Review queue
               </p>
-              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Weakest first</span>
+              <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Weakest first</span>
             </div>
             <div className="grid gap-1.5">
               {reviewItems.map((item) => (
-                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-background/65 px-3 py-2">
+                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-card px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-extrabold">{item.label}</p>
                     <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
@@ -557,7 +557,7 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
                   <Link to={`/academics/classes/${item.classId}`} className="text-xs font-extrabold text-primary">Review →</Link>
                 </div>
               ))}
-              {reviewItems.length === 0 && <p className="rounded-xl bg-background/55 px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
+              {reviewItems.length === 0 && <p className="rounded-xl bg-card px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
             </div>
           </section>
         </div>

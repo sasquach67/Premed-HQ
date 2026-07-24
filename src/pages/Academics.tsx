@@ -813,7 +813,7 @@ function CoursePlanCard({ course, requirements, allTerms, onMove, onRemove }: { 
   const tags = requirementTags(course, requirements)
   const prefix = courseCode(course.code).split(' ')[0]
   return (
-    <div className="rounded-xl border border-border bg-background/60 p-3 transition hover:bg-muted/35">
+    <div className="rounded-xl border border-border bg-card p-3 transition hover:bg-muted/35">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-display text-base font-bold">{course.code || 'Custom'}</p>
@@ -848,7 +848,7 @@ function requirementTags(course: Course, requirements: RequirementItem[]) {
 function CourseLibraryCard({ course, requirements, onOpen, onAdd }: { course: Course; requirements: RequirementItem[]; onOpen: () => void; onAdd: () => void }) {
   const tags = requirementTags(course, requirements)
   return (
-    <div className="rounded-xl border border-border bg-background/65 p-3">
+    <div className="rounded-xl border border-border bg-card p-3">
       <button onClick={onOpen} className="block w-full text-left">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

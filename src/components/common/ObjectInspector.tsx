@@ -67,7 +67,7 @@ function InspectorRegion({
   section: InspectorSection
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-background/45 p-4" aria-labelledby={`inspector-${slug(title)}`}>
+    <section className="rounded-2xl border border-border bg-card p-4" aria-labelledby={`inspector-${slug(title)}`}>
       <h2 id={`inspector-${slug(title)}`} className="mb-3 flex items-center gap-2 text-sm font-extrabold">
         <Icon className="size-4 text-primary" aria-hidden="true" />
         {title}

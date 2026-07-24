@@ -14,7 +14,7 @@ export function Atlas() {
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
             Atlas will connect your coursework, experiences, stories, and school research. The knowledge graph itself is intentionally deferred.
           </p>
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-bold text-muted-foreground">
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-muted-foreground">
             <Sparkles className="size-3.5 text-primary" /> Your existing data stays ready for it
           </div>
         </CardContent>

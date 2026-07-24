@@ -1122,7 +1122,7 @@ function ContentReaderPage({ item, onBack }: { item: PrepCatContentItem; onBack:
               <h2 className="font-display text-3xl font-extrabold">{item.title}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {item.meta.split('·').map((piece) => (
-                  <span key={piece.trim()} className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                  <span key={piece.trim()} className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-bold text-muted-foreground">
                     {piece.trim()}
                   </span>
                 ))}
@@ -1134,7 +1134,7 @@ function ContentReaderPage({ item, onBack }: { item: PrepCatContentItem; onBack:
             </Button>
           </div>
         </header>
-        <div className="min-h-[34rem] bg-background/10 px-5 py-6 md:px-7">
+        <div className="min-h-[34rem] bg-card px-5 py-6 md:px-7">
           <div className="mx-auto max-w-4xl">
             {loading ? (
               <p className="text-sm font-semibold text-muted-foreground">Loading PrepCat content...</p>
@@ -1260,7 +1260,7 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
         if (block.kind === 'table') {
           const [head, ...rows] = block.rows
           return (
-            <div key={index} className="overflow-x-auto rounded-2xl border border-border bg-background/45">
+            <div key={index} className="overflow-x-auto rounded-2xl border border-border bg-card">
               <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/35">

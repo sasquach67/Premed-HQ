@@ -359,7 +359,7 @@ function ApprovedEcsWorkspace({
           <strong className="block font-display text-4xl font-extrabold text-primary">84</strong>
           <span className="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">hours here</span>
         </div>
-        <div className="min-w-60 rounded-2xl border bg-background/55 p-3 text-xs font-semibold text-muted-foreground">
+        <div className="min-w-60 rounded-2xl border bg-card p-3 text-xs font-semibold text-muted-foreground">
           <div className="flex items-center gap-2 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] text-primary">
             <ShieldCheck className="size-3.5" /> AMCAS verifier
           </div>
@@ -432,7 +432,7 @@ function ApprovedEcsWorkspace({
 
       <section className="border-t px-5 py-5">
         <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><FileText className="size-4 text-primary" /> Log</h2>
-        <div className="mt-3 overflow-hidden rounded-2xl border bg-background/35">
+        <div className="mt-3 overflow-hidden rounded-2xl border bg-card">
           <div className="grid grid-cols-[4rem_minmax(0,1fr)_auto_3rem] items-center gap-3 border-b bg-primary/5 px-3 py-3 text-sm">
             <strong className="text-muted-foreground">Jul 8</strong><strong>Exec board — fall budget draft approved</strong><span className="text-amber-500" aria-label="Flagged for Story Bank">★</span><strong className="text-right">2.0</strong>
           </div>
@@ -473,7 +473,7 @@ function WorkspaceModule({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-2xl border bg-background/35 p-4">
+    <section className="rounded-2xl border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-display text-base font-extrabold"><Icon className="size-4 text-primary" /> {title}</h2>
         {action}
@@ -768,7 +768,7 @@ function EcsOrgWorkspace({
                   <div
                     key={reflection.id}
                     className={cn(
-                      'rounded-xl border bg-background/50 p-3',
+                      'rounded-xl border bg-card p-3',
                       focusReflectionId === reflection.id && 'border-primary/70 ring-2 ring-primary/20'
                     )}
                   >
@@ -925,7 +925,7 @@ function InitiativesView({
                   value={initiative.orgId ?? '__none__'}
                   onValueChange={(value) => onPatch(initiative.id, { orgId: value === '__none__' ? undefined : value })}
                 >
-                  <SelectTrigger className="h-9 rounded-full border-border/70 bg-background/60 text-sm">
+                  <SelectTrigger className="h-9 rounded-full border-border/70 text-sm">
                     <span className="flex min-w-0 items-center gap-2">
                       <Building2 className="size-4 shrink-0 text-primary" />
                       <SelectValue placeholder="Attach to organization" />
