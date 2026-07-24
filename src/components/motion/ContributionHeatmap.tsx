@@ -30,11 +30,10 @@ export function ContributionHeatmap({ values, className }: { values: Contributio
             aria-label={`${item.date}: ${item.count}`}
             initial={reduceMotion ? false : { opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={reduceMotion ? { duration: 0 } : { ...MOTION_TRANSITION.micro, delay: Math.min(index * 0.006, 0.2) }}
+            transition={reduceMotion ? MOTION_TRANSITION.instant : { ...MOTION_TRANSITION.micro, delay: Math.min(index * 0.006, 0.2) }}
           />
         )
       })}
     </div>
   )
 }
-

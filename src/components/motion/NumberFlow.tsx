@@ -23,7 +23,7 @@ export function NumberFlow({
           initial={reduceMotion ? false : { opacity: 0, y: MOTION_DISTANCE.small }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_DISTANCE.small }}
-          transition={reduceMotion ? { duration: 0 } : MOTION_TRANSITION.standard}
+          transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
           aria-hidden="true"
         >
           {output}
@@ -32,4 +32,3 @@ export function NumberFlow({
     </span>
   )
 }
-
