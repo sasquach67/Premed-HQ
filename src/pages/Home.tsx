@@ -11,13 +11,14 @@ import { daysUntil, fmtRelative, pickDaily, fmtTimeAgo } from '@/lib/date'
 import { formatClock, formatEventTimeRange, normalizeTimedEvents } from '@/lib/schedule'
 import { MCAT_QOTD } from '@/data/mcatQotd'
 import { uid } from '@/lib/id'
-import { homeBanner, type VisualTheme } from '@/lib/themeAssets'
+import { homeBanner } from '@/lib/themeAssets'
 import type { TaskItem, TaskProgress, TaskType, TipEntry } from '@/lib/types'
 import { Ram } from '@/components/mascot/Ram'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { SegmentedBar } from '@/components/common/SegmentedBar'
 import { InfoTip } from '@/components/common/InfoTip'
 import { useHeroScheduleSource } from '@/components/common/HeroDailySchedule'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -81,9 +82,9 @@ export function Home() {
   const alerts = upcomingAlerts(s.tasks, { horizon: 14 }).slice(0, 5)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <Hero />
-      <div className="grid gap-5 xl:grid-cols-[minmax(24rem,1fr)_minmax(20rem,.72fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(24rem,1fr)_minmax(20rem,.72fr)]">
         <TaskWorkspace />
         <AtAGlance gpa={gpa} hours={hours} best={best} />
       </div>
@@ -109,35 +110,31 @@ function Hero() {
   const dateLine = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <section className="relative min-h-[21rem] overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:min-h-[23rem]">
-      <ThemedHomeImage visualTheme={visualTheme} />
-      <div className="absolute inset-0 bg-slate-950/50 dark:bg-slate-950/62" />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/86 via-slate-950/50 to-slate-950/28" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_30%,rgba(255,255,255,.08),transparent_34%),linear-gradient(to_top,rgba(2,6,23,.5),transparent_58%)]" />
-      <div className="relative grid min-h-[21rem] gap-7 p-6 text-white md:min-h-[23rem] md:p-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(25rem,.96fr)] lg:items-center">
+    <PageHeader
+      scene="home"
+      title={`Good to see you again, ${firstName(name)}!`}
+      subtitle={`${dateLine} · ${formatClock(now, '12h')}`}
+      image={homeBanner(visualTheme)}
+      imageFallback={homeBanner('ghibli')}
+    >
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.04fr)_minmax(24rem,.96fr)] lg:items-center">
         <div className="min-w-0 space-y-4">
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">
-            {dateLine} · <span className="tabular-nums">{formatClock(now, '12h')}</span>
-          </p>
-          <h1 className="max-w-full text-balance font-display text-[clamp(2rem,2.55vw,2.55rem)] font-extrabold leading-[0.98] lg:whitespace-nowrap">
-            Good to see you again, {firstName(name)}!
-          </h1>
           <HeroLiveStatus schedule={schedule} now={now} />
           {nudge && <HeroMascotNudge tip={nudge} />}
         </div>
         <TodaySchedulePanel schedule={schedule} now={now} />
       </div>
-    </section>
+    </PageHeader>
   )
 }
 
 function HeroMascotNudge({ tip }: { tip: TipEntry }) {
   return (
-    <div className="hidden max-w-xl items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/34 px-3 py-2 shadow-sm backdrop-blur-sm sm:inline-flex">
+    <div className="hidden max-w-xl items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2 sm:inline-flex">
       <Ram size={38} className="pointer-events-none shrink-0 drop-shadow-md" />
       <div className="min-w-0">
-        <p className="truncate text-xs font-semibold leading-snug text-white/68">{tip.text}</p>
-        <p className="mt-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white/42">{tip.source}</p>
+        <p className="truncate text-xs font-semibold leading-snug text-foreground">{tip.text}</p>
+        <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{tip.source}</p>
       </div>
     </div>
   )
@@ -185,28 +182,28 @@ function HeroLiveStatus({ schedule, now }: { schedule: ReturnType<typeof useHero
   }
 
   return (
-    <div className="w-full max-w-[28rem] rounded-3xl border border-white/14 bg-slate-950/48 px-5 py-4 text-left shadow-lg shadow-black/15 backdrop-blur-md">
+    <div className="w-full max-w-md rounded-xl border border-border bg-background/75 p-4 text-left">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary/90">{eyebrow}</p>
-          <p className="mt-1 truncate text-sm font-extrabold text-white">{title}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{eyebrow}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-foreground">{title}</p>
         </div>
-        <p className="shrink-0 text-xs font-bold text-white/62">{detail}</p>
+        <p className="shrink-0 text-xs text-muted-foreground">{detail}</p>
       </div>
       {timer ? (
         <div className="mt-3">
-          <p className="font-display text-[clamp(2.6rem,5vw,4rem)] font-extrabold leading-none text-white tabular-nums">
+          <p className="font-display text-3xl font-semibold leading-tight text-foreground tabular-nums">
             {timer}
           </p>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/16">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary shadow-[0_0_18px_rgba(116,192,252,.32)] transition-[width] duration-500"
+              className="h-full rounded-full bg-primary transition-[width] duration-500"
               style={{ width: `${timer && progress ? progress : 14}%` }}
             />
           </div>
         </div>
       ) : (
-        <p className="mt-3 text-sm font-semibold text-white/68">{detail}</p>
+        <p className="mt-3 text-sm text-muted-foreground">{detail}</p>
       )}
     </div>
   )
@@ -229,23 +226,25 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
   const timelinePercent = (date: Date) => Math.min(98, Math.max(2, ((date.getTime() - dayStart.getTime()) / span) * 100))
 
   return (
-    <div className="relative rounded-3xl border border-white/14 bg-slate-950/58 p-4 shadow-xl backdrop-blur-md">
+    <div className="relative rounded-xl border border-border bg-background/75 p-4">
       {!schedule.connected && (
-        <button
+        <Button
+          size="sm"
+          variant="outline"
           onClick={() => { void schedule.connect(new Date()) }}
           disabled={!schedule.configured || schedule.status === 'connecting'}
-          className="absolute right-7 top-7 z-20 rounded-full border border-white/10 bg-slate-950/62 px-2.5 py-1 text-[11px] font-extrabold text-primary/90 shadow-sm backdrop-blur transition hover:bg-white/8 disabled:opacity-45"
+          className="absolute right-4 top-4 z-20"
         >
           Connect
-        </button>
+        </Button>
       )}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-4 shadow-inner shadow-black/10">
-        {visible.length === 0 && <p className="py-3 text-sm font-semibold text-white/65">No timed events today.</p>}
+      <div className="rounded-xl border border-border bg-card/70 p-4">
+        {visible.length === 0 && <p className="py-3 text-sm text-muted-foreground">No timed events today.</p>}
         {visible.length > 0 && (
           <div className="relative h-9" role="img" aria-label="Today’s schedule timeline">
-            <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/55" />
+            <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-muted-foreground/35" />
             <div
-              className="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary"
+              className="absolute top-1/2 z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-primary"
               style={{ left: `${timelinePercent(now)}%` }}
               aria-label="Current time"
             />
@@ -259,12 +258,12 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
                   <div
                     className={cn(
                       'absolute top-1/2 z-10 h-1.5 -translate-y-1/2 rounded-full',
-                      active ? 'bg-primary' : past ? 'bg-white/20' : 'bg-leaf/70'
+                      active ? 'bg-primary' : past ? 'bg-muted-foreground/20' : 'bg-leaf/70'
                     )}
                     style={{ left: `${start}%`, width: `${Math.max(2.5, end - start)}%` }}
                   />
                   <div
-                    className="absolute top-1/2 z-20 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/90"
+                    className="absolute top-1/2 z-20 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/80"
                     style={{ left: `${start}%` }}
                   />
                 </div>
@@ -280,11 +279,11 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
               const left = Math.max(0, event.endDate.getTime() - now.getTime())
               return (
                 <div key={event.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-xs">
-                  <span className="tabular-nums font-bold text-white/55">{formatClock(event.startDate, schedule.calendar.timeFormat).replace(/:00/g, '')}</span>
-                  <span className={cn('min-w-0 truncate font-extrabold', active ? 'text-primary' : past ? 'text-white/45 line-through' : 'text-white/86')}>
+                  <span className="tabular-nums text-muted-foreground">{formatClock(event.startDate, schedule.calendar.timeFormat).replace(/:00/g, '')}</span>
+                  <span className={cn('min-w-0 truncate font-semibold', active ? 'text-primary' : past ? 'text-muted-foreground line-through' : 'text-foreground')}>
                     {event.title}
                   </span>
-                  <span className={cn('truncate text-right text-[11px] font-bold tabular-nums', active ? 'text-primary' : 'text-white/55')}>
+                  <span className={cn('truncate text-right text-xs tabular-nums', active ? 'text-primary' : 'text-muted-foreground')}>
                     {active ? `${hms(left).replace(/^0:/, '')}` : formatEventTimeRange(event, schedule.calendar.timeFormat).split('-')[1]?.trim() ?? ''}
                   </span>
                 </div>
@@ -297,24 +296,6 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
   )
 }
 
-function ThemedHomeImage({ visualTheme }: { visualTheme: VisualTheme }) {
-  const sources = visualTheme === 'doraemon'
-    ? [homeBanner('doraemon'), homeBanner('ghibli')]
-    : [homeBanner('ghibli')]
-  const [idx, setIdx] = useState(0)
-
-  useEffect(() => setIdx(0), [visualTheme])
-
-  return (
-    <img
-      src={sources[idx]}
-      alt=""
-      draggable={false}
-      onError={() => setIdx((i) => Math.min(i + 1, sources.length - 1))}
-      className="absolute inset-0 size-full object-cover"
-    />
-  )
-}
 
 function TaskWorkspace() {
   const mode = useStore((s) => s.settings.overviewTaskMode)
@@ -372,7 +353,7 @@ function TaskWorkspace() {
             <button
               key={m}
               onClick={() => update((d) => { d.settings.overviewTaskMode = m })}
-              className={cn('flex-1 rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition', mode === m ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+              className={cn('flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition', mode === m ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground')}
             >
               {m === 'today' ? 'Today' : 'All active'}
             </button>
@@ -384,8 +365,8 @@ function TaskWorkspace() {
             {pinned.map((f) => (
               <div key={f.id} className="group flex items-center gap-2 rounded-xl bg-secondary/45 px-2 py-2">
                 <Checkbox checked={f.done} onCheckedChange={(v) => patchItem('focusTargets', f.id, { done: Boolean(v) })} />
-                <span className="min-w-0 flex-1 truncate text-sm font-bold">{f.text}</span>
-                <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Pinned</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{f.text}</span>
+                <span className="rounded-full bg-card px-2 py-0.5 text-xs font-semibold uppercase text-muted-foreground">Pinned</span>
                 <button onClick={() => removeItem('focusTargets', f.id)} className="rounded p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100" aria-label="Remove focus target">×</button>
               </div>
             ))}
@@ -394,7 +375,7 @@ function TaskWorkspace() {
 
         <section className="space-y-1">
           {shown.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">Nothing urgent here. Add a task or switch to all active.</p>
+            <p className="rounded-xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">Nothing urgent here. Add a task or switch to all active.</p>
           ) : shown.map((t) => (
             <TaskRow
               key={t.id}
@@ -436,42 +417,42 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Brain className="size-5 text-primary" />
-              <h2 className="font-display text-2xl font-extrabold">MCAT</h2>
+              <h2 className="font-display text-lg font-semibold">MCAT</h2>
             </div>
-            <p className="mt-1 text-xs font-extrabold uppercase tracking-wide text-primary">{phase} phase</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{phase} phase</p>
             <p className="mt-2 max-w-sm text-sm font-semibold text-muted-foreground">
               Launch a timed block, then move through the ultimate study plan one clean week at a time.
             </p>
           </div>
 
           <McatSessionSetupDialog
-            triggerClassName="group flex min-h-24 items-center justify-between rounded-3xl border border-leaf/35 bg-leaf/12 px-5 py-4 text-left text-leaf transition hover:-translate-y-0.5 hover:bg-leaf/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            triggerClassName="group flex min-h-24 items-center justify-between rounded-xl border border-leaf/35 bg-leaf/12 px-5 py-4 text-left text-leaf transition hover:-translate-y-0.5 hover:bg-leaf/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             trigger={(
               <>
                 <span>
-                  <span className="flex items-center gap-2 text-lg font-extrabold"><Play className="size-5 fill-current" /> Start session</span>
+                  <span className="flex items-center gap-2 text-lg font-semibold"><Play className="size-5 fill-current" /> Start session</span>
                   <span className="mt-1 block text-sm font-semibold text-muted-foreground">choose goal, length, and focus</span>
                 </span>
-                <span className="text-xl font-extrabold transition-transform group-hover:translate-x-0.5">→</span>
+                <span className="text-lg font-semibold transition-transform group-hover:translate-x-0.5">→</span>
               </>
             )}
           />
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[.8fr_.8fr_1.1fr]">
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">QOTD</p>
-              <p className="mt-1 text-sm font-bold">1 waiting</p>
+            <div className="rounded-xl bg-card/70 p-3 ring-1 ring-border/60">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">QOTD</p>
+              <p className="mt-1 font-display text-sm font-semibold">1 waiting</p>
               <p className="text-xs font-semibold text-muted-foreground">{qotd.section}</p>
             </div>
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">Missed Qs</p>
-              <p className="mt-1 text-sm font-bold"><NumberFlow value={misses} /> review</p>
-              <Link to="/mcat" className="text-xs font-bold text-primary">open bank</Link>
+            <div className="rounded-xl bg-card/70 p-3 ring-1 ring-border/60">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Missed Qs</p>
+              <p className="mt-1 font-display text-sm font-semibold"><NumberFlow value={misses} /> review</p>
+              <Link to="/mcat" className="text-xs font-semibold text-primary">open bank</Link>
             </div>
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60 sm:col-span-2 xl:col-span-1">
+            <div className="rounded-xl bg-card/70 p-3 ring-1 ring-border/60 sm:col-span-2 xl:col-span-1">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-bold">Plan progress</span>
-                <span className="text-xs font-bold text-primary"><NumberFlow value={planProgress} />%</span>
+                <span className="font-semibold">Plan progress</span>
+                <span className="font-display text-xs font-semibold text-primary"><NumberFlow value={planProgress} />%</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
                 <span className="block h-full rounded-full bg-primary" style={{ width: `${planProgress}%` }} />
@@ -480,11 +461,11 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border/65 bg-card/58 p-4">
+        <div className="rounded-xl border border-border/65 bg-card/58 p-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="grid size-8 place-items-center rounded-full bg-primary/12 text-primary"><Target className="size-4" /></span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-extrabold">Ultimate MCAT study plan</p>
+              <p className="text-sm font-semibold">Ultimate MCAT study plan</p>
               <p className="text-xs font-semibold text-muted-foreground">
                 Week {Math.min(schedule.length || 1, activeIndex + 1)} of {schedule.length || 1} · {phase}
               </p>
@@ -507,10 +488,10 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
                         aria-hidden="true"
                       />
                     )}
-                    <Link to="/mcat" className="block rounded-2xl p-2 transition hover:bg-muted/50">
+                    <Link to="/mcat" className="block rounded-xl p-2 transition hover:bg-muted/50">
                       <span
                         className={cn(
-                          'grid size-8 place-items-center rounded-full border-2 bg-card text-xs font-extrabold',
+                          'grid size-8 place-items-center rounded-full border-2 bg-card text-xs font-semibold',
                           state === 'done' && 'border-success bg-success text-success-foreground',
                           state === 'current' && 'border-primary bg-primary text-primary-foreground shadow-[0_0_0_5px_color-mix(in_srgb,var(--primary)_18%,transparent)]',
                           state === 'future' && 'border-border text-muted-foreground'
@@ -518,7 +499,7 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
                       >
                         {index + 1}
                       </span>
-                      <span className="mt-2 block text-xs font-extrabold uppercase tracking-wide text-primary">{item.phase}</span>
+                      <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-primary">{item.phase}</span>
                       <span className="mt-1 block min-h-8 text-xs font-semibold leading-snug text-foreground">{item.focus}</span>
                     </Link>
                   </li>
@@ -529,9 +510,9 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Quick resources</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quick resources</span>
           {['UWorld', 'Anki', 'Notes'].map((label) => (
-            <Link key={label} to="/mcat" className="rounded-full bg-card/70 px-3 py-1.5 text-xs font-extrabold text-primary ring-1 ring-border/60 hover:bg-muted">
+            <Link key={label} to="/mcat" className="rounded-full bg-card/70 px-3 py-1.5 text-xs font-semibold text-primary ring-1 ring-border/60 hover:bg-muted">
               {label}
             </Link>
           ))}
@@ -547,10 +528,10 @@ function TaskRow({ task, onFinish }: { task: TaskItem; onFinish: () => void }) {
     <div className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-muted/50">
       <Checkbox checked={false} onCheckedChange={onFinish} />
       <Link to="/timeline" className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold">{task.title}</span>
+        <span className="block truncate text-sm font-semibold">{task.title}</span>
         <span className="text-xs text-muted-foreground">{task.course || task.type}</span>
       </Link>
-      {task.deadline && <span className={cn('shrink-0 text-xs font-bold', d != null && d <= 2 ? 'text-destructive' : 'text-muted-foreground')}>{fmtRelative(task.deadline)}</span>}
+      {task.deadline && <span className={cn('shrink-0 text-xs font-semibold', d != null && d <= 2 ? 'text-destructive' : 'text-muted-foreground')}>{fmtRelative(task.deadline)}</span>}
     </div>
   )
 }
@@ -585,17 +566,17 @@ function AddTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           <DialogDescription>Creates a Timeline task and shows it here when active.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <label className="block text-sm font-bold">Task name<Input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></label>
+          <label className="block text-sm font-semibold">Task name<Input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></label>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block text-sm font-bold">Date<DateField value={deadline} onChange={setDeadline} /></label>
-            <label className="block text-sm font-bold">Category
+            <label className="block text-sm font-semibold">Date<DateField value={deadline} onChange={setDeadline} /></label>
+            <label className="block text-sm font-semibold">Category
               <Select value={type} onValueChange={(value) => setType(value as TaskType)}><SelectTrigger className="mt-1 h-10"><SelectValue /></SelectTrigger><SelectContent>{(['Assignment', 'Exam', 'Application', 'Meeting', 'Advising', 'Personal', 'Other'] as TaskType[]).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
             </label>
-            <label className="block text-sm font-bold">Status
+            <label className="block text-sm font-semibold">Status
               <Select value={progress} onValueChange={(value) => setProgress(value as TaskProgress)}><SelectTrigger className="mt-1 h-10"><SelectValue /></SelectTrigger><SelectContent>{(['Not started', 'Working on', 'Finished'] as TaskProgress[]).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
             </label>
           </div>
-          <label className="block text-sm font-bold">Notes<Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></label>
+          <label className="block text-sm font-semibold">Notes<Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} /></label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">Save task</Button>
@@ -616,10 +597,10 @@ function UpcomingPanel({ alerts }: { alerts: ReturnType<typeof upcomingAlerts> }
           <Link key={a.id} to="/timeline" className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 hover:bg-muted/50">
             <span className={cn('size-2.5 rounded-full', a.severity === 'urgent' ? 'bg-destructive' : a.severity === 'soon' ? 'bg-warning' : 'bg-primary')} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold">{a.label}</span>
+              <span className="block truncate text-sm font-semibold">{a.label}</span>
               <span className="text-xs text-muted-foreground">{a.sub}</span>
             </span>
-            <span className="text-xs font-bold text-muted-foreground">{fmtRelative(a.date)}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{fmtRelative(a.date)}</span>
           </Link>
         ))}
       </CardContent>
@@ -660,13 +641,13 @@ function AtAGlance({ gpa, hours, best }: { gpa: ReturnType<typeof gpaStats>; hou
                 to={r.route}
                 className="group min-h-[4.25rem] border-t border-border/70 px-2.5 py-2.5 transition-colors hover:bg-muted/35 first:border-t-0 sm:[&:nth-child(-n+3)]:border-t-0"
               >
-                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <span className="grid size-7 place-items-center rounded-full bg-secondary/70 text-primary transition-colors group-hover:bg-secondary">
                     <Icon className="size-3.5" />
                   </span>
                   {r.label}
                 </span>
-                <span className="mt-1 block pl-9 text-sm font-extrabold">{r.value}</span>
+                <span className="mt-1 block pl-9 font-display text-sm font-semibold">{r.value}</span>
                 {'pct' in r && <span className="mt-2 ml-9 block h-1.5 overflow-hidden rounded-full bg-muted"><i className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(100, r.pct ?? 0)}%` }} /></span>}
               </Link>
             )
@@ -694,8 +675,8 @@ function PremedRoadmap() {
               <li key={m.id} className={cn('roadmap-node', state)}>
                 <Link to={`/${m.route}`} className="block rounded-xl p-2 hover:bg-muted/50">
                   <span className="roadmap-dot" />
-                  <span className="block text-sm font-extrabold">{m.label}</span>
-                  <span className="block text-xs font-bold text-primary">{m.date}</span>
+                  <span className="block text-sm font-semibold">{m.label}</span>
+                  <span className="block text-xs font-semibold text-primary">{m.date}</span>
                   <span className="block text-xs text-muted-foreground">{m.detail}</span>
                 </Link>
               </li>
@@ -727,7 +708,7 @@ function LowerWidgets({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
     })
   }, [activity])
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
+    <div className="grid gap-6 lg:grid-cols-3">
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Brain className="size-4 text-primary" /> MCAT QOTD</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -747,14 +728,14 @@ function LowerWidgets({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
                     answered && picked && !isCorrect && 'border-destructive/70 bg-destructive/15 text-destructive'
                   )}
                 >
-                  <span className="mr-2 text-xs font-extrabold text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>{choice}
+                  <span className="mr-2 text-xs font-semibold text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>{choice}
                 </button>
               )
             })}
           </div>
           {answered && (
             <div className="rounded-xl bg-muted/50 p-3">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-primary">{selected === qotd.answer ? 'Correct' : 'Review'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">{selected === qotd.answer ? 'Correct' : 'Review'}</p>
               <p className="mt-1 text-muted-foreground">{qotd.explanation}</p>
             </div>
           )}
@@ -763,7 +744,7 @@ function LowerWidgets({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /> Quarterly goals</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          {goals.slice(0, 3).map((g) => <div key={g.id} className="rounded-xl bg-muted/40 px-3 py-2 text-sm font-medium">{g.text}</div>)}
+          {goals.slice(0, 3).map((g) => <div key={g.id} className="rounded-xl bg-muted/40 px-3 py-2 text-sm font-semibold">{g.text}</div>)}
         </CardContent>
       </Card>
       <Card>
