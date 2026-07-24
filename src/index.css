@@ -304,8 +304,7 @@
   }
 
   strong,
-  b,
-  th {
+  b {
     font-weight: 600;
   }
   ::selection {
