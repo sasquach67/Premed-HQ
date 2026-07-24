@@ -1,4 +1,3 @@
-import { useId } from 'react'
 import { m } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { MOTION_TRANSITION } from '@/lib/motion'
@@ -19,7 +18,6 @@ export function ModeSwitch<T extends string>({
   onChange: (value: T) => void
   label?: string
 }) {
-  const indicatorId = useId()
   const left = options[0]
   const right = options[1]
   if (!left || !right) return null
@@ -42,27 +40,19 @@ export function ModeSwitch<T extends string>({
       onKeyDown={onKeyDown}
       whileTap={{ scale: 0.985 }}
       transition={MOTION_TRANSITION.micro}
-      className="inline-grid h-10 grid-cols-2 items-stretch rounded-xl border border-border bg-muted/55 p-1 shadow-sm transition-colors duration-200 hover:bg-muted/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+      className="relative inline-grid h-10 min-w-56 grid-cols-2 items-stretch rounded-full border border-border/80 bg-muted/70 p-1 shadow-inner transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
     >
-      <span className={cn('relative flex min-w-20 items-center justify-center px-3 text-sm font-extrabold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-muted-foreground' : 'text-foreground')}>
-        {!checked && (
-          <m.span
-            layoutId={`${indicatorId}-mode-indicator`}
-            className="absolute inset-0 rounded-lg border border-border/80 bg-card shadow-sm"
-            transition={MOTION_TRANSITION.standard}
-          />
-        )}
-        <span className="relative">{left.label}</span>
+      <m.span
+        aria-hidden
+        className="pointer-events-none absolute bottom-1 left-1 top-1 w-[calc(50%-0.25rem)] rounded-full bg-primary shadow-sm"
+        animate={{ x: checked ? '100%' : '0%' }}
+        transition={MOTION_TRANSITION.standard}
+      />
+      <span className={cn('relative z-10 flex min-w-20 items-center justify-center px-4 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-muted-foreground' : 'text-primary-foreground')}>
+        {left.label}
       </span>
-      <span className={cn('relative flex min-w-20 items-center justify-center px-3 text-sm font-extrabold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-foreground' : 'text-muted-foreground')}>
-        {checked && (
-          <m.span
-            layoutId={`${indicatorId}-mode-indicator`}
-            className="absolute inset-0 rounded-lg border border-border/80 bg-card shadow-sm"
-            transition={MOTION_TRANSITION.standard}
-          />
-        )}
-        <span className="relative">{right.label}</span>
+      <span className={cn('relative z-10 flex min-w-20 items-center justify-center px-4 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-primary-foreground' : 'text-muted-foreground')}>
+        {right.label}
       </span>
     </m.button>
   )

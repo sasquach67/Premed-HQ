@@ -85,19 +85,19 @@ export function Sidebar({
       </div>
 
       {/* groups */}
-      <div className="flex-1 overflow-hidden px-2.5 pb-3 [@media(max-height:950px)]:pb-6">
-        <div className="flex min-h-full flex-col justify-between [@media(max-height:950px)]:py-2">
+      <div className="flex-1 overflow-hidden px-2.5 pb-3 [@media(max-height:1000px)]:pb-6">
+        <div className="flex min-h-full flex-col [@media(max-height:1000px)]:py-2">
           {NAV_GROUPS.map(({ group, items }) => (
-            <div key={group} className="mb-2.5 [@media(max-height:950px)]:mb-2">
-              <div className="h-7 overflow-hidden [@media(max-height:950px)]:h-6">
+            <div key={group} className="mb-2.5 [@media(max-height:1000px)]:mb-2">
+              <div className="h-7 overflow-hidden [@media(max-height:1000px)]:h-6">
                 {group === 'Home' ? null : (
                   <AnimatePresence initial={false}>
-                    {labelsShown && <m.p className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 [@media(max-height:950px)]:text-[10px]" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{group}</m.p>}
+                    {labelsShown && <m.p className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 [@media(max-height:1000px)]:text-[10px]" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{group}</m.p>}
                   </AnimatePresence>
                 )}
                 {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
               </div>
-              <ul className="space-y-1 [@media(max-height:950px)]:space-y-0.5">
+              <ul className="space-y-1 [@media(max-height:1000px)]:space-y-0.5">
                 {items.map((r) => {
                   const to = r.id === 'home' ? '/' : `/${r.id}`
                   const isActive = r.id === 'home' ? location.pathname === '/' : location.pathname === to
@@ -107,8 +107,8 @@ export function Sidebar({
                       aria-label={r.label}
                       onClick={() => { touchRoute(r.id); onNavigate?.() }}
                       className={cn(
-                        'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg border border-transparent text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [@media(max-height:950px)]:h-10 [@media(max-height:950px)]:grid-cols-[2.5rem_minmax(0,1fr)] [@media(max-height:950px)]:text-sm',
-                        expanded ? 'px-1.5' : 'mx-auto w-12 px-0 [@media(max-height:950px)]:w-10',
+                        'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg border border-transparent text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [@media(max-height:1000px)]:h-10 [@media(max-height:1000px)]:grid-cols-[2.5rem_minmax(0,1fr)] [@media(max-height:1000px)]:text-sm',
+                        expanded ? 'px-1.5' : 'mx-auto w-12 px-0 [@media(max-height:1000px)]:w-10',
                         r.id === 'home' && expanded && 'border-sidebar-border bg-card/70 shadow-sm',
                         expanded
                           ? isActive
@@ -119,8 +119,8 @@ export function Sidebar({
                             : 'text-muted-foreground hover:text-sidebar-primary'
                       )}
                     >
-                      <span className="grid size-12 place-items-center [@media(max-height:950px)]:size-10">
-                        <r.icon className={cn('size-5 shrink-0 transition-colors duration-200 [@media(max-height:950px)]:size-[18px]', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
+                      <span className="grid size-12 place-items-center [@media(max-height:1000px)]:size-10">
+                        <r.icon className={cn('size-5 shrink-0 transition-colors duration-200 [@media(max-height:1000px)]:size-[18px]', isActive ? 'text-sidebar-primary' : 'text-muted-foreground group-hover:text-sidebar-primary')} />
                       </span>
                       <AnimatePresence initial={false}>
                         {labelsShown && <m.span className="min-w-0 truncate" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{r.label}</m.span>}
