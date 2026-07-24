@@ -40,10 +40,10 @@ type SectionKey = 'bb' | 'cp' | 'cars' | 'ps'
 type ContentType = PrepCatContentType
 
 const SECTION_META: Record<SectionKey, { label: string; short: string; color: string; soft: string }> = {
-  bb: { label: 'Bio/Biochem', short: 'Bio', color: 'var(--sec-bb)', soft: 'bg-leaf/15 text-leaf' },
-  cp: { label: 'Chem/Phys', short: 'Chem', color: 'var(--sec-cp)', soft: 'bg-amber/20 text-amber-foreground' },
-  cars: { label: 'CARS', short: 'CARS', color: 'var(--sec-cars)', soft: 'bg-primary/15 text-primary' },
-  ps: { label: 'Psych/Soc', short: 'Psych', color: 'var(--sec-ps)', soft: 'bg-rose/15 text-rose-foreground' },
+  bb: { label: 'Bio/Biochem', short: 'Bio', color: '#76b86c', soft: 'bg-leaf/15 text-leaf' },
+  cp: { label: 'Chem/Phys', short: 'Chem', color: '#e4a24f', soft: 'bg-amber/20 text-amber-foreground' },
+  cars: { label: 'CARS', short: 'CARS', color: '#62b7ee', soft: 'bg-primary/15 text-primary' },
+  ps: { label: 'Psych/Soc', short: 'Psych', color: '#ef86b4', soft: 'bg-rose/15 text-rose-foreground' },
 }
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
@@ -159,11 +159,11 @@ export function Mcat() {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm card-soft">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span className="flex items-center gap-1.5"><CalendarRange className="size-4 text-primary" /> Sit date <span className="font-semibold">{formatDateChip(targetDate)}</span></span>
-          <span className="font-semibold text-primary">{days != null ? `${days} days out` : 'Set a date'}</span>
-          <span>Goal <span className="font-display font-semibold text-foreground">{mcat.goalScore ?? 'Set'}</span></span>
-          <span>Baseline <span className="font-display font-semibold text-foreground">{mcat.baselineScore ?? best ?? 'Set'}</span></span>
-          <span className="text-muted-foreground">Best so far <span className="font-display font-semibold text-foreground">{best ?? '—'}</span></span>
+          <span className="flex items-center gap-1.5"><CalendarRange className="size-4 text-primary" /> Sit date <b>{formatDateChip(targetDate)}</b></span>
+          <span className="font-bold text-primary">{days != null ? `${days} days out` : 'Set a date'}</span>
+          <span>Goal <b className="text-foreground">{mcat.goalScore ?? 'Set'}</b></span>
+          <span>Baseline <b className="text-foreground">{mcat.baselineScore ?? best ?? 'Set'}</b></span>
+          <span className="text-muted-foreground">Best so far <b className="text-foreground">{best ?? '—'}</b></span>
         </div>
         <McatSetupDialog />
       </div>
@@ -291,7 +291,7 @@ function McatSetupDialog() {
 
         <div className="space-y-5">
           <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exam goal</h3>
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Exam goal</h3>
             <div className="grid gap-4 md:grid-cols-3">
               <Label className="space-y-1.5">
                 <span>Sit date</span>
@@ -308,7 +308,7 @@ function McatSetupDialog() {
             </div>
           </section>
           <section className="space-y-3 border-t border-border pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Study plan</h3>
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Study plan</h3>
             <div className="grid gap-4 md:grid-cols-3">
               <Label className="space-y-1.5">
                 <span>Weekly hours</span>
@@ -324,8 +324,8 @@ function McatSetupDialog() {
               </Label>
             </div>
           </section>
-          <details className="rounded-xl border border-border bg-muted/25 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Preferences</summary>
+          <details className="rounded-2xl border border-border bg-muted/25 p-3">
+            <summary className="cursor-pointer text-sm font-extrabold">Preferences</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Label className="space-y-1.5">
                 <span>Plan intensity</span>
@@ -359,26 +359,26 @@ function McatFocusLaunchStrip({
   const phase = setup.currentPhase || 'Set your phase'
 
   return (
-    <section className="mb-4 rounded-xl border border-leaf/35 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--leaf)_18%,var(--card)),var(--card)_58%,color-mix(in_srgb,var(--primary)_14%,var(--card)))] p-4 shadow-sm card-soft">
+    <section className="mb-4 rounded-2xl border border-leaf/35 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--leaf)_18%,var(--card)),var(--card)_58%,color-mix(in_srgb,var(--primary)_14%,var(--card)))] p-4 shadow-sm card-soft">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf/15 px-2.5 py-1 text-xs font-semibold text-leaf">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-leaf/15 px-2.5 py-1 text-xs font-extrabold text-leaf">
               <Play className="size-3.5 fill-current" /> Focus session
             </span>
-            <span className="text-xs font-semibold text-muted-foreground">{phase} · {length} min · {section}</span>
+            <span className="text-xs font-bold text-muted-foreground">{phase} · {length} min · {section}</span>
           </div>
-          <h2 className="mt-2 font-display text-lg font-semibold">Start the next MCAT block</h2>
+          <h2 className="mt-2 font-display text-2xl font-extrabold">Start the next MCAT block</h2>
           <p className="mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
             Choose the section, length, and goal before the timer takes over the screen.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <div className="rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-xs font-bold text-muted-foreground">
             {openTasks ? `${openTasks} unfinished MCAT items` : 'No MCAT debt logged'}
           </div>
           <McatSessionSetupDialog
-            triggerClassName="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-leaf px-6 text-sm font-semibold text-foreground transition hover:bg-leaf/90"
+            triggerClassName="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-leaf px-6 text-base font-extrabold text-white shadow-sm transition hover:bg-leaf/90"
             trigger={<><Play className="size-4 fill-current" /> Start session</>}
           />
         </div>
@@ -410,21 +410,21 @@ function McatDashboard({
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="space-y-4">
-        <section className="rounded-xl border border-border bg-card p-5 text-card-foreground">
+        <section className="rounded-2xl border border-border bg-[linear-gradient(135deg,#211d18,#2a251f_55%,#17231b)] p-5 text-white shadow-sm">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{today}</p>
-              <h2 className="mt-1 font-display text-3xl font-semibold">MCAT readiness, Andy</h2>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/60">{today}</p>
+              <h2 className="mt-1 font-display text-3xl font-extrabold">MCAT readiness, Andy</h2>
             </div>
-            <span className="rounded-full border border-leaf/40 bg-leaf/15 px-3 py-1 text-xs font-semibold text-leaf">{statusLabel}</span>
+            <span className="rounded-full border border-leaf/40 bg-leaf/15 px-3 py-1 text-xs font-extrabold text-leaf">{statusLabel}</span>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
-            <ReadinessMetric value={readiness} />
+            <ReadinessRing value={readiness} />
             <div className="space-y-4">
-              <div className="rounded-xl bg-muted/40 p-4 ring-1 ring-border">
-                <p className="text-sm font-semibold text-muted-foreground">Projected {projectedReadiness}% by exam day</p>
-                <p className="mt-1 text-lg font-semibold text-leaf">+{projectedReadiness - readiness} readiness points</p>
+              <div className="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
+                <p className="text-sm font-bold text-white/65">Projected {projectedReadiness}% by exam day</p>
+                <p className="mt-1 text-2xl font-extrabold text-leaf">+{projectedReadiness - readiness} readiness points</p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
                   <ScoreTile label="Score now" value={currentScore} />
                   <ScoreTile label="Projected" value={projectedScore} />
@@ -454,13 +454,13 @@ function McatDashboard({
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Brain className="size-4 text-primary" /> QOTD + Missed bank</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-xl bg-muted/45 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">{qotd.section}</p>
+              <div className="rounded-2xl bg-muted/45 p-3">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-primary">{qotd.section}</p>
                 <p className="mt-1 line-clamp-3 text-sm font-semibold">{qotd.question}</p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-xl bg-muted/35 p-3"><span className="font-display font-semibold">0</span><br /><span className="text-muted-foreground">review due</span></div>
-                <div className="rounded-xl bg-muted/35 p-3"><span className="font-display font-semibold">streak 4</span><br /><span className="text-muted-foreground">keep it alive</span></div>
+                <div className="rounded-2xl bg-muted/35 p-3"><b>0</b><br /><span className="text-muted-foreground">review due</span></div>
+                <div className="rounded-2xl bg-muted/35 p-3"><b>streak 4</b><br /><span className="text-muted-foreground">keep it alive</span></div>
               </div>
             </CardContent>
           </Card>
@@ -473,7 +473,7 @@ function McatDashboard({
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 size-5 text-destructive" />
               <div>
-                <p className="font-display text-lg font-semibold">{hasDebt ? 'You need to catch up!' : 'Plan debt is clear'}</p>
+                <p className="font-display text-lg font-extrabold">{hasDebt ? 'You need to catch up!' : 'Plan debt is clear'}</p>
                 <p className="text-sm font-semibold text-muted-foreground">
                   {hasDebt ? `${openTasks} unfinished tasks · ~${debtHours}h` : 'No unfinished MCAT tasks or unresolved misses yet.'}
                 </p>
@@ -485,8 +485,8 @@ function McatDashboard({
 
         <Card className="border-leaf/30 bg-leaf/10">
           <CardContent className="p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-leaf">Smart nudge</p>
-            <p className="mt-1 font-semibold">Focus on {focusLabel}; your setup marks it as the priority.</p>
+            <p className="text-xs font-extrabold uppercase tracking-wide text-leaf">Smart nudge</p>
+            <p className="mt-1 font-bold">Focus on {focusLabel}; your setup marks it as the priority.</p>
           </CardContent>
         </Card>
 
@@ -498,7 +498,7 @@ function McatDashboard({
         </div>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Study consistency</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Study consistency</CardTitle></CardHeader>
           <CardContent><Heatmap /></CardContent>
         </Card>
       </aside>
@@ -513,8 +513,8 @@ function McatPlan({ currentScore, projectedScore, goal }: { currentScore: number
       <Card className="border-primary/25 bg-primary/8">
         <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Adaptive plan</p>
-            <h2 className="font-display text-lg font-semibold">Projected {projectedScore} · {Math.max(0, goal - projectedScore)} pts to go</h2>
+            <p className="text-xs font-extrabold uppercase tracking-wide text-primary">Adaptive plan</p>
+            <h2 className="font-display text-2xl font-extrabold">Projected {projectedScore} · {Math.max(0, goal - projectedScore)} pts to go</h2>
             <p className="text-sm font-semibold text-muted-foreground">Current baseline {currentScore}. The plan shifts toward debt, weak topics, and upcoming full lengths.</p>
           </div>
           <Button onClick={() => setRebuilt(true)}><TrendingUp className="size-4" /> Rebuild my plan to close the gap</Button>
@@ -522,7 +522,7 @@ function McatPlan({ currentScore, projectedScore, goal }: { currentScore: number
       </Card>
       {rebuilt && <div className="rounded-xl border border-leaf/30 bg-leaf/10 px-4 py-2 text-sm font-semibold text-leaf">Plan rebuilt locally: Bio/Biochem review and error-log sessions were moved earlier this week.</div>}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card p-3 card-soft">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card p-3 card-soft">
         <div className="grid min-w-[980px] grid-cols-8 gap-3">
           {PLAN_DAYS.map((day) => <PlanDay key={`${day.day}-${day.date}`} day={day} />)}
         </div>
@@ -560,13 +560,13 @@ function McatContent() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 card-soft">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 card-soft">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search PrepCat guides, pathways, drills..." className="pl-9" />
           </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+          <div className="flex flex-wrap gap-2 text-xs font-bold">
             {[
               `${PREPCAT_CONTENT_COUNTS.guide} guides`,
               `${PREPCAT_CONTENT_COUNTS['hack-sheet']} hack sheets`,
@@ -592,7 +592,7 @@ function McatContent() {
 
       {featured.length > 0 && (
         <section>
-          <h3 className="mb-2 font-display text-lg font-semibold">Featured PrepCat sheets</h3>
+          <h3 className="mb-2 font-display text-xl font-extrabold">Featured PrepCat sheets</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {featured.map((item) => <ContentCard key={`${item.number}-${item.title}`} item={item} featured onOpen={() => setSelectedItem(item)} />)}
           </div>
@@ -601,14 +601,14 @@ function McatContent() {
 
       <section>
         <div className="mb-2 flex items-end justify-between gap-3">
-          <h3 className="font-display text-lg font-semibold">Study library</h3>
-          <p className="text-xs font-semibold text-muted-foreground">{items.length} of {PREPCAT_CONTENT_ITEMS.length} items</p>
+          <h3 className="font-display text-xl font-extrabold">Study library</h3>
+          <p className="text-xs font-bold text-muted-foreground">{items.length} of {PREPCAT_CONTENT_ITEMS.length} items</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => <ContentCard key={`${item.number}-${item.title}`} item={item} onOpen={() => setSelectedItem(item)} />)}
         </div>
         {items.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm font-semibold text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm font-bold text-muted-foreground">
             No PrepCat content matches those filters yet.
           </div>
         )}
@@ -679,12 +679,12 @@ function MistakeMap() {
         tabIndex={0}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="rounded-xl border border-dashed border-primary/50 bg-primary/8 p-8 text-center outline-none transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/60 card-soft"
+        className="rounded-2xl border border-dashed border-primary/50 bg-primary/8 p-8 text-center outline-none transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/60 card-soft"
       >
-        <div className="mx-auto grid size-14 place-items-center rounded-xl bg-primary/15 text-primary">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/15 text-primary">
           <UploadCloud className="size-7" />
         </div>
-        <h2 className="mt-3 font-display text-lg font-semibold">Log a mistake</h2>
+        <h2 className="mt-3 font-display text-2xl font-extrabold">Log a mistake</h2>
         <p className="mx-auto mt-1 max-w-2xl text-sm font-semibold text-muted-foreground">
           Drop a screenshot here, or paste with Cmd+V. You can enter it manually if there is no screenshot.
         </p>
@@ -693,7 +693,7 @@ function MistakeMap() {
           <Button variant="outline" onClick={() => add()}><Plus className="size-4" /> Enter manually</Button>
         </div>
         {(lastUpload || pendingCount > 0) && (
-          <p className="mt-3 text-xs font-semibold text-primary">
+          <p className="mt-3 text-xs font-bold text-primary">
             {lastUpload ? `Queued from ${lastUpload}` : `${pendingCount} screenshot${pendingCount === 1 ? '' : 's'} waiting to be classified`}
           </p>
         )}
@@ -739,11 +739,11 @@ function MistakeMap() {
                     fix: section !== 'Needs classification' && er.fix === 'Identify the MCAT section/topic, then add the fix and drill it again.' ? '' : er.fix,
                   })}
                 >
-                  <SelectTrigger className="h-8 w-44 rounded-full border-0 px-2 text-xs font-semibold text-primary-foreground" style={{ background: sectionColorByLabel(er.section) }}><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 w-44 rounded-full border-0 px-2 text-xs font-bold text-primary-foreground" style={{ background: sectionColorByLabel(er.section) }}><SelectValue /></SelectTrigger>
                   <SelectContent>{er.section === 'Needs classification' && <SelectItem value="Needs classification">Needs classification</SelectItem>}{Object.values(SECTION_META).map((section) => <SelectItem key={section.label} value={section.label}>{section.label}</SelectItem>)}</SelectContent>
                 </Select>
-                <Input defaultValue={er.section === 'Needs classification' ? '' : er.topic} placeholder={er.section === 'Needs classification' ? 'Choose a section to classify this screenshot' : 'Topic (e.g. amino acid pKa)'} onBlur={(e) => patch(er.id, { topic: e.target.value || (er.section === 'Needs classification' ? 'Screenshot pending analysis' : '') })} className="h-7 flex-1 border-0 px-1 text-sm font-semibold shadow-none focus-visible:ring-0" />
-                <label className="flex cursor-pointer items-center gap-1 text-xs font-semibold uppercase text-muted-foreground">
+                <Input defaultValue={er.section === 'Needs classification' ? '' : er.topic} placeholder={er.section === 'Needs classification' ? 'Choose a section to classify this screenshot' : 'Topic (e.g. amino acid pKa)'} onBlur={(e) => patch(er.id, { topic: e.target.value || (er.section === 'Needs classification' ? 'Screenshot pending analysis' : '') })} className="h-7 flex-1 border-0 px-1 text-sm font-bold shadow-none focus-visible:ring-0" />
+                <label className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
                   <Checkbox checked={er.resolved} onCheckedChange={(v) => patch(er.id, { resolved: Boolean(v) })} /> Got it
                 </label>
                 <button onClick={() => update((d) => { d.mcat.errorLog = d.mcat.errorLog.filter((e) => e.id !== er.id) })} className="rounded-md p-1 text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
@@ -776,13 +776,13 @@ function McatStats({
   const topicCounts = rankTopics(errorLog)
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-border bg-card p-5 card-soft">
+      <section className="rounded-2xl border border-border bg-card p-5 card-soft">
         <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
-          <ReadinessMetric value={Math.round((projectedScore / 528) * 100)} label={`${projectedScore}/528`} sublabel="projected score" />
+          <ReadinessRing value={Math.round((projectedScore / 528) * 100)} label={`${projectedScore}/528`} sublabel="projected score" />
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">You are here</p>
-              <h2 className="font-display text-3xl font-semibold">Diagnostic → goal trajectory</h2>
+              <p className="text-xs font-extrabold uppercase tracking-wide text-primary">You are here</p>
+              <h2 className="font-display text-3xl font-extrabold">Diagnostic → goal trajectory</h2>
               <p className="text-sm font-semibold text-muted-foreground">Current {currentScore} · projected {projectedScore} · goal {goal}</p>
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -820,8 +820,8 @@ function McatStats({
             {topicCounts.length === 0 && <p className="text-sm text-muted-foreground">No misses yet. Log misses to build the ranking.</p>}
             {topicCounts.map((topic, i) => (
               <div key={topic.topic} className="flex items-center justify-between rounded-xl bg-muted/35 px-3 py-2 text-sm">
-                <span className="font-semibold">{i + 1}. {topic.topic}</span>
-                <span className="font-semibold text-destructive">{topic.count}</span>
+                <span className="font-bold">{i + 1}. {topic.topic}</span>
+                <span className="font-extrabold text-destructive">{topic.count}</span>
               </div>
             ))}
           </CardContent>
@@ -857,7 +857,7 @@ function McatAdvisor() {
         <CardContent className="space-y-3">
           <div className="space-y-2">
             {messages.map((message, i) => (
-              <div key={`${message.role}-${i}`} className={cn('max-w-[85%] rounded-xl px-3 py-2 text-sm font-semibold', message.role === 'assistant' ? 'bg-muted text-foreground' : 'ml-auto bg-primary text-primary-foreground')}>
+              <div key={`${message.role}-${i}`} className={cn('max-w-[85%] rounded-2xl px-3 py-2 text-sm font-semibold', message.role === 'assistant' ? 'bg-muted text-foreground' : 'ml-auto bg-primary text-primary-foreground')}>
                 {message.text}
               </div>
             ))}
@@ -883,13 +883,14 @@ function McatAdvisor() {
   )
 }
 
-function ReadinessMetric({ value, label = `${value}%`, sublabel = 'ready' }: { value: number; label?: string; sublabel?: string }) {
+function ReadinessRing({ value, label = `${value}%`, sublabel = 'ready' }: { value: number; label?: string; sublabel?: string }) {
   return (
-    <div className="self-center rounded-xl border border-border bg-card/80 p-4 text-center text-card-foreground">
-      <p className="font-display text-3xl font-semibold">{label}</p>
-      <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{sublabel}</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-        <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+    <div className="mx-auto grid aspect-square w-full max-w-[15rem] place-items-center rounded-full p-4" style={{ background: `conic-gradient(var(--primary) ${value * 3.6}deg, rgba(255,255,255,.14) 0deg)` }}>
+      <div className="grid size-full place-items-center rounded-full bg-[#211d18] text-center text-white shadow-inner">
+        <div>
+          <p className="font-display text-4xl font-extrabold">{label}</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">{sublabel}</p>
+        </div>
       </div>
     </div>
   )
@@ -897,9 +898,9 @@ function ReadinessMetric({ value, label = `${value}%`, sublabel = 'ready' }: { v
 
 function ScoreTile({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-xl bg-muted/50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 font-display text-lg font-semibold text-foreground">{value}</p>
+    <div className="rounded-xl bg-black/20 p-3">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-white/50">{label}</p>
+      <p className="mt-1 text-xl font-extrabold text-white">{value}</p>
     </div>
   )
 }
@@ -909,8 +910,8 @@ function MetricTile({ icon: Icon, label, value }: { icon: typeof Target; label: 
     <Card>
       <CardContent className="p-3">
         <Icon className="mb-2 size-4 text-primary" />
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 font-display text-lg font-semibold">{value}</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="mt-1 font-display text-2xl font-extrabold">{value}</p>
       </CardContent>
     </Card>
   )
@@ -919,7 +920,7 @@ function MetricTile({ icon: Icon, label, value }: { icon: typeof Target; label: 
 function MiniBar({ label, value, projected, color }: { label: string; value: number; projected: number; color: string }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs font-semibold">
+      <div className="mb-1 flex items-center justify-between text-xs font-bold">
         <span>{label}</span>
         <span className="text-muted-foreground">{value}% → {projected}%</span>
       </div>
@@ -952,12 +953,12 @@ function StudyQueueRow({ session }: { session: (typeof PLAN_DAYS)[number]['sessi
     <div className="flex items-start justify-between gap-3 rounded-xl bg-muted/35 px-3 py-2">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold uppercase', meta.soft)}>{meta.short}</span>
-          <p className="truncate font-semibold">{session.task}</p>
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.short}</span>
+          <p className="truncate font-bold">{session.task}</p>
         </div>
         <p className="mt-1 text-xs font-semibold text-muted-foreground">{session.detail}</p>
       </div>
-      <span className="shrink-0 text-xs font-semibold text-primary">{session.time}</span>
+      <span className="shrink-0 text-xs font-extrabold text-primary">{session.time}</span>
     </div>
   )
 }
@@ -971,27 +972,27 @@ function PlanDay({ day }: { day: (typeof PLAN_DAYS)[number] }) {
             'border-border bg-muted/35'
 
   return (
-    <div className={cn('min-h-[22rem] rounded-xl border p-3', phaseTone)}>
+    <div className={cn('min-h-[22rem] rounded-2xl border p-3', phaseTone)}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="font-display text-lg font-semibold">{day.day}</p>
-          <p className="text-xs font-semibold opacity-65">{day.date}</p>
+          <p className="font-display text-lg font-extrabold">{day.day}</p>
+          <p className="text-xs font-bold opacity-65">{day.date}</p>
         </div>
-        <span className="rounded-full bg-card/80 px-2 py-1 text-xs font-semibold text-foreground">{day.hours ? `${day.hours}h` : day.phase}</span>
+        <span className="rounded-full bg-card/80 px-2 py-1 text-[10px] font-extrabold text-foreground">{day.hours ? `${day.hours}h` : day.phase}</span>
       </div>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-65">{day.phase}</p>
-      {day.phase === 'Rest' && <div className="grid h-40 place-items-center rounded-xl border border-dashed border-border text-center text-sm font-semibold text-muted-foreground">Rest day<br />Protect recovery</div>}
-      {day.phase === 'Exam day' && <div className="grid h-40 place-items-center rounded-xl bg-background/10 text-center text-sm font-semibold">Exam-day card<br />Sleep, breakfast, arrive early.</div>}
+      <p className="mb-3 text-[10px] font-extrabold uppercase tracking-wide opacity-65">{day.phase}</p>
+      {day.phase === 'Rest' && <div className="grid h-40 place-items-center rounded-xl border border-dashed border-border text-center text-sm font-bold text-muted-foreground">Rest day<br />Protect recovery</div>}
+      {day.phase === 'Exam day' && <div className="grid h-40 place-items-center rounded-xl bg-background/10 text-center text-sm font-bold">Exam-day card<br />Sleep, breakfast, arrive early.</div>}
       <div className="space-y-2">
         {day.sessions.map((session) => {
           const meta = SECTION_META[session.section]
           return (
             <div key={`${day.day}-${session.time}-${session.task}`} className="rounded-xl bg-card/85 p-2 text-foreground ring-1 ring-border/70">
               <div className="flex items-center justify-between gap-2">
-                <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold uppercase', meta.soft)}>{meta.short}</span>
-                <span className="text-xs font-semibold text-muted-foreground">{session.time}</span>
+                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.short}</span>
+                <span className="text-[10px] font-bold text-muted-foreground">{session.time}</span>
               </div>
-              <p className="mt-2 text-sm font-semibold">{session.task}</p>
+              <p className="mt-2 text-sm font-extrabold">{session.task}</p>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">{session.detail}</p>
             </div>
           )
@@ -1020,7 +1021,7 @@ function FilterRow({
             key={option}
             onClick={() => onChange(option)}
             className={cn(
-              'rounded-full border px-3 py-1 text-xs font-semibold capitalize transition',
+              'rounded-full border px-3 py-1 text-xs font-extrabold capitalize transition',
               active && !tone && 'border-transparent bg-primary text-primary-foreground',
               active && tone && tone.soft,
               !active && 'border-border bg-card hover:bg-muted'
@@ -1050,21 +1051,21 @@ function ContentCard({ item, featured = false, onOpen }: { item: PrepCatContentI
       onClick={onOpen}
       style={{ borderLeftColor: meta.color }}
       className={cn(
-        'flex min-h-[210px] flex-col rounded-xl border border-l-4 border-border bg-card p-4 text-left card-soft transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+        'flex min-h-[210px] flex-col rounded-2xl border border-l-4 border-border bg-card p-4 text-left card-soft transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
         featured && 'border-primary/35 bg-primary/8'
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold uppercase', meta.soft)}>{meta.label}</span>
-          <h4 className="mt-3 font-display text-lg font-semibold">{item.title}</h4>
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.label}</span>
+          <h4 className="mt-3 font-display text-xl font-extrabold">{item.title}</h4>
         </div>
         <BookOpen className="size-5" style={{ color: meta.color }} />
       </div>
       <p className="mt-3 line-clamp-3 text-sm font-semibold leading-relaxed text-muted-foreground">{item.description}</p>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
-        <p className="text-xs font-semibold text-muted-foreground">{detailMeta}</p>
-        <span className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-primary">Open page</span>
+        <p className="text-xs font-bold text-muted-foreground">{detailMeta}</p>
+        <span className="rounded-full bg-background px-3 py-1 text-xs font-extrabold text-primary">Open page</span>
       </div>
     </button>
   )
@@ -1102,26 +1103,26 @@ function ContentReaderPage({ item, onBack }: { item: PrepCatContentItem; onBack:
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-extrabold text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       >
         <ArrowLeft className="size-4" />
         Back to Content
       </button>
 
-      <article className="overflow-hidden rounded-xl border border-border bg-card card-soft">
+      <article className="overflow-hidden rounded-3xl border border-border bg-card card-soft">
         <header className="border-b border-border bg-muted/10 px-5 py-5 md:px-7">
           <div className="flex flex-wrap gap-2">
-            <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold uppercase', meta.soft)}>{meta.label}</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold uppercase text-muted-foreground">
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', meta.soft)}>{meta.label}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-extrabold uppercase text-muted-foreground">
               {CONTENT_TYPE_LABELS[item.type] ?? item.sourceType}
             </span>
           </div>
           <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <h2 className="font-display text-3xl font-semibold">{item.title}</h2>
+              <h2 className="font-display text-3xl font-extrabold">{item.title}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {item.meta.split('·').map((piece) => (
-                  <span key={piece.trim()} className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                  <span key={piece.trim()} className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs font-bold text-muted-foreground">
                     {piece.trim()}
                   </span>
                 ))}
@@ -1179,9 +1180,9 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
             <Tag
               key={index}
               className={cn(
-                'font-display font-semibold leading-tight text-foreground',
+                'font-display font-extrabold leading-tight text-foreground',
                 block.level === 1 && 'text-3xl',
-                block.level === 2 && 'mt-8 border-t border-border pt-6 text-lg first:mt-0 first:border-t-0 first:pt-0',
+                block.level === 2 && 'mt-8 border-t border-border pt-6 text-2xl first:mt-0 first:border-t-0 first:pt-0',
                 block.level === 3 && 'pt-3 text-lg'
               )}
             >
@@ -1191,11 +1192,11 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
         }
         if (block.kind === 'contents') {
           return (
-            <div key={index} className="rounded-xl border border-border bg-muted/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">On this page</p>
+            <div key={index} className="rounded-2xl border border-border bg-muted/20 p-4">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">On this page</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {block.items.map((item) => (
-                  <div key={item} className="rounded-xl border border-border bg-card/70 px-3 py-2 text-sm font-semibold leading-snug text-foreground">
+                  <div key={item} className="rounded-xl border border-border bg-card/70 px-3 py-2 text-sm font-bold leading-snug text-foreground">
                     {item}
                   </div>
                 ))}
@@ -1206,39 +1207,39 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
         if (block.kind === 'callout') {
           return (
             <div key={index} className={cn(
-              'rounded-xl border px-4 py-3 text-sm font-semibold leading-relaxed',
+              'rounded-2xl border px-4 py-3 text-sm font-semibold leading-relaxed',
               block.tone === 'trap'
                 ? 'border-destructive/30 bg-destructive/10 text-foreground'
                 : block.tone === 'tip'
                   ? 'border-leaf/30 bg-leaf/10 text-foreground'
                   : 'border-primary/25 bg-primary/10 text-foreground'
             )}>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{block.label}</p>
+              <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">{block.label}</p>
               <p>{block.text}</p>
             </div>
           )
         }
         if (block.kind === 'worked-example') {
           return (
-            <div key={index} className="overflow-hidden rounded-xl border border-primary/25 bg-primary/8">
+            <div key={index} className="overflow-hidden rounded-2xl border border-primary/25 bg-primary/8">
               <div className="border-b border-primary/15 bg-primary/10 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Worked example</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Worked example</p>
               </div>
               <div className="grid gap-0 md:grid-cols-[0.95fr_1.25fr]">
                 <div className="border-b border-primary/15 p-4 md:border-b-0 md:border-r">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Question</p>
+                  <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Question</p>
                   <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
                 </div>
                 <div className="p-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Walkthrough</p>
+                  <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Walkthrough</p>
                   {block.explanation ? (
                     <div className="space-y-3">
                       {block.explanation.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
-                        <p key={paragraphIndex} className="text-sm font-semibold leading-7 text-muted-foreground">{paragraph}</p>
+                        <p key={paragraphIndex} className="text-sm font-medium leading-7 text-muted-foreground">{paragraph}</p>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm font-semibold leading-7 text-muted-foreground">Work through the prompt, then compare with the surrounding guide explanation.</p>
+                    <p className="text-sm font-medium leading-7 text-muted-foreground">Work through the prompt, then compare with the surrounding guide explanation.</p>
                   )}
                 </div>
               </div>
@@ -1247,7 +1248,7 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
         }
         if (block.kind === 'formula') {
           return (
-            <div key={index} className="rounded-xl border border-primary/20 bg-primary/8 p-3">
+            <div key={index} className="rounded-2xl border border-primary/20 bg-primary/8 p-3">
               <div className="space-y-2">
                 {block.lines.map((line, lineIndex) => (
                   <FormulaLine key={`${index}-${lineIndex}`} line={line} />
@@ -1259,23 +1260,27 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
         if (block.kind === 'table') {
           const [head, ...rows] = block.rows
           return (
-            <div key={index} className="overflow-x-auto rounded-xl border border-border bg-background/45">
-              <div className="min-w-[34rem] text-sm">
-                <div className="grid border-b border-border bg-muted/35" style={{ gridTemplateColumns: `repeat(${Math.max(1, head.length)}, minmax(0, 1fr))` }}>
-                  {head.map((cell, cellIndex) => <div key={cellIndex} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cell}</div>)}
-                </div>
-                {rows.map((row, rowIndex) => (
-                  <div key={rowIndex} className="grid border-b border-border/70 last:border-0" style={{ gridTemplateColumns: `repeat(${Math.max(1, head.length)}, minmax(0, 1fr))` }}>
-                    {row.map((cell, cellIndex) => <div key={cellIndex} className="px-3 py-2 font-semibold leading-relaxed text-muted-foreground">{cell}</div>)}
-                  </div>
-                ))}
-              </div>
+            <div key={index} className="overflow-x-auto rounded-2xl border border-border bg-background/45">
+              <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/35">
+                    {head.map((cell, cellIndex) => <th key={cellIndex} className="px-3 py-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{cell}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-border/70 last:border-0">
+                      {row.map((cell, cellIndex) => <td key={cellIndex} className="px-3 py-2 align-top font-semibold leading-relaxed text-muted-foreground">{cell}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )
         }
         if (block.kind === 'list') {
           return (
-            <ul key={index} className="space-y-2 rounded-xl border border-border bg-muted/20 px-4 py-3">
+            <ul key={index} className="space-y-2 rounded-2xl border border-border bg-muted/20 px-4 py-3">
               {block.items.map((item, itemIndex) => (
                 <li key={itemIndex} className="flex gap-2 text-sm font-semibold leading-relaxed text-muted-foreground">
                   <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
@@ -1285,7 +1290,7 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
             </ul>
           )
         }
-        return <p key={index} className="max-w-3xl text-sm font-semibold leading-7 text-muted-foreground">{block.text}</p>
+        return <p key={index} className="max-w-3xl text-[0.95rem] font-medium leading-7 text-muted-foreground">{block.text}</p>
       })}
     </div>
   )
@@ -1483,7 +1488,7 @@ function FormulaLine({ line }: { line: string }) {
       {pieces.map((piece, index) => {
         const [formula, note] = piece.split(/←|—/, 2).map((part) => part.trim())
         return (
-          <span key={index} className="inline-flex min-h-8 items-center gap-2 rounded-xl border border-border bg-card/85 px-3 py-1.5 font-display text-sm font-semibold text-foreground shadow-sm">
+          <span key={index} className="inline-flex min-h-8 items-center gap-2 rounded-xl border border-border bg-card/85 px-3 py-1.5 font-mono text-sm font-bold text-foreground shadow-sm">
             <span>{renderMathText(formula)}</span>
             {note && <span className="font-sans text-xs font-semibold text-muted-foreground">{note}</span>}
           </span>
@@ -1568,7 +1573,7 @@ function isFormulaLine(line: string) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
       {children}
     </div>
   )
@@ -1613,7 +1618,7 @@ function lowestSectionLabel(sectionReadiness: ReturnType<typeof buildSectionRead
 }
 
 function sectionColorByLabel(label: string) {
-  if (label === 'Needs classification') return 'var(--warning)'
+  if (label === 'Needs classification') return '#e4a24f'
   return Object.values(SECTION_META).find((s) => s.label === label)?.color ?? 'var(--primary)'
 }
 
