@@ -225,7 +225,7 @@ export function TrackerTable({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="glass-surface overflow-hidden rounded-2xl border">
+      <div className="bg-card card-soft overflow-hidden rounded-2xl border">
         <div className="flex min-h-10 flex-wrap items-center justify-end gap-3 border-b border-border px-3 py-1.5">
           <div className="relative mr-auto min-w-48 flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
