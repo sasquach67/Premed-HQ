@@ -27,7 +27,7 @@ export function HelpFeedbackLauncher() {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="fixed bottom-4 right-4 z-40 grid size-10 place-items-center rounded-full border border-border bg-card text-sm font-semibold shadow-lg transition-transform duration-200 hover:-translate-y-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Help and feedback" title="Help and feedback (?)">?</button>
+      <button type="button" onClick={() => setOpen(true)} className="fixed bottom-4 right-4 z-40 grid size-10 place-items-center rounded-full border border-border bg-card text-sm font-extrabold shadow-lg transition-transform duration-200 hover:-translate-y-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Help and feedback" title="Help and feedback (?)">?</button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

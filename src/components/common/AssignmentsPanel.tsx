@@ -121,7 +121,7 @@ function assignmentColumns({
       const due = daysLeftLabel((row as TaskItem).deadline)
       return (
         <span className={cn(
-          'inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold',
+          'inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-extrabold',
           due.tone === 'late' && 'bg-destructive/12 text-destructive',
           due.tone === 'urgent' && 'bg-warning/20 text-warning-foreground',
           due.tone === 'soon' && 'bg-primary/12 text-primary',
@@ -162,7 +162,7 @@ export function AssignmentsPanel() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Active assignments</h3>
+        <h3 className="text-sm font-bold">Active assignments</h3>
         <Button size="sm" variant="outline" onClick={() => addTask()}><Plus className="size-4" /> Add task</Button>
       </div>
       <TrackerTable
@@ -328,7 +328,7 @@ function AcademicTagSelect({
           <button
             type="button"
             onClick={() => selectOption(null)}
-            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X className="size-3.5" /> Clear current value
           </button>
@@ -354,7 +354,7 @@ function AcademicTagSelect({
             <button
               type="button"
               onClick={createOption}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-bold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
             >
               <Plus className="size-4" /> Create "{query.trim()}"
             </button>
@@ -380,12 +380,12 @@ function TagPill({ option, fallback, placeholder, kind = 'type' }: { option?: Ta
   const compact = kind === 'course'
   const label = compact ? compactCourseLabel(fullLabel) : titleCaseLabel(fullLabel)
   if (!label) {
-    return <span className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">{placeholder}</span>
+    return <span className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs font-bold text-muted-foreground">{placeholder}</span>
   }
   const course = option && 'icon' in option ? option as AcademicCourseOption : null
   return (
     <span className={cn(
-      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none',
+      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-extrabold leading-none',
       compact ? 'max-w-[6.75rem]' : 'max-w-[10rem]',
       option ? TAG_COLOR_CLASS[option.color] : TAG_COLOR_CLASS.gray
     )}
@@ -456,7 +456,7 @@ function OptionRow({
                 key={color}
                 type="button"
                 onClick={() => onColor(color)}
-                className={cn('h-6 rounded-full border px-2 text-[10px] font-semibold capitalize transition hover:scale-[1.03]', TAG_COLOR_CLASS[color], option.color === color && 'ring-2 ring-ring/45')}
+                className={cn('h-6 rounded-full border px-2 text-[10px] font-bold capitalize transition hover:scale-[1.03]', TAG_COLOR_CLASS[color], option.color === color && 'ring-2 ring-ring/45')}
               >
                 {color}
               </button>
@@ -465,7 +465,7 @@ function OptionRow({
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
           >
             {used ? <Archive className="size-3.5" /> : <Trash2 className="size-3.5" />}
             {used ? 'Archive option' : 'Delete option'}

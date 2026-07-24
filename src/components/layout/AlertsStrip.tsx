@@ -15,7 +15,7 @@ export function AlertsStrip() {
   return (
     <div className="border-b border-border bg-[color-mix(in_srgb,var(--warning)_8%,var(--card))]">
       <div className="mx-auto flex w-full max-w-[84rem] flex-wrap items-center gap-2 px-4 py-2 md:px-8">
-        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[color-mix(in_srgb,var(--warning)_55%,var(--foreground))]">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[color-mix(in_srgb,var(--warning)_55%,var(--foreground))]">
           <AlertTriangle className="size-3.5" /> Needs attention
         </span>
         {alerts.map((a) => (
@@ -41,7 +41,7 @@ function AlertChip({ a }: { a: AttentionItem }) {
     <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-card px-2.5 py-1 text-xs font-medium text-destructive">
       <CalendarClock className="size-3.5 shrink-0" />
       <Link to={a.route} className="max-w-[12rem] truncate hover:underline">{a.title}</Link>
-      <span className="font-semibold">{a.why}</span>
+      <span className="font-bold">{a.why}</span>
     </span>
   )
 }

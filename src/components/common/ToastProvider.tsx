@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ? <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
                 : <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{entry.title}</p>
+                <p className="text-sm font-extrabold">{entry.title}</p>
                 {entry.description && <p className="mt-0.5 text-xs text-muted-foreground">{entry.description}</p>}
                 {(entry.onOpen || entry.onUndo) && (
                   <div className="mt-2 flex gap-2">

@@ -133,7 +133,7 @@ export function QuickAddDialog() {
           {!activeKind ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {TYPES.map(([value, label, Icon]) => (
-                <button key={value} type="button" onClick={() => { setKind(value); setChoosing(false) }} className="flex min-h-20 flex-col items-start justify-between rounded-xl border border-border bg-card p-3 text-left text-sm font-semibold hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <button key={value} type="button" onClick={() => { setKind(value); setChoosing(false) }} className="flex min-h-20 flex-col items-start justify-between rounded-xl border border-border bg-card p-3 text-left text-sm font-bold hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                   <Icon className="size-4 text-primary" /> {label}
                 </button>
               ))}
@@ -141,7 +141,7 @@ export function QuickAddDialog() {
           ) : (
             <form onSubmit={submit} className="space-y-4">
               <div className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
-                <span className="text-sm font-semibold">{TYPES.find(([value]) => value === activeKind)?.[1]}</span>
+                <span className="text-sm font-bold">{TYPES.find(([value]) => value === activeKind)?.[1]}</span>
                 <Button type="button" variant="ghost" size="sm" onClick={() => { setKind(undefined); setChoosing(true) }}>Change type</Button>
               </div>
               <div className="space-y-1.5"><Label htmlFor="quick-title">{activeKind === 'course' ? 'Course code' : activeKind === 'hours' ? 'Organization' : activeKind === 'mistake' ? 'Topic' : 'Title'}</Label><Input id="quick-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} required /></div>

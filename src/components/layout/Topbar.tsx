@@ -53,7 +53,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
       <div className="mx-auto flex w-full max-w-[84rem] min-w-0 items-center gap-2 px-4 py-2.5 md:px-8">
         <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={onMenu} aria-label="Open menu"><Menu className="size-5" /></Button>
         <Breadcrumb className="hidden min-w-0 xl:block">
-          <BreadcrumbList className="h-9 flex-nowrap gap-1 text-xs font-semibold sm:gap-1">
+          <BreadcrumbList className="h-9 flex-nowrap gap-1 text-xs font-bold sm:gap-1">
             <BreadcrumbItem className="min-w-0">
               <BreadcrumbLink asChild>
                 <Link to={activeRoute.id === 'home' ? '/' : `/${activeRoute.id}`} className="max-w-32 truncate">{activeRoute.label}</Link>
@@ -63,7 +63,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
               <>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem className="min-w-0">
-                  <BreadcrumbPage className="max-w-32 truncate capitalize font-semibold">{deepLabel}</BreadcrumbPage>
+                  <BreadcrumbPage className="max-w-32 truncate capitalize font-bold">{deepLabel}</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             )}
@@ -84,7 +84,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
 function LiveStatusChip({ label, tone }: { label: string; tone: 'alert' | 'due' | 'system' | 'clear' }) {
   return (
     <Link to={tone === 'system' || tone === 'clear' ? '/settings' : '/timeline'} className={cn(
-      'hidden h-8 max-w-[10rem] items-center gap-1.5 truncate rounded-full border px-3 text-xs font-semibold shadow-sm transition hover:bg-muted sm:inline-flex',
+      'hidden h-8 max-w-[10rem] items-center gap-1.5 truncate rounded-full border px-3 text-xs font-extrabold shadow-sm transition hover:bg-muted sm:inline-flex',
       tone === 'alert' && 'border-destructive/35 bg-destructive/10 text-destructive',
       tone === 'due' && 'border-primary/30 bg-primary/10 text-primary',
       tone === 'system' && 'border-warning/35 bg-warning/10 text-warning',

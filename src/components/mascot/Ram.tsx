@@ -28,7 +28,7 @@ export function Ram({
         style={{ width: size, height: size }}
         aria-label="mascot"
       >
-        <span className="font-display text-lg font-semibold">HQ</span>
+        <span className="font-display text-lg font-bold">HQ</span>
       </div>
     )
   }

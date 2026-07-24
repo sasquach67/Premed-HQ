@@ -62,14 +62,14 @@ export function TrashRecovery() {
       {archived.length > 0 && (
         <section className="rounded-xl border border-border bg-muted/20 p-3">
           <div className="mb-3">
-            <h3 className="text-sm font-semibold">Archived records</h3>
+            <h3 className="text-sm font-bold">Archived records</h3>
             <p className="text-xs text-muted-foreground">Restore records that were archived from their owning list.</p>
           </div>
           <div className="max-h-64 space-y-1 overflow-y-auto">
             {archived.map(({ collection, record }) => (
               <div key={`${collection}-${record.id}`} className="flex min-h-11 items-center gap-3 rounded-lg bg-card px-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{recordLabel(record)}</p>
+                  <p className="truncate text-sm font-bold">{recordLabel(record)}</p>
                   <p className="text-xs text-muted-foreground">{collection}</p>
                 </div>
                 <Button
@@ -91,7 +91,7 @@ export function TrashRecovery() {
       <section className="rounded-xl border border-border bg-muted/20 p-3">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <div className="mr-auto">
-            <h3 className="text-sm font-semibold">Trash</h3>
+            <h3 className="text-sm font-bold">Trash</h3>
             <p className="text-xs text-muted-foreground">Deleted records stay recoverable until permanently removed.</p>
           </div>
           {selectedIds.size > 0 && (
@@ -108,13 +108,13 @@ export function TrashRecovery() {
           <div className="max-h-96 space-y-4 overflow-y-auto">
             {grouped.map(([collection, entries]) => (
               <section key={collection}>
-                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{collection}</h4>
+                <h4 className="mb-1 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{collection}</h4>
                 <div className="space-y-1">
                   {entries.map((entry) => (
                     <div key={entry.id} className="flex min-h-11 items-center gap-3 rounded-lg bg-card px-3 py-2">
                       <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggle(entry.id)} aria-label={`Select ${recordLabel(entry.record)}`} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{recordLabel(entry.record)}</p>
+                        <p className="truncate text-sm font-bold">{recordLabel(entry.record)}</p>
                         <p className="text-xs text-muted-foreground">Deleted {new Date(entry.deletedAt).toLocaleString()}</p>
                       </div>
                       <Button size="sm" variant="ghost" onClick={() => restore([entry.id])}><RotateCcw className="size-3.5" /> Restore</Button>
@@ -129,13 +129,13 @@ export function TrashRecovery() {
 
       {recoveryStack.length > 0 && (
         <section className="rounded-xl border border-border bg-muted/20 p-3">
-          <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold"><History className="size-4 text-primary" /> Recent reversible changes</h3>
+          <h3 className="mb-1 flex items-center gap-2 text-sm font-bold"><History className="size-4 text-primary" /> Recent reversible changes</h3>
           <p className="mb-3 text-xs text-muted-foreground">The latest local changes stay available after reload. This is recovery, not version history.</p>
           <div className="max-h-56 space-y-1 overflow-y-auto">
             {recoveryStack.slice(0, 10).map((entry) => (
               <div key={entry.id} className="flex min-h-10 items-center gap-3 rounded-lg bg-card px-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{entry.label}</p>
+                  <p className="truncate text-sm font-bold">{entry.label}</p>
                   <p className="text-xs text-muted-foreground">{entry.collection} · {new Date(entry.at).toLocaleString()}</p>
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => { undoRecovery(entry.id); toast({ title: 'Change undone' }) }}>

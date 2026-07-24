@@ -37,7 +37,7 @@ export function AnimatedFileUpload({
       onDrop={(event) => { event.preventDefault(); setDragging(false); deliver(event.dataTransfer.files) }}
     >
       <FileUp className="size-5 text-primary" />
-      <span className="mt-2 text-sm font-semibold">Drop class files here or browse</span>
+      <span className="mt-2 text-sm font-bold">Drop class files here or browse</span>
       <span className="mt-1 text-xs text-muted-foreground">Stored as references in this class kit.</span>
       <input ref={inputRef} hidden type="file" accept={accept} multiple={multiple} onChange={(event) => { deliver(event.target.files); event.currentTarget.value = '' }} />
     </m.button>

@@ -62,7 +62,7 @@ export function Sidebar({
         <AppMark />
         <AnimatePresence initial={false}>
           {expanded && (
-            <m.p className="min-w-0 font-display text-lg font-semibold" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>Premed HQ</m.p>
+            <m.p className="min-w-0 font-display text-lg font-bold" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>Premed HQ</m.p>
           )}
         </AnimatePresence>
         {collapsible && expanded && (
@@ -92,7 +92,7 @@ export function Sidebar({
               <div className="h-7 overflow-hidden [@media(max-height:1000px)]:h-6">
                 {group === 'Home' ? null : (
                   <AnimatePresence initial={false}>
-                    {labelsShown && <m.p className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 [@media(max-height:1000px)]:text-[10px]" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{group}</m.p>}
+                    {labelsShown && <m.p className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80 [@media(max-height:1000px)]:text-[10px]" initial={{ opacity: 0, x: -MOTION_DISTANCE.small }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -MOTION_DISTANCE.small }} transition={MOTION_TRANSITION.standard}>{group}</m.p>}
                   </AnimatePresence>
                 )}
                 {!expanded && group !== 'Home' && <div className="mx-auto my-3 h-px w-6 bg-sidebar-border" />}
@@ -157,9 +157,9 @@ export function Sidebar({
               aria-label="Open account menu"
             >
               <Avatar>
-                <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{profile.name.slice(0, 1)}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">{profile.name.slice(0, 1)}</AvatarFallback>
               </Avatar>
-              {expanded && <div className="min-w-0 leading-tight"><p className="truncate text-sm font-semibold">{profile.name}</p><p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Local profile'}</p></div>}
+              {expanded && <div className="min-w-0 leading-tight"><p className="truncate text-sm font-bold">{profile.name}</p><p className="truncate text-[11px] text-muted-foreground">{profile.email || 'Local profile'}</p></div>}
               {expanded && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
             </button>
           </DropdownMenuTrigger>
@@ -168,7 +168,7 @@ export function Sidebar({
             <DropdownMenuItem asChild><Link to="/settings" onClick={onNavigate}><Settings className="size-4" /> Settings</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link to="/upgrade" onClick={onNavigate}><Crown className="size-4" /> Upgrade plan</Link></DropdownMenuItem>
             <DropdownMenuItem onSelect={() => { setPatchNotesOpen(true); setPatchNotesSeen(true); localStorage.setItem('premed_hq_patch_notes_seen', 'foundation-l5-shell') }}>
-              <BookOpenText className="size-4" /> Patch Notes {!patchNotesSeen && <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">New</span>}
+              <BookOpenText className="size-4" /> Patch Notes {!patchNotesSeen && <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary">New</span>}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => window.dispatchEvent(new Event('premed:attention'))}><Bell className="size-4" /> Notifications</DropdownMenuItem>
             <DropdownMenuSeparator />

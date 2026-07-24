@@ -30,7 +30,7 @@ export function SidePeek({
           )}
         >
           <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3.5">
-            <DialogPrimitive.Title className="min-w-0 truncate font-display text-lg font-semibold">{title}</DialogPrimitive.Title>
+            <DialogPrimitive.Title className="min-w-0 truncate font-display text-lg font-bold">{title}</DialogPrimitive.Title>
             {headerActions}
             {!hideClose && (
               <DialogPrimitive.Close className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
