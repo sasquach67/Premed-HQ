@@ -13,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'glass-inset inline-flex h-10 items-center justify-start gap-1 rounded-xl border p-1 text-muted-foreground',
+      'inline-flex h-10 items-center justify-start gap-1 rounded-xl border border-border bg-muted p-1 text-muted-foreground',
       className
     )}
     {...props}
@@ -31,9 +31,10 @@ const TabsTrigger = React.forwardRef<
       whileTap={{ scale: 0.98 }}
       transition={MOTION_TRANSITION.micro}
       className={cn(
-        'interactive-glass inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border-transparent px-3 py-1.5 text-sm font-semibold',
+        'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-colors',
+        'hover:text-foreground hover:bg-background/50',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
-        'data-[state=active]:text-foreground',
+        'data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-border data-[state=active]:shadow-sm',
         className
       )}
     >
