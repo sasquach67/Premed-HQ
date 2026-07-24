@@ -6,16 +6,16 @@ import { cn } from '@/lib/utils'
 import { MOTION_GESTURE, MOTION_TRANSITION } from '@/lib/motion'
 
 const buttonVariants = cva(
-  "interactive-glass inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border text-sm font-semibold disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border text-sm font-semibold transition-[transform,box-shadow,background-color,border-color,color] duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
-        default: 'glass-primary text-primary-foreground hover:brightness-105',
-        secondary: 'glass-secondary text-secondary-foreground hover:brightness-[0.98]',
-        outline: 'text-foreground',
-        ghost: 'glass-muted border-transparent text-foreground',
-        destructive: 'glass-destructive text-destructive-foreground hover:brightness-105',
-        link: 'glass-transparent border-transparent text-primary shadow-none underline-offset-4 hover:underline',
+        default: 'border-transparent bg-primary text-primary-foreground shadow-sm hover:brightness-105 hover:shadow-md',
+        secondary: 'border-transparent bg-secondary text-secondary-foreground shadow-sm hover:brightness-[0.97]',
+        outline: 'border-border bg-transparent text-foreground hover:bg-muted',
+        ghost: 'border-transparent bg-transparent text-foreground hover:bg-muted',
+        destructive: 'border-transparent bg-destructive text-destructive-foreground shadow-sm hover:brightness-105',
+        link: 'border-transparent bg-transparent text-primary shadow-none underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-9 px-4 py-2',
@@ -39,7 +39,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const classes = cn(buttonVariants({ variant, size, className }))
     if (asChild) return <Slot ref={ref} className={classes} {...props} />
     const motionProps = props as unknown as React.ComponentPropsWithoutRef<typeof m.button>
-    return <m.button ref={ref} whileTap={MOTION_GESTURE.press} transition={MOTION_TRANSITION.micro} className={classes} {...motionProps} />
+    return <m.button ref={ref} whileHover={{ y: -1 }} whileTap={MOTION_GESTURE.press} transition={MOTION_TRANSITION.micro} className={classes} {...motionProps} />
   }
 )
 Button.displayName = 'Button'
