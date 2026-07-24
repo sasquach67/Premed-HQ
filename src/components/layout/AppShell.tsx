@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import { Sidebar } from './Sidebar'
@@ -15,11 +15,13 @@ import { ShellActionsProvider } from './ShellActionsProvider'
 import { QuickAddDialog } from './QuickAddDialog'
 import { HelpFeedbackLauncher } from './HelpFeedbackLauncher'
 import { MOTION_TRANSITION } from '@/lib/motion'
+import { crossfade } from '@/lib/motion'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const collapsed = useStore((s) => s.settings.sidebarCollapsed)
   const update = useStore((s) => s.update)
+  const location = useLocation()
   useTheme()
   useBackup() // wires daily-on-open check + debounced auto-backup
   const cloud = useCloudSync() // wires Supabase login + cross-device cloud sync (no-op until configured/signed in)
@@ -44,14 +46,9 @@ export function AppShell() {
       <ShellActionsProvider>
       <div className="flex h-svh overflow-hidden">
         {/* desktop sidebar — compact icons when collapsed, full navigation when open */}
-        <m.aside
-          layout="size"
-          transition={MOTION_TRANSITION.standard}
-          className="relative hidden shrink-0 lg:block"
-          style={{ width: collapsed ? '4.75rem' : '16rem' }}
-        >
+        <aside className={collapsed ? 'relative hidden w-[4.75rem] shrink-0 lg:block' : 'relative hidden w-64 shrink-0 lg:block'}>
           <Sidebar collapsible signedIn={Boolean(cloud.user)} onSignOut={() => { void cloud.signOut() }} />
-        </m.aside>
+        </aside>
 
         {/* mobile drawer */}
         <AnimatePresence>
@@ -78,7 +75,17 @@ export function AppShell() {
           <AlertsStrip />
           <main className="relative flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-[84rem] px-4 py-6 md:px-8 md:py-8">
-              <Outlet />
+              <AnimatePresence mode="wait" initial={false}>
+                <m.div
+                  key={`${location.pathname}${location.search}`}
+                  variants={crossfade}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  <Outlet />
+                </m.div>
+              </AnimatePresence>
             </div>
           </main>
         </div>

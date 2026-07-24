@@ -49,7 +49,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
   }, [openQuickAdd])
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/75 shadow-sm backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-[84rem] min-w-0 items-center gap-2 px-4 py-2.5 md:px-8">
         <Button variant="ghost" size="icon" className="shrink-0 lg:hidden" onClick={onMenu} aria-label="Open menu"><Menu className="size-5" /></Button>
         <Breadcrumb className="hidden min-w-0 xl:block">
