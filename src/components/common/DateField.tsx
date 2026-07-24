@@ -59,18 +59,18 @@ export function DateField({
       </PopoverTrigger>
       <PopoverContent
         align={align}
-        className="w-[17rem] rounded-2xl border-border bg-card/95 p-3 font-display shadow-xl backdrop-blur-md"
+        className="w-[17rem] rounded-xl border-border bg-card/95 p-3 font-display shadow-xl backdrop-blur-md"
       >
         <div className="mb-2 flex items-center justify-between">
           <button type="button" aria-label="Previous month" onClick={() => setView((v) => subMonths(v, 1))} className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35">
             <ChevronLeft className="size-4" />
           </button>
-          <span className="text-sm font-extrabold tabular-nums">{format(view, 'MMMM yyyy')}</span>
+          <span className="text-sm font-semibold tabular-nums">{format(view, 'MMMM yyyy')}</span>
           <button type="button" aria-label="Next month" onClick={() => setView((v) => addMonths(v, 1))} className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35">
             <ChevronRight className="size-4" />
           </button>
         </div>
-        <div className="mb-1 grid grid-cols-7 text-center text-[0.65rem] font-bold uppercase tracking-wide text-muted-foreground">
+        <div className="mb-1 grid grid-cols-7 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {WEEKDAYS.map((d, i) => <span key={i} className="py-1">{d}</span>)}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
@@ -86,7 +86,7 @@ export function DateField({
                 aria-pressed={isSel}
                 onClick={() => { onChange(format(day, 'yyyy-MM-dd')); setOpen(false) }}
                 className={cn(
-                  'grid size-9 place-items-center rounded-lg text-sm font-bold tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                  'grid size-9 place-items-center rounded-lg text-sm font-semibold tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                   !inMonth && 'text-muted-foreground/40',
                   inMonth && !isSel && 'hover:bg-muted',
                   isSel && 'bg-primary text-primary-foreground shadow-sm',
@@ -99,11 +99,11 @@ export function DateField({
           })}
         </div>
         <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
-          <button type="button" onClick={() => { onChange(format(new Date(), 'yyyy-MM-dd')); setOpen(false) }} className="rounded-md px-2 py-1 text-xs font-bold text-primary transition hover:bg-primary/10">
+          <button type="button" onClick={() => { onChange(format(new Date(), 'yyyy-MM-dd')); setOpen(false) }} className="rounded-md px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10">
             Today
           </button>
           {selected && (
-            <button type="button" onClick={() => { onChange(''); setOpen(false) }} className="rounded-md px-2 py-1 text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground">
+            <button type="button" onClick={() => { onChange(''); setOpen(false) }} className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground">
               Clear
             </button>
           )}
@@ -144,7 +144,7 @@ export function MonthField({
         <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
         <span>{value ? format(new Date(`${value}-01T12:00:00`), 'MMMM yyyy') : placeholder}</span>
       </PopoverTrigger>
-      <PopoverContent className="w-72 rounded-2xl p-3">
+      <PopoverContent className="w-72 rounded-xl p-3">
         <div className="mb-3 flex items-center justify-between">
           <button type="button" className="grid size-8 place-items-center rounded-lg hover:bg-muted" onClick={() => setYear((current) => current - 1)} aria-label="Previous year"><ChevronLeft className="size-4" /></button>
           <strong className="text-sm">{year}</strong>
@@ -158,7 +158,7 @@ export function MonthField({
                 key={month}
                 type="button"
                 onClick={() => { onChange(next); setOpen(false) }}
-                className={cn('min-h-10 rounded-lg text-sm font-bold hover:bg-muted', value === next && 'bg-primary text-primary-foreground')}
+                className={cn('min-h-10 rounded-lg text-sm font-semibold hover:bg-muted', value === next && 'bg-primary text-primary-foreground')}
               >
                 {month}
               </button>
@@ -204,13 +204,13 @@ export function TimeField({
         <Clock3 className="size-4 shrink-0" aria-hidden="true" />
         <span>{value ? format(new Date(`2000-01-01T${value}`), 'h:mm a') : placeholder}</span>
       </PopoverTrigger>
-      <PopoverContent className="max-h-72 w-52 overflow-y-auto rounded-2xl p-1.5">
+      <PopoverContent className="max-h-72 w-52 overflow-y-auto rounded-xl p-1.5">
         {times.map((time) => (
           <button
             key={time}
             type="button"
             onClick={() => { onChange(time); setOpen(false) }}
-            className={cn('block min-h-10 w-full rounded-lg px-3 text-left text-sm font-bold hover:bg-muted', value === time && 'bg-primary/10 text-primary')}
+            className={cn('block min-h-10 w-full rounded-lg px-3 text-left text-sm font-semibold hover:bg-muted', value === time && 'bg-primary/10 text-primary')}
           >
             {format(new Date(`2000-01-01T${time}`), 'h:mm a')}
           </button>

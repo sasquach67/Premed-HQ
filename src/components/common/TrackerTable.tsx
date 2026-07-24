@@ -223,7 +223,7 @@ export function TrackerTable({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="overflow-hidden rounded-2xl border border-border bg-card/70 shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-card/70 shadow-sm">
         <div className="flex min-h-10 flex-wrap items-center justify-end gap-3 border-b border-border px-3 py-1.5">
           <div className="relative mr-auto min-w-48 flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -244,7 +244,7 @@ export function TrackerTable({
         <div className="hidden max-h-[42rem] overflow-auto md:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead className="sticky top-0 z-10 bg-card">
-          <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border/80 bg-card/45 text-left text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {reorder && (
               <th className="w-8 px-1 py-3">
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
@@ -300,12 +300,12 @@ export function TrackerTable({
             <article key={row.id} className={cn('rounded-xl border border-border bg-card', views.state.density === 'compact' ? 'p-2' : 'p-3')}>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Checkbox checked={effectiveSelectedIds.has(row.id)} onCheckedChange={() => toggleSelected(row.id)} aria-label="Select record" />
-                {onOpen && <button type="button" className="ml-auto text-sm font-bold text-primary" onClick={() => onOpen(row.id)}>Open</button>}
+                {onOpen && <button type="button" className="ml-auto text-sm font-semibold text-primary" onClick={() => onOpen(row.id)}>Open</button>}
               </div>
               <dl className="space-y-3">
                 {visibleColumns.map((column) => (
                   <div key={column.key}>
-                    <dt className="mb-1 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{column.header}</dt>
+                    <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{column.header}</dt>
                     <dd>
                       <Cell row={row} column={column} value={field(row, column.key)} checked={checkKey ? Boolean(field(row, checkKey)) : false} onChange={(value) => patch(row.id, column.key, value)} />
                       {column.validate?.(field(row, column.key), row) && <p className="mt-1 text-xs font-semibold text-destructive" role="alert">{column.validate(field(row, column.key), row)}</p>}
@@ -379,7 +379,7 @@ function TableRow({
       <td className="px-2 text-right">
         <div className="flex items-center justify-end gap-1">
           {rowActions?.(row)}
-          {onOpen && <button type="button" onClick={onOpen} className="min-h-8 rounded-md px-2 text-xs font-bold text-primary hover:bg-primary/10">Open</button>}
+          {onOpen && <button type="button" onClick={onOpen} className="min-h-8 rounded-md px-2 text-xs font-semibold text-primary hover:bg-primary/10">Open</button>}
           <button onClick={onDelete} className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-45 transition hover:bg-muted hover:text-destructive hover:opacity-100 group-hover:opacity-100 motion-reduce:transition-none" aria-label="Select row for removal">
             <Trash2 className="size-3.5" />
           </button>
@@ -425,7 +425,7 @@ function Cell({
       <button
         onClick={() => onChange(!on)}
         className={cn(
-          'rounded-full px-2 py-0.5 text-xs font-bold transition-colors',
+          'rounded-full px-2 py-0.5 text-xs font-semibold transition-colors',
           on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
         )}
       >
@@ -462,7 +462,7 @@ function Cell({
             </span>
           )}
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border-border bg-card/95 font-display shadow-xl backdrop-blur-md">
+        <SelectContent className="rounded-xl border-border bg-card/95 font-display shadow-xl backdrop-blur-md">
           {column.allowEmpty && <SelectItem value={emptyValue}>{column.placeholder || 'Select…'}</SelectItem>}
           {(column.options ?? []).map((o) => (
             <SelectItem key={o} value={o}>
@@ -580,7 +580,7 @@ function LongText({ column, value, onChange }: { column: ColumnDef; value: strin
           className="min-h-32"
         />
         {max != null && (
-          <div className={cn('mt-1 text-right text-[11px] font-semibold', over ? 'text-destructive' : 'text-muted-foreground')}>
+          <div className={cn('mt-1 text-right text-xs font-semibold', over ? 'text-destructive' : 'text-muted-foreground')}>
             {text.length.toLocaleString()} / {max.toLocaleString()} chars{over ? ' · over AMCAS limit' : ''}
           </div>
         )}

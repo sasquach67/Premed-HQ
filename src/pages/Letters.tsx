@@ -6,8 +6,8 @@ import { uid } from '@/lib/id'
 import { PageHeader } from '@/components/common/PageHeader'
 import { TrackerTable, type ColumnDef } from '@/components/common/TrackerTable'
 import { EmptyState } from '@/components/common/EmptyState'
-import { StatTile } from '@/components/common/StatTile'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 const COLUMNS: ColumnDef[] = [
   { key: 'recommender', header: 'Recommender', type: 'text', width: '180px', placeholder: 'Name', wrap: true },
@@ -60,18 +60,30 @@ export function Letters() {
   return (
     <div>
       <PageHeader title={route.label} actions={<Button onClick={add}><Plus className="size-4" /> Add recommender</Button>} />
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <StatTile icon={Mail} label="Recommenders" value={String(letters.length)} sub="identified so far" />
-        <StatTile icon={Mail} label="Agreed" value={String(agreed)} sub="committed to write" accent="var(--cat-volunteer)" />
-        <StatTile icon={Mail} label="Submitted" value={String(submitted)} sub="letters in hand" accent="var(--success)" />
-      </div>
+      <Card className="mb-6">
+        <CardContent className="grid grid-cols-3 divide-x divide-border p-0">
+          <LetterStat label="Recommenders" value={letters.length} detail="identified so far" />
+          <LetterStat label="Agreed" value={agreed} detail="committed to write" />
+          <LetterStat label="Submitted" value={submitted} detail="letters in hand" />
+        </CardContent>
+      </Card>
       <div className="mb-6 space-y-3">
-        <h3 className="text-sm font-bold">Recommender tracker</h3>
+        <h3 className="text-sm font-semibold">Recommender tracker</h3>
         <TrackerTable
           collection="letters" rows={letters} columns={COLUMNS} listId="letters.tracker"
           empty={<EmptyState icon={Mail} title="No recommenders yet" hint="Most schools want science faculty + others; some want a committee letter. Build relationships early — a letter writer needs to actually know you." action={<Button size="sm" onClick={add}><Plus className="size-4" /> Add your first</Button>} />}
         />
       </div>
+    </div>
+  )
+}
+
+function LetterStat({ label, value, detail }: { label: string; value: number; detail: string }) {
+  return (
+    <div className="min-w-0 p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-lg font-semibold">{value}</p>
+      <p className="truncate text-xs text-muted-foreground">{detail}</p>
     </div>
   )
 }

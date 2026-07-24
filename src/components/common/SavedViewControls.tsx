@@ -36,7 +36,7 @@ export function SavedViewControls({
         aria-pressed={state.density === value}
         onClick={() => onChange({ ...state, density: value })}
         className={cn(
-          'inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs font-bold transition-colors motion-reduce:transition-none',
+          'inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs font-semibold transition-colors motion-reduce:transition-none',
           state.density === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
         )}
       >
@@ -55,7 +55,7 @@ export function SavedViewControls({
         <Popover>
           <PopoverTrigger asChild><Button size="sm" variant="ghost"><Columns3 className="size-4" /> Columns</Button></PopoverTrigger>
           <PopoverContent align="end" className="w-64">
-            <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Visible columns</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visible columns</p>
             <div className="space-y-1">
               {columns.map((column) => {
                 const visible = state.visibleColumns.length === 0 || state.visibleColumns.includes(column.key)
@@ -103,7 +103,7 @@ export function SavedViewControls({
             <DialogTitle>Save this view</DialogTitle>
             <DialogDescription>Keep this list’s filters, sorting, grouping, columns, density, date range, and view switch together.</DialogDescription>
           </DialogHeader>
-          <label className="text-sm font-bold">View name<Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Application priorities" autoFocus /></label>
+          <label className="text-sm font-semibold">View name<Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Application priorities" autoFocus /></label>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSaveOpen(false)}>Cancel</Button>
             <Button disabled={!name.trim()} onClick={() => { onSave(name.trim()); setName(''); setSaveOpen(false) }}>Save view</Button>

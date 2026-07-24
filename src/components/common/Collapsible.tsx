@@ -21,7 +21,7 @@ export function Collapsible({
         className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-muted/40"
       >
         <ChevronRight className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')} />
-        <span className="flex-1 text-sm font-bold">{title}</span>
+        <span className="flex-1 text-sm font-semibold">{title}</span>
         {badge}
         {right}
       </button>

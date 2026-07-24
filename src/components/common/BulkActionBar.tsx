@@ -113,7 +113,7 @@ export function BulkActionBar({
   return (
     <>
       <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={MOTION_TRANSITION.standard} className="sticky bottom-3 z-20 mx-3 mb-3 flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-xl backdrop-blur" role="toolbar" aria-label="Bulk actions">
-        <span className="mr-auto text-sm font-bold">{selectedIds.size} selected</span>
+        <span className="mr-auto text-sm font-semibold">{selectedIds.size} selected</span>
         {ARCHIVE_COLLECTIONS.has(collection) && <Button size="sm" variant="ghost" onClick={archiveSelected}><Archive className="size-4" /> Archive</Button>}
         <Button size="sm" variant="ghost" onClick={exportSelected}><Download className="size-4" /> Export</Button>
         <DropdownMenu>
@@ -194,9 +194,9 @@ function BulkValueDialog({
           <DialogDescription>Apply this value to {rows.length} selected {collection} {rows.length === 1 ? 'record' : 'records'}.</DialogDescription>
         </DialogHeader>
         {(action === 'tag' || action === 'term') ? (
-          <label className="text-sm font-bold">{label}<Input value={value} onChange={(event) => setValue(event.target.value)} placeholder={action === 'tag' ? 'Service' : 'Fall 2027'} /></label>
+          <label className="text-sm font-semibold">{label}<Input value={value} onChange={(event) => setValue(event.target.value)} placeholder={action === 'tag' ? 'Service' : 'Fall 2027'} /></label>
         ) : (
-          <label className="text-sm font-bold">
+          <label className="text-sm font-semibold">
             {label}
             <Select value={value} onValueChange={setValue}>
               <SelectTrigger className="mt-1"><SelectValue placeholder={`Choose ${label.toLowerCase()}`} /></SelectTrigger>

@@ -8,7 +8,7 @@ export function AutosaveStatus({ status = 'saved', className }: { status?: SaveS
   return (
     <span
       className={cn(
-        'inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold text-muted-foreground',
+        'inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-muted-foreground',
         status === 'error' && 'text-destructive',
         className
       )}
