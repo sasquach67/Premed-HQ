@@ -30,7 +30,7 @@ export function ResourceGrid({ pillar }: { pillar: string }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold"><FolderOpen className="size-4 text-primary" /> Resources</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><FolderOpen className="size-4 text-primary" /> Resources</h3>
         <AddResource pillar={pillar} categories={grouped.map((g) => g[0])} />
       </div>
 
@@ -42,7 +42,7 @@ export function ResourceGrid({ pillar }: { pillar: string }) {
 
       {grouped.map(([category, items]) => (
         <div key={category}>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{category}</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{category}</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((r) => (
               <a

@@ -47,7 +47,7 @@ export function DependencyConfirmDialog({
         <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/20 p-3">
           {impacts.map((impact) => (
             <section key={impact.recordId} className="rounded-lg bg-card p-3">
-              <h3 className="text-sm font-bold">{impact.recordLabel}</h3>
+              <h3 className="text-sm font-semibold">{impact.recordLabel}</h3>
               {impact.dependents.length ? (
                 <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
                   {impact.dependents.map((dependent) => (
@@ -63,7 +63,7 @@ export function DependencyConfirmDialog({
         </div>
 
         {canReassign && (
-          <label className="text-sm font-bold">
+          <label className="text-sm font-semibold">
             Reassign linked records
             <Select value={replacementId} onValueChange={setReplacementId}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a replacement" /></SelectTrigger>

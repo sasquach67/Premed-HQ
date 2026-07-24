@@ -18,7 +18,7 @@ export function AnimatedStepper({ steps, activeIndex, onStepChange }: { steps: S
       <ol className="flex items-center" aria-label="Progress">
         {steps.map((step, index) => (
           <li key={step.id} className="flex flex-1 items-center last:flex-none">
-            <button type="button" className="grid min-w-8 place-items-center gap-1 text-xs font-bold" onClick={() => onStepChange?.(index)} disabled={!onStepChange} aria-current={index === activeIndex ? 'step' : undefined}>
+            <button type="button" className="grid min-w-8 place-items-center gap-1 text-xs font-semibold" onClick={() => onStepChange?.(index)} disabled={!onStepChange} aria-current={index === activeIndex ? 'step' : undefined}>
               <span className={cn('grid size-8 place-items-center rounded-full border', index <= activeIndex ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground')}>
                 {index < activeIndex ? <Check className="size-4" /> : index + 1}
               </span>

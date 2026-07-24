@@ -81,19 +81,19 @@ export function UltimateGuideDialog() {
       </DialogTrigger>
         <DialogContent className="max-h-[86svh] max-w-5xl overflow-y-auto p-0">
           <DialogHeader className="border-b border-border bg-[color-mix(in_srgb,var(--secondary)_42%,var(--card))] px-5 py-4 pr-12">
-            <p className="text-xs font-bold uppercase tracking-wide text-primary">Premed Ultimate Guide</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Premed Ultimate Guide</p>
             <DialogTitle className="font-display text-2xl">The whole application, kept in view</DialogTitle>
             <DialogDescription>A compact map of the systems, evidence, timing, mindset, and resources behind the dashboard.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-5">
             <div className="grid gap-3 lg:grid-cols-2">
               <div className="rounded-xl border border-primary/25 bg-secondary/45 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-primary"><Zap className="size-4" /> The fact that drives timing</div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary"><Zap className="size-4" /> The fact that drives timing</div>
                 <p className="font-display text-lg font-semibold">Med school is rolling admissions.</p>
                 <p className="mt-1 text-sm text-muted-foreground">Schools review and offer seats as applications arrive, so applying early, complete, and verified materially raises your odds. This is why the whole plan front-loads MCAT, letters, essays, and secondaries.</p>
               </div>
               <div className="rounded-xl border border-border bg-muted/25 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-bold"><Compass className="size-4 text-primary" /> What the application is really doing</div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Compass className="size-4 text-primary" /> What the application is really doing</div>
                 <p className="text-sm text-muted-foreground">It is not just a checklist. Grades and MCAT show academic readiness; experiences show exposure and commitment; essays, letters, and interviews explain who you are and why medicine. The pieces are read together.</p>
               </div>
             </div>
@@ -152,13 +152,13 @@ function GuideResources({ guideLinkOpened }: { guideLinkOpened: boolean }) {
       <div className="grid gap-2 sm:grid-cols-2">
         {COMMUNITY_RESOURCES.map(([label, url, desc]) => (
           <a key={label} href={url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border bg-card p-3 hover:border-primary/40">
-            <span className="flex items-center gap-1.5 text-sm font-bold">{label}<ExternalLink className="size-3.5 text-muted-foreground" /></span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">{label}<ExternalLink className="size-3.5 text-muted-foreground" /></span>
             <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
           </a>
         ))}
         {officialResources.map((r) => (
           <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border bg-card p-3 hover:border-primary/40">
-            <span className="flex items-center gap-1.5 text-sm font-bold">{r.label}<ExternalLink className="size-3.5 text-muted-foreground" /></span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">{r.label}<ExternalLink className="size-3.5 text-muted-foreground" /></span>
             <p className="mt-1 text-xs text-muted-foreground">{r.category}</p>
           </a>
         ))}

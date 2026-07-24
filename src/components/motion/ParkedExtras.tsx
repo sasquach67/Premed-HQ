@@ -7,7 +7,7 @@ import { MOTION_TRANSITION } from '@/lib/motion'
 export function PreviewLinkCard({ href, title, description }: { href: string; title: string; description?: string }) {
   return (
     <m.a href={href} target="_blank" rel="noreferrer" whileHover={{ y: -2 }} transition={MOTION_TRANSITION.micro} className="block rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <span className="flex items-center justify-between gap-3 font-bold">{title}<ExternalLink className="size-4 text-primary" /></span>
+      <span className="flex items-center justify-between gap-3 font-semibold">{title}<ExternalLink className="size-4 text-primary" /></span>
       {description && <span className="mt-1 block text-sm text-muted-foreground">{description}</span>}
     </m.a>
   )

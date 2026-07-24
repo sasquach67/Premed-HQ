@@ -102,7 +102,7 @@ export function CenterPeek({
   const content = (
     <>
       <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border bg-card px-3 py-2 md:px-4">
-        <span className="min-w-0 truncate text-sm font-bold text-muted-foreground">{label}</span>
+        <span className="min-w-0 truncate text-sm font-semibold text-muted-foreground">{label}</span>
         {controls}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>

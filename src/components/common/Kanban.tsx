@@ -102,7 +102,7 @@ function Column({
     <div className="flex min-h-48 flex-col rounded-xl border border-border bg-muted/40 p-2.5">
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="size-2.5 rounded-full" style={{ background: col.accent ?? 'var(--primary)' }} />
-        <span className="text-sm font-bold">{col.title}</span>
+        <span className="text-sm font-semibold">{col.title}</span>
         <span className="text-xs text-muted-foreground">{count}</span>
       </div>
       <div ref={setNodeRef} className={cn('flex-1 space-y-2 rounded-lg p-1 transition-colors', isOver && 'bg-secondary/60 ring-2 ring-primary/30')}>
@@ -145,7 +145,7 @@ function Card({
         {item.badge}
       </div>
       {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
-      {onOpen && <button type="button" className="mt-2 min-h-8 text-xs font-bold text-primary" onClick={onOpen}>Open</button>}
+      {onOpen && <button type="button" className="mt-2 min-h-8 text-xs font-semibold text-primary" onClick={onOpen}>Open</button>}
     </div>
   )
 }

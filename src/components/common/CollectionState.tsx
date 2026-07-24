@@ -34,7 +34,7 @@ export function CollectionState({
       <div className="grid min-h-48 place-items-center rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-center" role="alert">
         <div>
           <AlertCircle className="mx-auto size-6 text-destructive" aria-hidden="true" />
-          <p className="mt-2 text-sm font-bold">Collection unavailable</p>
+          <p className="mt-2 text-sm font-semibold">Collection unavailable</p>
           <p className="mt-1 text-sm text-muted-foreground">{errorMessage}</p>
           {onRetry && <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}>Retry</Button>}
         </div>

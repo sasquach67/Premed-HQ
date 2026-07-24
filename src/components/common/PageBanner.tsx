@@ -43,7 +43,7 @@ export function PageBanner({
       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/45 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-5">
         <div className="min-w-0">
-          {title && <h1 className="font-display text-3xl font-bold tracking-tight">{title}</h1>}
+          {title && <h1 className="font-display text-3xl font-semibold tracking-tight">{title}</h1>}
           {children}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}

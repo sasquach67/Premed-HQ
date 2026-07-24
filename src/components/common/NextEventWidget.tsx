@@ -34,8 +34,8 @@ export function NextEventWidget() {
     <Card className="overflow-hidden border-primary/25">
       <CardContent className="relative bg-gradient-to-br from-secondary/60 to-card py-5">
         <div className="flex items-baseline gap-1">
-          <span className="font-display text-4xl font-bold tabular-nums tracking-tight">{time}</span>
-          <span className="text-lg font-bold tabular-nums text-muted-foreground">:{seconds}</span>
+          <span className="font-display text-4xl font-semibold tabular-nums tracking-tight">{time}</span>
+          <span className="text-lg font-semibold tabular-nums text-muted-foreground">:{seconds}</span>
         </div>
         <p className="text-xs font-semibold text-muted-foreground">{today}</p>
 
@@ -43,7 +43,7 @@ export function NextEventWidget() {
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><CalendarClock className="size-4" /></span>
           {next ? (
             <Link to="/timeline" className="group min-w-0 flex-1">
-              <p className="truncate text-sm font-bold group-hover:text-primary">{next.title || 'Untitled'}</p>
+              <p className="truncate text-sm font-semibold group-hover:text-primary">{next.title || 'Untitled'}</p>
               <p className="text-xs text-muted-foreground">{fmtRelative(next.deadline)} · {fmtDate(next.deadline)}</p>
             </Link>
           ) : (

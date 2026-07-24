@@ -10,7 +10,7 @@ export function AtlasAgentAvatar({ label = 'Atlas' }: { label?: string }) {
 }
 
 export function AtlasBranch({ label, children }: { label: string; children?: React.ReactNode }) {
-  return <div className="rounded-xl border border-border bg-muted/30 p-3"><p className="flex items-center gap-2 text-sm font-bold"><GitBranch className="size-4 text-primary" />{label}</p>{children && <div className="mt-2 pl-6 text-sm text-muted-foreground">{children}</div>}</div>
+  return <div className="rounded-xl border border-border bg-muted/30 p-3"><p className="flex items-center gap-2 text-sm font-semibold"><GitBranch className="size-4 text-primary" />{label}</p>{children && <div className="mt-2 pl-6 text-sm text-muted-foreground">{children}</div>}</div>
 }
 
 export function AtlasInput({ value, onChange, onSubmit }: { value: string; onChange: (value: string) => void; onSubmit: () => void }) {
@@ -27,5 +27,5 @@ export function AtlasTypewriterText({ children }: { children: string }) {
 }
 
 export function AtlasTweetCard({ author, children }: { author: string; children: React.ReactNode }) {
-  return <figure className="rounded-2xl border border-border bg-card p-4"><Quote className="size-4 text-primary" /><blockquote className="mt-2 text-sm">{children}</blockquote><figcaption className="mt-3 text-xs font-bold text-muted-foreground">{author}</figcaption></figure>
+  return <figure className="rounded-2xl border border-border bg-card p-4"><Quote className="size-4 text-primary" /><blockquote className="mt-2 text-sm">{children}</blockquote><figcaption className="mt-3 text-xs font-semibold text-muted-foreground">{author}</figcaption></figure>
 }

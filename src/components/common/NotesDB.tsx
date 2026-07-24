@@ -34,7 +34,7 @@ export function NotesDB({ pillar, title = 'Notes' }: { pillar: string; title?: s
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold"><FileText className="size-4 text-primary" /> {title}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><FileText className="size-4 text-primary" /> {title}</h3>
         <Button size="sm" variant="outline" onClick={add}><Plus className="size-4" /> New note</Button>
       </div>
 
@@ -48,7 +48,7 @@ export function NotesDB({ pillar, title = 'Notes' }: { pillar: string; title?: s
               onClick={() => setOpenId(p.id)}
               className="group relative flex flex-col rounded-xl border border-border bg-card p-3 text-left card-soft transition-all hover:-translate-y-0.5 hover:border-primary/40"
             >
-              <span className="truncate text-sm font-bold">{p.title || 'Untitled note'}</span>
+              <span className="truncate text-sm font-semibold">{p.title || 'Untitled note'}</span>
               <span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.body || 'Empty — click to write.'}</span>
               <span className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground"><Clock className="size-3" /> {fmtTimeAgo(p.updatedAt)}</span>
               <span
@@ -70,7 +70,7 @@ export function NotesDB({ pillar, title = 'Notes' }: { pillar: string; title?: s
             value={active?.title ?? ''}
             placeholder="Note title…"
             onChange={(e) => active && patchItem('notePages', active.id, { title: e.target.value, updatedAt: Date.now() })}
-            className="h-8 border-0 px-0 text-lg font-bold shadow-none focus-visible:ring-0"
+            className="h-8 border-0 px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
           />
         }
       >

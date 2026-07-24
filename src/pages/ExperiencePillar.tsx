@@ -3,7 +3,7 @@ import type { ComponentType, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ArrowLeft, Award, BookOpen, CalendarDays,
-  ChevronDown, ClipboardCheck, Clock, Copy, FileText,
+  ChevronDown, ClipboardCheck, Clock, FileText,
   HeartHandshake,
   ListChecks, Mail, Map as MapIcon, Network, Plus, Search,
   ShieldCheck, Stethoscope, Trash2, TrendingUp, UserRound, Users,
@@ -237,7 +237,7 @@ function ApprovedPillarPage(props: ApprovedPillarProps) {
 }
 
 // Kept while existing stored pillar records are migrated to the approved layouts.
-void [ApprovedMetric, ApprovedCenterpiece, ApprovedEntityWorkspace]
+void [ApprovedMetric, ApprovedEntityWorkspace]
 
 function ApprovedMetric({ icon: Icon, label, value, detail, accent = false }: { icon: typeof Clock; label: string; value: string; detail: string; accent?: boolean }) {
   return (
@@ -249,66 +249,6 @@ function ApprovedMetric({ icon: Icon, label, value, detail, accent = false }: { 
       <p className="mt-3 font-display text-lg font-semibold">{value}</p>
       <p className="mt-1 text-xs font-semibold text-muted-foreground">{detail}</p>
     </div>
-  )
-}
-
-function ApprovedCenterpiece({ category, rows, entities }: { category: ExperienceCategory; rows: ExperienceEntry[]; entities: ExperienceEntity[] }) {
-  if (category === 'clinical') {
-    const certDue = rows.filter((row) => row.tags.some((tag) => /cert|cpr|bls/i.test(tag))).length
-    return (
-      <section className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Clinical continuity</p>
-          <h2 className="mt-1 font-display text-lg font-semibold">Your sites, shifts, and credentials in one record</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{coverageForCategory(category, rows).detail}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <MiniMetric label="Sites" value={String(entities.length)} />
-          <MiniMetric label="Cert records" value={String(certDue)} />
-        </div>
-      </section>
-    )
-  }
-
-  if (category === 'volunteering') {
-    return <ApprovedLedger rows={rows} />
-  }
-
-  if (category === 'shadowing') {
-    const specialties = siteSummaries(rows)
-    const total = Math.max(1, rows.reduce((sum, row) => sum + Number(row.hours || 0), 0))
-    return (
-      <section className="overflow-hidden rounded-xl border bg-card">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b p-4">
-          <div><h2 className="font-display text-lg font-semibold">Specialty exposure</h2><p className="text-sm text-muted-foreground">Coverage and the next relationship gap to close.</p></div>
-          <span className="rounded-full bg-amber-500/12 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-200">Primary care still matters</span>
-        </div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[46rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Specialty</th><th>Hours</th><th>Share</th><th>Settings</th><th className="pr-4">Next move</th></tr></thead><tbody>
-          {specialties.map((site) => <tr key={site.key} className="border-t"><td className="px-4 py-3 font-semibold">{site.org || 'Unspecified specialty'}</td><td>{site.hours}h</td><td><div className="h-1.5 w-28 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((site.hours / total) * 100)}%` }} /></div></td><td className="text-muted-foreground">{rows.filter((row) => (row.org || row.id) === site.key).length} session{rows.filter((row) => (row.org || row.id) === site.key).length === 1 ? '' : 's'}</td><td className="pr-4 text-primary">Maintain contact</td></tr>)}
-        </tbody></table></div>
-      </section>
-    )
-  }
-
-  return (
-    <section className="overflow-hidden rounded-xl border bg-card">
-      <div className="border-b p-4"><h2 className="font-display text-lg font-semibold">Research outputs</h2><p className="text-sm text-muted-foreground">Translate time in the lab into concrete lines for a CV and application.</p></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[45rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Project / output</th><th>Type</th><th>Venue</th><th>Deadline</th><th className="pr-4">Status</th></tr></thead><tbody>
-        {(rows.length ? rows : [{ id: 'empty', category: 'research', org: 'No research output yet', role: '', description: '', tags: [], status: 'planned', hours: 0, order: 0 } satisfies ExperienceEntry]).map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-semibold">{row.description || row.org || 'Untitled project'}</td><td>{row.tags[0] || 'Project'}</td><td className="text-muted-foreground">{row.org || 'Add venue'}</td><td className="text-muted-foreground">{formatDate(row.endDate)}</td><td className="pr-4"><span className={cn('rounded-full px-2 py-1 text-xs font-semibold', statusTone(row.status))}>{row.status}</span></td></tr>)}
-      </tbody></table></div>
-    </section>
-  )
-}
-
-function ApprovedLedger({ rows }: { rows: ExperienceEntry[] }) {
-  const sites = siteSummaries(rows)
-  return (
-    <section className="overflow-hidden rounded-xl border bg-card">
-      <div className="border-b p-4"><h2 className="font-display text-lg font-semibold">Verification ledger</h2><p className="text-sm text-muted-foreground">The audit-ready record behind the final AMCAS entry.</p></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[48rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Organization</th><th>Total hrs</th><th>Avg / wk</th><th>Dates</th><th>Verifier</th><th>Type</th><th className="pr-4">AMCAS</th></tr></thead><tbody>
-        {sites.map((site) => { const row = site.entry; const count = rows.filter((item) => (item.org || item.id) === site.key).length; return <tr key={site.key} className="border-t"><td className="px-4 py-3 font-semibold">{site.org || 'Unnamed organization'}</td><td>{site.hours}h</td><td>{Math.max(1, Math.round(site.hours / Math.max(1, count * 4)))}h</td><td className="text-muted-foreground">{dateRangeLabel([row])}</td><td>{row.supervisor || row.contact || 'Add verifier'}</td><td>{row.tags[0] || 'Non-clinical'}</td><td className="pr-4"><button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><Copy className="size-3.5" /> Copy</button></td></tr> })}
-      </tbody></table></div>
-    </section>
   )
 }
 

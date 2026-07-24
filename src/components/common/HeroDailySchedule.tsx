@@ -140,13 +140,13 @@ export function HeroCountdown({ events, name }: { events: NormalizedScheduleEven
       : ''
   return (
     <div className="relative max-w-2xl space-y-4 text-foreground">
-      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-foreground/70">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
         <span>{dateLabel}</span>
         <span className="size-1 rounded-full bg-foreground/35" aria-hidden="true" />
         <span className="tabular-nums">{formatClock(now, '12h')}</span>
       </div>
       <div>
-        <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-foreground transition-opacity md:text-5xl">
+        <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-foreground transition-opacity md:text-5xl">
           {rotatingGreeting(now, name)}
         </h1>
         <p className="mt-1 max-w-2xl text-base font-semibold text-muted-foreground md:whitespace-nowrap md:text-lg">
@@ -157,15 +157,15 @@ export function HeroCountdown({ events, name }: { events: NormalizedScheduleEven
         <div className="relative w-fit max-w-full rounded-3xl border border-border/55 bg-card/82 px-4 py-3 pr-16 shadow-lg backdrop-blur-md dark:bg-card/60">
           <button
             onClick={() => setCompact((c) => !c)}
-            className="absolute right-3 top-3 rounded-full border border-border/70 bg-card/70 px-2 py-0.5 text-[10px] font-extrabold text-muted-foreground/80 shadow-sm backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute right-3 top-3 rounded-full border border-border/70 bg-card/70 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground/80 shadow-sm backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
             title="Toggle countdown format"
           >
             {compact ? 'H:MM:SS' : 'MM:SS'}
           </button>
-          <p className="font-display text-[clamp(2.9rem,8vw,5.4rem)] font-extrabold leading-[0.9] text-leaf tabular-nums">
+          <p className="font-display text-4xl font-semibold leading-none text-leaf tabular-nums md:text-5xl">
             {smallCountdown(targetMs, compact)}
           </p>
-          <p className="mt-1 text-sm font-extrabold text-foreground/72 dark:text-muted-foreground">{countdownCaption}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground/72 dark:text-muted-foreground">{countdownCaption}</p>
         </div>
       )}
     </div>
@@ -201,7 +201,7 @@ export function HeroSchedulePanel({ schedule }: { schedule: ReturnType<typeof us
 
   return (
     <div className="relative flex h-full min-h-[22rem] flex-col text-slate-950 drop-shadow-[0_1px_1px_rgba(255,255,255,.6)] dark:text-white dark:drop-shadow-[0_2px_4px_rgba(0,0,0,.55)]">
-      <div className="flex items-center justify-end gap-1.5 pb-1 text-[11px] font-extrabold text-slate-950 dark:text-white/82">
+      <div className="flex items-center justify-end gap-1.5 pb-1 text-[11px] font-semibold text-slate-950 dark:text-white/82">
         <span>{schedule.sourceLabel}{schedule.stale ? ' · cached' : ''}</span>
         {schedule.source === 'google' ? (
           <button onClick={() => { void schedule.refresh(new Date()) }} className="rounded p-1 hover:bg-foreground/10 dark:hover:bg-white/10" aria-label="Refresh Google Calendar">
@@ -211,7 +211,7 @@ export function HeroSchedulePanel({ schedule }: { schedule: ReturnType<typeof us
           <button
             onClick={() => { void schedule.connect(new Date()) }}
             disabled={!schedule.configured || schedule.status === 'connecting'}
-            className="inline-flex items-center gap-1 rounded-full border border-slate-700/25 bg-white/25 px-2 py-0.5 text-[10px] font-bold hover:bg-white/45 disabled:opacity-50 dark:border-white/30 dark:bg-transparent dark:hover:bg-white/10"
+            className="inline-flex items-center gap-1 rounded-full border border-slate-700/25 bg-white/25 px-2 py-0.5 text-[10px] font-semibold hover:bg-white/45 disabled:opacity-50 dark:border-white/30 dark:bg-transparent dark:hover:bg-white/10"
           >
             <Wifi className="size-3" /> Connect
           </button>
@@ -225,7 +225,7 @@ export function HeroSchedulePanel({ schedule }: { schedule: ReturnType<typeof us
         <DayMarker label="Sunset" time={formatMinuteLabel(dayMarkers.sunset, settings.timeFormat)} top={sunsetTop} side="right" />
 
         {analysis.timedEvents.length === 0 ? (
-          <div className="grid h-full place-items-center"><p className="text-sm font-bold text-slate-950 dark:text-white/82">No timed events today.</p></div>
+          <div className="grid h-full place-items-center"><p className="text-sm font-semibold text-slate-950 dark:text-white/82">No timed events today.</p></div>
         ) : (
           nodes.map(({ event, top, side }) => (
             <RailNode key={event.id} event={event} top={top} side={side} state={eventState(event, now, analysis.next?.id)} timeFormat={settings.timeFormat} />
@@ -251,7 +251,7 @@ export function HeroSchedulePanel({ schedule }: { schedule: ReturnType<typeof us
           const state = eventState(event, now, analysis.next?.id)
           return (
             <div key={event.id} className={cn('flex items-center justify-between gap-2 rounded-lg bg-white/45 px-3 py-1.5 dark:bg-white/10', state === 'past' && 'opacity-50')}>
-              <span className={cn('text-sm font-bold', state === 'next' && 'text-primary')}>{event.title}</span>
+              <span className={cn('text-sm font-semibold', state === 'next' && 'text-primary')}>{event.title}</span>
               <span className="shrink-0 text-xs font-semibold text-slate-700/80 tabular-nums dark:text-[#f7efe1]/75">{formatEventTimeRange(event, settings.timeFormat)}</span>
             </div>
           )
@@ -281,8 +281,8 @@ function DayMarker({ label, time, top, side }: { label: string; time: string; to
           side === 'left' ? 'right-[calc(50%+2.1rem)] text-right' : 'left-[calc(50%+2.1rem)] text-left'
         )}
       >
-        <p className="font-display text-base font-extrabold leading-none">{label}</p>
-        <p className="mt-0.5 text-sm font-extrabold leading-none text-slate-950 tabular-nums dark:text-white/88">{time}</p>
+        <p className="font-display text-base font-semibold leading-none">{label}</p>
+        <p className="mt-0.5 text-sm font-semibold leading-none text-slate-950 tabular-nums dark:text-white/88">{time}</p>
       </div>
     </div>
   )
@@ -314,8 +314,8 @@ function RailNode({
           side === 'left' ? 'right-[calc(50%+2.2rem)] text-right' : 'left-[calc(50%+2.2rem)] text-left'
         )}
       >
-        <p className={cn('font-display text-[15px] font-extrabold leading-tight text-slate-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:text-white dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]', isNext && 'text-primary')}>{event.title}</p>
-        <p className="mt-0.5 text-[13px] font-extrabold leading-tight text-slate-950 tabular-nums drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:text-white/90 dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]">{formatEventTimeRange(event, timeFormat)}</p>
+        <p className={cn('font-display text-[15px] font-semibold leading-tight text-slate-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:text-white dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]', isNext && 'text-primary')}>{event.title}</p>
+        <p className="mt-0.5 text-[13px] font-semibold leading-tight text-slate-950 tabular-nums drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] dark:text-white/90 dark:drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]">{formatEventTimeRange(event, timeFormat)}</p>
       </div>
     </div>
   )
