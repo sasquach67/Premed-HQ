@@ -246,7 +246,7 @@ export function TrackerTable({
         <div className="hidden max-h-[42rem] overflow-auto md:block">
         <table className="w-full border-collapse text-sm" style={{ minWidth }}>
           <thead className="sticky top-0 z-10 bg-card">
-          <tr className="border-b border-border/80 bg-card/45 text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border/80 bg-card text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
             {reorder && (
               <th className="w-8 px-1 py-3">
                 <GripVertical className="size-3.5 opacity-45" aria-hidden="true" />
@@ -314,7 +314,7 @@ export function TrackerTable({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -MOTION_DISTANCE.small }}
               transition={MOTION_TRANSITION.standard}
-              className={cn('rounded-xl border border-border bg-card/70 shadow-sm backdrop-blur-md', views.state.density === 'compact' ? 'p-2' : 'p-3')}
+              className={cn('rounded-xl border border-border bg-card card-soft', views.state.density === 'compact' ? 'p-2' : 'p-3')}
             >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Checkbox checked={effectiveSelectedIds.has(row.id)} onCheckedChange={() => toggleSelected(row.id)} aria-label="Select record" />
@@ -378,7 +378,7 @@ function TableRow({
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
           transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
           data-glass-row="true"
-          className={cn('group border-b border-border/70 bg-card/20 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
+          className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
         >
       {reorder && (
         <td className="px-1 text-muted-foreground">
@@ -487,7 +487,7 @@ function Cell({
             </span>
           )}
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border-border bg-card/95 font-display shadow-xl backdrop-blur-md">
+        <SelectContent className="glass-surface rounded-2xl border-border font-display shadow-xl">
           {column.allowEmpty && <SelectItem value={emptyValue}>{column.placeholder || 'Select…'}</SelectItem>}
           {(column.options ?? []).map((o) => (
             <SelectItem key={o} value={o}>
