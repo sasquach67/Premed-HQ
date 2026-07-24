@@ -38,7 +38,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const classes = cn(buttonVariants({ variant, size, className }))
     if (asChild) return <Slot ref={ref} className={classes} {...props} />
-    return <m.button ref={ref} whileTap={MOTION_GESTURE.press} transition={MOTION_TRANSITION.micro} className={classes} {...props} />
+    const motionProps = props as unknown as React.ComponentPropsWithoutRef<typeof m.button>
+    return <m.button ref={ref} whileTap={MOTION_GESTURE.press} transition={MOTION_TRANSITION.micro} className={classes} {...motionProps} />
   }
 )
 Button.displayName = 'Button'

@@ -4,13 +4,14 @@ import { MOTION_TRANSITION } from "@/lib/motion"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   const reduceMotion = useReducedMotion()
+  const motionProps = props as unknown as React.ComponentPropsWithoutRef<typeof m.div>
   return (
     <m.div
       data-slot="skeleton"
       className={cn("rounded-md bg-accent", className)}
       animate={reduceMotion ? undefined : { opacity: [0.55, 1] }}
       transition={reduceMotion ? MOTION_TRANSITION.instant : { ...MOTION_TRANSITION.entrance, repeat: Infinity, repeatType: "reverse" }}
-      {...props}
+      {...motionProps}
     />
   )
 }
