@@ -377,7 +377,8 @@ function TableRow({
           animate={{ opacity: isDragging ? 0.6 : checked ? 0.55 : 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
           transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
-          className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
+          data-glass-row="true"
+          className={cn('group border-b border-border/70 bg-card/20 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
         >
       {reorder && (
         <td className="px-1 text-muted-foreground">

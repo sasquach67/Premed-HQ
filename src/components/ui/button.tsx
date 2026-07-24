@@ -6,16 +6,16 @@ import { cn } from '@/lib/utils'
 import { MOTION_GESTURE, MOTION_TRANSITION } from '@/lib/motion'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-[background-color,border-color,color,box-shadow,filter] duration-200 ease-[cubic-bezier(.16,1,.3,1)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+  "interactive-glass inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border text-sm font-semibold disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:brightness-105',
-        secondary: 'bg-secondary text-secondary-foreground hover:brightness-[0.98]',
-        outline: 'border border-border bg-card hover:bg-muted text-foreground',
-        ghost: 'hover:bg-muted text-foreground',
-        destructive: 'bg-destructive text-destructive-foreground hover:brightness-105',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default: 'glass-primary text-primary-foreground hover:brightness-105',
+        secondary: 'glass-secondary text-secondary-foreground hover:brightness-[0.98]',
+        outline: 'text-foreground',
+        ghost: 'glass-muted border-transparent text-foreground',
+        destructive: 'glass-destructive text-destructive-foreground hover:brightness-105',
+        link: 'glass-transparent border-transparent text-primary shadow-none underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-9 px-4 py-2',
