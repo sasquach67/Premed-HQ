@@ -37,7 +37,7 @@ export function ObjectInspector({
     <article className={cn('min-w-0', className)} aria-label="Object inspector">
       <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4 md:px-6">
         <div className="min-w-0">
-          <h1 className="truncate font-display text-xl font-extrabold">{title}</h1>
+          <h1 className="truncate font-display text-lg font-semibold">{title}</h1>
           {subtitle && <div className="mt-1 text-sm font-semibold text-muted-foreground">{subtitle}</div>}
         </div>
         <AutosaveStatus status={saveStatus} />
@@ -67,8 +67,8 @@ function InspectorRegion({
   section: InspectorSection
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-background/45 p-4" aria-labelledby={`inspector-${slug(title)}`}>
-      <h2 id={`inspector-${slug(title)}`} className="mb-3 flex items-center gap-2 text-sm font-extrabold">
+    <section className="rounded-xl border border-border bg-background/45 p-4" aria-labelledby={`inspector-${slug(title)}`}>
+      <h2 id={`inspector-${slug(title)}`} className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <Icon className="size-4 text-primary" aria-hidden="true" />
         {title}
       </h2>

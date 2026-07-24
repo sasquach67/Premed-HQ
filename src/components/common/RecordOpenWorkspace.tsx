@@ -75,14 +75,14 @@ export function RecordOpenWorkspace({
         {loading ? (
           <div className="space-y-4 p-6" aria-label="Loading record">
             <div className="h-7 w-2/5 animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
-            <div className="h-32 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
-            <div className="h-24 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
+            <div className="h-32 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
+            <div className="h-24 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
           </div>
         ) : (
           <div className="grid min-h-72 place-items-center p-6 text-center">
             <div>
               <AlertCircle className="mx-auto size-7 text-destructive" aria-hidden="true" />
-              <h2 className="mt-3 font-display text-lg font-extrabold">Record unavailable</h2>
+              <h2 className="mt-3 font-display text-lg font-semibold">Record unavailable</h2>
               <p className="mt-1 text-sm text-muted-foreground">This record may have been archived or removed.</p>
               <Button className="mt-4" variant="outline" onClick={() => onOpenChange(false)}>Return to {parentLabel}</Button>
             </div>
@@ -95,7 +95,7 @@ export function RecordOpenWorkspace({
   const listPane = (
     <section className="h-full overflow-y-auto border-r border-border bg-muted/15" aria-label={`${parentLabel} records`}>
       <div className="sticky top-0 z-10 border-b border-border bg-card px-4 py-3">
-        <h2 className="font-display text-base font-extrabold">{parentLabel}</h2>
+        <h2 className="font-display text-sm font-semibold">{parentLabel}</h2>
         <p className="text-xs text-muted-foreground">Choose a record or pin one for paired work.</p>
       </div>
       <div className="space-y-2 p-3">
@@ -115,7 +115,7 @@ export function RecordOpenWorkspace({
                 setMobilePane('record')
               }}
             >
-              <span className="block truncate text-sm font-bold">{record.label}</span>
+              <span className="block truncate text-sm font-semibold">{record.label}</span>
               {record.description && <span className="block truncate text-xs text-muted-foreground">{record.description}</span>}
             </button>
             {record.id !== activeId && (
@@ -179,7 +179,7 @@ export function RecordOpenWorkspace({
                 aria-selected={mobilePane === id}
                 onClick={() => setMobilePane(id)}
                 className={cn(
-                  'min-w-0 flex-1 truncate border-b-2 px-3 py-3 text-sm font-bold',
+                  'min-w-0 flex-1 truncate border-b-2 px-3 py-3 text-sm font-semibold',
                   mobilePane === id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
                 )}
               >
