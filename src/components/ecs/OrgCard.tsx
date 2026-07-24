@@ -37,13 +37,13 @@ export function OrgCard({
     >
       <button type="button" onClick={onOpen} className="block w-full text-left">
         <div className="flex items-start gap-3">
-          <span className={cn('grid size-11 shrink-0 place-items-center rounded-xl font-display text-sm font-semibold', ORG_COLOR_CLASSES[color])}>
+          <span className={cn('grid size-11 shrink-0 place-items-center rounded-xl font-display text-sm font-extrabold', ORG_COLOR_CLASSES[color])}>
             {orgInitials(org.name)}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="truncate text-sm font-semibold leading-tight">{org.name || 'Untitled org'}</h3>
+                <h3 className="truncate text-base font-bold leading-tight">{org.name || 'Untitled org'}</h3>
                 <p className="truncate text-sm font-semibold text-muted-foreground">{org.type || 'Organization'}{org.role ? ` · ${org.role}` : ''}</p>
               </div>
             </div>
@@ -57,7 +57,7 @@ export function OrgCard({
             <span className={cn('size-2 rounded-full', reflections ? 'bg-leaf' : 'bg-warning')} />
             {reflections ? `${reflections} ${reflections === 1 ? 'reflection' : 'reflections'}` : 'No reflection yet'}
           </span>
-          {org.meetingInfo && <span className="max-w-[11rem] truncate rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{org.meetingInfo}</span>}
+          {org.meetingInfo && <span className="max-w-[11rem] truncate rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">{org.meetingInfo}</span>}
         </div>
       </button>
       <DropdownMenu>

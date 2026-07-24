@@ -253,7 +253,7 @@ function ApprovedEcsSummary({ orgs }: { orgs: Org[] }) {
   void orgs
 
   return (
-    <section className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-xl border bg-card px-5 py-4 shadow-sm">
+    <section className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-2xl border bg-card px-5 py-4 shadow-sm">
       <ApprovedMetric label="orgs" value="3" />
       <ApprovedMetric label="leadership roles" value="2" />
       <ApprovedMetric label="total hours" value="214" />
@@ -270,8 +270,8 @@ function ApprovedEcsSummary({ orgs }: { orgs: Org[] }) {
 function ApprovedMetric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-baseline gap-2 whitespace-nowrap">
-      <strong className="font-display text-lg font-semibold text-primary">{value}</strong>
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <strong className="font-display text-2xl font-extrabold text-primary">{value}</strong>
+      <span className="text-xs font-extrabold text-muted-foreground">{label}</span>
     </div>
   )
 }
@@ -301,7 +301,7 @@ function EcsEntityTabs({
           type="button"
           onClick={() => orgs[index] && onOpen(orgs[index])}
           className={cn(
-            'relative -mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition',
+            'relative -mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-extrabold transition',
             index === 0 || activeId === orgs[index]?.id
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -314,7 +314,7 @@ function EcsEntityTabs({
       <button
         type="button"
         onClick={onAdd}
-        className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-muted-foreground transition hover:text-primary"
+        className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-3 text-sm font-extrabold text-muted-foreground transition hover:text-primary"
       >
         <Plus className="size-4" /> add org
       </button>
@@ -344,11 +344,11 @@ function ApprovedEcsWorkspace({
   const [quickWhat, setQuickWhat] = useState('')
 
   return (
-    <article className="overflow-hidden rounded-xl border bg-card shadow-sm">
+    <article className="overflow-hidden rounded-3xl border bg-card shadow-sm">
       <header className="grid gap-5 border-b bg-muted/20 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(15rem,auto)] lg:items-center">
         <div className="min-w-0">
-          <h2 className="font-display text-lg font-semibold">Minority Assoc. of Premed Students (MAPS)</h2>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <h2 className="font-display text-xl font-extrabold">Minority Assoc. of Premed Students (MAPS)</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
             <button type="button" onClick={() => onPatch({ role: 'Treasurer' })} className="rounded-full bg-primary/15 px-3 py-1 text-primary">Treasurer</button>
             <span className="rounded-full bg-emerald-500/12 px-3 py-1 text-emerald-600 dark:text-emerald-300">Active</span>
             <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" /> Aug 2025 – present</span>
@@ -356,11 +356,11 @@ function ApprovedEcsWorkspace({
           </div>
         </div>
         <div className="text-left lg:text-right">
-          <strong className="block font-display text-3xl font-semibold text-primary">84</strong>
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">hours here</span>
+          <strong className="block font-display text-4xl font-extrabold text-primary">84</strong>
+          <span className="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">hours here</span>
         </div>
-        <div className="min-w-60 rounded-xl border bg-background/55 p-3 text-xs font-semibold text-muted-foreground">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+        <div className="min-w-60 rounded-2xl border bg-background/55 p-3 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-2 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] text-primary">
             <ShieldCheck className="size-3.5" /> AMCAS verifier
           </div>
           <strong className="mt-1 block text-sm text-foreground">Dr. Renée Watson · faculty advisor</strong>
@@ -372,7 +372,7 @@ function ApprovedEcsWorkspace({
 
       <div className="grid gap-4 p-5 xl:grid-cols-2">
         <div className="space-y-4">
-          <WorkspaceModule title="Position history" icon={Milestone} action={<button type="button" onClick={() => onPatch({ role: 'New role' })} className="text-xs font-semibold text-primary">+ role change</button>}>
+          <WorkspaceModule title="Position history" icon={Milestone} action={<button type="button" onClick={() => onPatch({ role: 'New role' })} className="text-xs font-extrabold text-primary">+ role change</button>}>
             <div className="relative space-y-4 pl-6 before:absolute before:bottom-2 before:left-1.5 before:top-2 before:w-px before:bg-border">
               {[
                 ['Treasurer', 'Apr 2026 – present · elected, 31–9 vote'],
@@ -388,7 +388,7 @@ function ApprovedEcsWorkspace({
             </div>
           </WorkspaceModule>
 
-          <WorkspaceModule title="Accomplishments" icon={Award} action={<button type="button" onClick={onAddInitiative} className="text-xs font-semibold text-primary">+ add</button>}>
+          <WorkspaceModule title="Accomplishments" icon={Award} action={<button type="button" onClick={onAddInitiative} className="text-xs font-extrabold text-primary">+ add</button>}>
             <div className="space-y-3">
               {[
                 ['$1,840', 'Rebuilt dues collection in Google Sheets + Zelle', '46 of 52 members paid, up from 61% last year'],
@@ -396,7 +396,7 @@ function ApprovedEcsWorkspace({
                 ['12', 'Monthly budget reports delivered to exec board', 'zero discrepancies at year-end audit'],
               ].map(([value, title, detail]) => (
                 <div key={title} className="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 border-b border-border/70 pb-3 last:border-0 last:pb-0">
-                  <strong className="font-display text-lg text-primary">{value}</strong>
+                  <strong className="font-display text-xl text-primary">{value}</strong>
                   <p className="text-sm"><strong>{title}</strong> <span className="text-muted-foreground">· {detail}</span></p>
                 </div>
               ))}
@@ -420,7 +420,7 @@ function ApprovedEcsWorkspace({
                 ['KO', 'Kayla Osei', 'President · co-signs budget', 'kosei@unc.edu'],
               ].map(([initials, name, role, email]) => (
                 <a key={name} href={`mailto:${email}`} className="flex items-center gap-3 rounded-xl bg-muted/35 p-3 transition hover:bg-muted/55">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{initials}</span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-extrabold text-primary">{initials}</span>
                   <span className="min-w-0 flex-1"><strong className="block text-sm">{name}</strong><span className="block truncate text-xs text-muted-foreground">{role}</span></span>
                   <Mail className="size-4 text-primary" />
                 </a>
@@ -431,14 +431,14 @@ function ApprovedEcsWorkspace({
       </div>
 
       <section className="border-t px-5 py-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-semibold"><FileText className="size-4 text-primary" /> Log</h2>
-        <div className="mt-3 overflow-hidden rounded-xl border bg-background/35">
+        <h2 className="flex items-center gap-2 font-display text-lg font-extrabold"><FileText className="size-4 text-primary" /> Log</h2>
+        <div className="mt-3 overflow-hidden rounded-2xl border bg-background/35">
           <div className="grid grid-cols-[4rem_minmax(0,1fr)_auto_3rem] items-center gap-3 border-b bg-primary/5 px-3 py-3 text-sm">
             <strong className="text-muted-foreground">Jul 8</strong><strong>Exec board — fall budget draft approved</strong><span className="text-amber-500" aria-label="Flagged for Story Bank">★</span><strong className="text-right">2.0</strong>
           </div>
           <div className="border-b px-3 py-3">
             <p className="text-sm leading-relaxed text-muted-foreground">Defended keeping the service-event budget over a social increase — first time I pushed back on the exec board and won the room. Might be a story about advocating with numbers instead of volume.</p>
-            <p className="mt-2 text-xs font-semibold text-amber-500">★ flagged for Story Bank <span className="text-muted-foreground">· edit · delete</span></p>
+            <p className="mt-2 text-xs font-extrabold text-amber-500">★ flagged for Story Bank <span className="text-muted-foreground">· edit · delete</span></p>
           </div>
           {[
             ['Jun 24', 'Collected final spring dues, closed the books', '1.5'],
@@ -454,7 +454,7 @@ function ApprovedEcsWorkspace({
           <Input value={quickHours} onChange={(event) => setQuickHours(event.target.value)} placeholder="hrs" aria-label="Hours" />
           <Input value={quickWhat} onChange={(event) => setQuickWhat(event.target.value)} placeholder="what happened? (meeting, event, task…)" aria-label="What happened" />
           <Button type="submit" size="sm">Log</Button>
-          <span className="self-center whitespace-nowrap px-2 text-xs font-semibold text-muted-foreground">↵ saves · star it later</span>
+          <span className="self-center whitespace-nowrap px-2 text-[0.68rem] font-bold text-muted-foreground">↵ saves · star it later</span>
         </form>
       </section>
     </article>
@@ -473,9 +473,9 @@ function WorkspaceModule({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-xl border bg-background/35 p-4">
+    <section className="rounded-2xl border bg-background/35 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-display text-sm font-semibold"><Icon className="size-4 text-primary" /> {title}</h2>
+        <h2 className="flex items-center gap-2 font-display text-base font-extrabold"><Icon className="size-4 text-primary" /> {title}</h2>
         {action}
       </div>
       {children}
@@ -486,8 +486,8 @@ function WorkspaceModule({
 function InlineFact({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl bg-muted/35 px-3 py-2">
-      <strong className="block font-display text-lg">{value}</strong>
-      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
+      <strong className="block font-display text-xl">{value}</strong>
+      <span className="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
     </div>
   )
 }
@@ -512,13 +512,13 @@ function PillarTabStrip({
             type="button"
             onClick={() => onChange(tab.id)}
             className={cn(
-              'inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-semibold transition',
+              'inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-extrabold transition',
               selected ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
             <Icon className="size-4" />
             {tab.label}
-            <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', selected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>
+            <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', selected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>
               {counts[tab.id]}
             </span>
           </button>
@@ -566,7 +566,7 @@ function OrganizationsView({
             type="button"
             onClick={() => onFilter(item.id)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-semibold transition',
+              'rounded-full px-3 py-1.5 text-sm font-extrabold transition',
               filter === item.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -582,8 +582,8 @@ function OrganizationsView({
           {sections.map((section) => (
             <section key={section.id} className="space-y-3">
               <div className="flex items-center gap-2">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{section.label}</h2>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{section.orgs.length}</span>
+                <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">{section.label}</h2>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{section.orgs.length}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {section.orgs.map((org) => {
@@ -605,7 +605,7 @@ function OrganizationsView({
                   <button
                     type="button"
                     onClick={() => onAdd('interested')}
-                    className="flex min-h-[10.5rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 p-4 text-center font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+                    className="flex min-h-[10.5rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 p-4 text-center font-extrabold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
                   >
                     <Plus className="mb-2 size-5" />
                     Add organization to watchlist
@@ -644,20 +644,20 @@ function EcsOrgWorkspace({
 
   return (
     <section className="space-y-5">
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={onBack} aria-label="Back to organizations">
               <ArrowLeft className="size-4" />
             </Button>
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 font-display text-sm font-semibold text-primary">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 font-display text-base font-extrabold text-primary">
               {orgInitials(org.name)}
             </span>
             <div className="min-w-0 flex-1">
               <Input
                 value={org.name}
                 onChange={(event) => onPatch({ name: event.target.value })}
-                className="h-9 border-0 bg-transparent px-0 font-display text-lg font-semibold"
+                className="h-9 border-0 bg-transparent px-0 font-display text-2xl font-extrabold"
                 placeholder="Organization name"
               />
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -695,8 +695,8 @@ function EcsOrgWorkspace({
                 <Network className="size-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Application read</p>
-                <h2 className="mt-1 font-display text-lg font-semibold">{read.title}</h2>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-muted-foreground">Application read</p>
+                <h2 className="mt-1 font-display text-xl font-extrabold">{read.title}</h2>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{read.detail}</p>
               </div>
             </div>
@@ -704,25 +704,25 @@ function EcsOrgWorkspace({
 
           <section className="rounded-xl border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">Organization profile</h2>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+              <h2 className="font-display text-lg font-extrabold">Organization profile</h2>
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
                 {reflectionCount(org)} {reflectionCount(org) === 1 ? 'reflection' : 'reflections'}
               </span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-sm font-semibold">
+              <label className="space-y-1 text-sm font-bold">
                 Type
                 <Input value={org.type} onChange={(event) => onPatch({ type: event.target.value })} />
               </label>
-              <label className="space-y-1 text-sm font-semibold">
+              <label className="space-y-1 text-sm font-bold">
                 Role
                 <Input value={org.role} onChange={(event) => onPatch({ role: event.target.value })} />
               </label>
-              <label className="space-y-1 text-sm font-semibold">
+              <label className="space-y-1 text-sm font-bold">
                 Joined
                 <MonthField value={org.joinedAt ?? ''} onChange={(joinedAt) => onPatch({ joinedAt })} />
               </label>
-              <label className="space-y-1 text-sm font-semibold">
+              <label className="space-y-1 text-sm font-bold">
                 Status
                 <Select value={org.status} onValueChange={(value) => onPatch({ status: value as Org['status'] })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -734,19 +734,19 @@ function EcsOrgWorkspace({
                   </SelectContent>
                 </Select>
               </label>
-              <label className="space-y-1 text-sm font-semibold sm:col-span-2">
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
                 Meetings / cadence
                 <Input value={org.meetingInfo} onChange={(event) => onPatch({ meetingInfo: event.target.value })} placeholder="Weekly meeting, event rhythm, or attendance pattern" />
               </label>
-              <label className="space-y-1 text-sm font-semibold sm:col-span-2">
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
                 Link
                 <Input value={org.link} onChange={(event) => onPatch({ link: event.target.value })} placeholder="https://..." />
               </label>
-              <label className="space-y-1 text-sm font-semibold sm:col-span-2">
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
                 Next move
                 <Textarea value={org.nextGoal ?? ''} onChange={(event) => onPatch({ nextGoal: event.target.value })} placeholder="What should happen next for this org to matter more?" />
               </label>
-              <label className="space-y-1 text-sm font-semibold sm:col-span-2">
+              <label className="space-y-1 text-sm font-bold sm:col-span-2">
                 Opportunities
                 <Textarea value={org.opportunities} onChange={(event) => onPatch({ opportunities: event.target.value })} placeholder="Leadership roles, events, committees, or relationships to pursue." />
               </label>
@@ -755,7 +755,7 @@ function EcsOrgWorkspace({
 
           <section className="rounded-xl border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">Reflection timeline</h2>
+              <h2 className="font-display text-lg font-extrabold">Reflection timeline</h2>
               <Button size="sm" variant="outline" onClick={onReflection}><Plus className="size-4" /> Add reflection</Button>
             </div>
             <div className="mt-4 space-y-3">
@@ -806,7 +806,7 @@ function EcsOrgWorkspace({
           <section className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <UserRoundCheck className="size-4 text-primary" />
-              <h2 className="font-display text-lg font-semibold">Open loops</h2>
+              <h2 className="font-display text-lg font-extrabold">Open loops</h2>
             </div>
             <div className="mt-3 space-y-2">
               {loops.map((loop) => (
@@ -818,7 +818,7 @@ function EcsOrgWorkspace({
           <section className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <Milestone className="size-4 text-primary" />
-              <h2 className="font-display text-lg font-semibold">Linked initiatives</h2>
+              <h2 className="font-display text-lg font-extrabold">Linked initiatives</h2>
             </div>
             <div className="mt-3 space-y-2">
               {linkedInitiatives.length === 0 ? (
@@ -827,7 +827,7 @@ function EcsOrgWorkspace({
                 </p>
               ) : linkedInitiatives.map((initiative) => (
                 <div key={initiative.id} className="rounded-xl bg-muted/35 px-3 py-2">
-                  <p className="font-semibold">{initiative.title || 'Untitled initiative'}</p>
+                  <p className="font-bold">{initiative.title || 'Untitled initiative'}</p>
                   <p className="line-clamp-2 text-xs text-muted-foreground">{initiative.body || 'No detail yet.'}</p>
                 </div>
               ))}
@@ -837,11 +837,11 @@ function EcsOrgWorkspace({
           <section className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <LinkIcon className="size-4 text-primary" />
-              <h2 className="font-display text-lg font-semibold">Network context</h2>
+              <h2 className="font-display text-lg font-extrabold">Network context</h2>
             </div>
             <div className="mt-3 space-y-2">
               <div className="rounded-xl bg-muted/35 px-3 py-2 text-sm">
-                <div className="flex items-center gap-2 font-semibold">
+                <div className="flex items-center gap-2 font-bold">
                   <CalendarDays className="size-4 text-primary" />
                   {org.meetingInfo || 'Meeting rhythm not set'}
                 </div>
@@ -849,7 +849,7 @@ function EcsOrgWorkspace({
               </div>
               {related.length ? related.map((item) => (
                 <div key={item.id} className="rounded-xl bg-muted/25 px-3 py-2 text-sm">
-                  <p className="font-semibold">{item.name || 'Untitled organization'}</p>
+                  <p className="font-bold">{item.name || 'Untitled organization'}</p>
                   <p className="text-xs text-muted-foreground">{item.type || 'Related org'} · {statusLabel(item.status)}</p>
                 </div>
               )) : (
@@ -891,7 +891,7 @@ function InitiativesView({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold">Initiatives</h2>
+          <h2 className="font-display text-xl font-extrabold">Initiatives</h2>
           <p className="text-sm text-muted-foreground">Things you built, led, or improved.</p>
         </div>
         <Button onClick={onAdd}><Plus className="size-4" /> Add initiative</Button>
@@ -913,9 +913,9 @@ function InitiativesView({
                     <Input
                       value={initiative.title}
                       onChange={(event) => onPatch(initiative.id, { title: event.target.value })}
-                      className="h-8 border-0 bg-transparent px-0 font-display text-lg font-semibold"
+                      className="h-8 border-0 bg-transparent px-0 font-display text-lg font-extrabold"
                     />
-                    <div className="text-xs font-semibold text-muted-foreground">Updated {formatDate(initiative.updatedAt)}</div>
+                    <div className="text-xs font-bold text-muted-foreground">Updated {formatDate(initiative.updatedAt)}</div>
                   </div>
                   <Button variant="ghost" size="icon" aria-label="Delete initiative" onClick={() => onDelete(initiative.id)}>
                     <Trash2 className="size-4" />
@@ -948,13 +948,13 @@ function InitiativesView({
                 />
                 <div className="flex flex-wrap gap-2">
                   {linkedOrg && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
                       <Building2 className="size-3" />
                       {linkedOrg.name || 'Untitled organization'}
                     </span>
                   )}
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Portfolio</span>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Leadership evidence</span>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">Portfolio</span>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">Leadership evidence</span>
                 </div>
               </div>
             </div>
