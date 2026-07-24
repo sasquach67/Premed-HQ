@@ -32,7 +32,7 @@ function RadioGroupItem({
         whileTap={MOTION_GESTURE.press}
         transition={MOTION_TRANSITION.micro}
         className={cn(
-          "interactive-glass aspect-square size-4 shrink-0 rounded-full border text-primary outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+          "field-solid aspect-square size-4 shrink-0 rounded-full border text-primary outline-none transition-colors duration-200 data-[state=checked]:border-primary disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
           className
         )}
       >
