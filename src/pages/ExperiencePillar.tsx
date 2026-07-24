@@ -243,10 +243,10 @@ function ApprovedMetric({ icon: Icon, label, value, detail, accent = false }: { 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-extrabold uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
         <Icon className={cn('size-4 text-primary', accent && 'text-emerald-500')} />
       </div>
-      <p className="mt-3 font-display text-2xl font-extrabold">{value}</p>
+      <p className="mt-3 font-display text-lg font-semibold">{value}</p>
       <p className="mt-1 text-xs font-semibold text-muted-foreground">{detail}</p>
     </div>
   )
@@ -256,10 +256,10 @@ function ApprovedCenterpiece({ category, rows, entities }: { category: Experienc
   if (category === 'clinical') {
     const certDue = rows.filter((row) => row.tags.some((tag) => /cert|cpr|bls/i.test(tag))).length
     return (
-      <section className="grid gap-3 rounded-2xl border bg-card p-4 md:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1.2fr_0.8fr]">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">Clinical continuity</p>
-          <h2 className="mt-1 font-display text-xl font-extrabold">Your sites, shifts, and credentials in one record</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Clinical continuity</p>
+          <h2 className="mt-1 font-display text-lg font-semibold">Your sites, shifts, and credentials in one record</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{coverageForCategory(category, rows).detail}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -278,23 +278,23 @@ function ApprovedCenterpiece({ category, rows, entities }: { category: Experienc
     const specialties = siteSummaries(rows)
     const total = Math.max(1, rows.reduce((sum, row) => sum + Number(row.hours || 0), 0))
     return (
-      <section className="overflow-hidden rounded-2xl border bg-card">
+      <section className="overflow-hidden rounded-xl border bg-card">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b p-4">
-          <div><h2 className="font-display text-lg font-extrabold">Specialty exposure</h2><p className="text-sm text-muted-foreground">Coverage and the next relationship gap to close.</p></div>
-          <span className="rounded-full bg-amber-500/12 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-200">Primary care still matters</span>
+          <div><h2 className="font-display text-lg font-semibold">Specialty exposure</h2><p className="text-sm text-muted-foreground">Coverage and the next relationship gap to close.</p></div>
+          <span className="rounded-full bg-amber-500/12 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-200">Primary care still matters</span>
         </div>
         <div className="overflow-x-auto"><table className="w-full min-w-[46rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Specialty</th><th>Hours</th><th>Share</th><th>Settings</th><th className="pr-4">Next move</th></tr></thead><tbody>
-          {specialties.map((site) => <tr key={site.key} className="border-t"><td className="px-4 py-3 font-bold">{site.org || 'Unspecified specialty'}</td><td>{site.hours}h</td><td><div className="h-1.5 w-28 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((site.hours / total) * 100)}%` }} /></div></td><td className="text-muted-foreground">{rows.filter((row) => (row.org || row.id) === site.key).length} session{rows.filter((row) => (row.org || row.id) === site.key).length === 1 ? '' : 's'}</td><td className="pr-4 text-primary">Maintain contact</td></tr>)}
+          {specialties.map((site) => <tr key={site.key} className="border-t"><td className="px-4 py-3 font-semibold">{site.org || 'Unspecified specialty'}</td><td>{site.hours}h</td><td><div className="h-1.5 w-28 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((site.hours / total) * 100)}%` }} /></div></td><td className="text-muted-foreground">{rows.filter((row) => (row.org || row.id) === site.key).length} session{rows.filter((row) => (row.org || row.id) === site.key).length === 1 ? '' : 's'}</td><td className="pr-4 text-primary">Maintain contact</td></tr>)}
         </tbody></table></div>
       </section>
     )
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card">
-      <div className="border-b p-4"><h2 className="font-display text-lg font-extrabold">Research outputs</h2><p className="text-sm text-muted-foreground">Translate time in the lab into concrete lines for a CV and application.</p></div>
+    <section className="overflow-hidden rounded-xl border bg-card">
+      <div className="border-b p-4"><h2 className="font-display text-lg font-semibold">Research outputs</h2><p className="text-sm text-muted-foreground">Translate time in the lab into concrete lines for a CV and application.</p></div>
       <div className="overflow-x-auto"><table className="w-full min-w-[45rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Project / output</th><th>Type</th><th>Venue</th><th>Deadline</th><th className="pr-4">Status</th></tr></thead><tbody>
-        {(rows.length ? rows : [{ id: 'empty', category: 'research', org: 'No research output yet', role: '', description: '', tags: [], status: 'planned', hours: 0, order: 0 } satisfies ExperienceEntry]).map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-bold">{row.description || row.org || 'Untitled project'}</td><td>{row.tags[0] || 'Project'}</td><td className="text-muted-foreground">{row.org || 'Add venue'}</td><td className="text-muted-foreground">{formatDate(row.endDate)}</td><td className="pr-4"><span className={cn('rounded-full px-2 py-1 text-xs font-bold', statusTone(row.status))}>{row.status}</span></td></tr>)}
+        {(rows.length ? rows : [{ id: 'empty', category: 'research', org: 'No research output yet', role: '', description: '', tags: [], status: 'planned', hours: 0, order: 0 } satisfies ExperienceEntry]).map((row) => <tr key={row.id} className="border-t"><td className="px-4 py-3 font-semibold">{row.description || row.org || 'Untitled project'}</td><td>{row.tags[0] || 'Project'}</td><td className="text-muted-foreground">{row.org || 'Add venue'}</td><td className="text-muted-foreground">{formatDate(row.endDate)}</td><td className="pr-4"><span className={cn('rounded-full px-2 py-1 text-xs font-semibold', statusTone(row.status))}>{row.status}</span></td></tr>)}
       </tbody></table></div>
     </section>
   )
@@ -303,10 +303,10 @@ function ApprovedCenterpiece({ category, rows, entities }: { category: Experienc
 function ApprovedLedger({ rows }: { rows: ExperienceEntry[] }) {
   const sites = siteSummaries(rows)
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card">
-      <div className="border-b p-4"><h2 className="font-display text-lg font-extrabold">Verification ledger</h2><p className="text-sm text-muted-foreground">The audit-ready record behind the final AMCAS entry.</p></div>
+    <section className="overflow-hidden rounded-xl border bg-card">
+      <div className="border-b p-4"><h2 className="font-display text-lg font-semibold">Verification ledger</h2><p className="text-sm text-muted-foreground">The audit-ready record behind the final AMCAS entry.</p></div>
       <div className="overflow-x-auto"><table className="w-full min-w-[48rem] text-sm"><thead className="bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Organization</th><th>Total hrs</th><th>Avg / wk</th><th>Dates</th><th>Verifier</th><th>Type</th><th className="pr-4">AMCAS</th></tr></thead><tbody>
-        {sites.map((site) => { const row = site.entry; const count = rows.filter((item) => (item.org || item.id) === site.key).length; return <tr key={site.key} className="border-t"><td className="px-4 py-3 font-bold">{site.org || 'Unnamed organization'}</td><td>{site.hours}h</td><td>{Math.max(1, Math.round(site.hours / Math.max(1, count * 4)))}h</td><td className="text-muted-foreground">{dateRangeLabel([row])}</td><td>{row.supervisor || row.contact || 'Add verifier'}</td><td>{row.tags[0] || 'Non-clinical'}</td><td className="pr-4"><button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-primary"><Copy className="size-3.5" /> Copy</button></td></tr> })}
+        {sites.map((site) => { const row = site.entry; const count = rows.filter((item) => (item.org || item.id) === site.key).length; return <tr key={site.key} className="border-t"><td className="px-4 py-3 font-semibold">{site.org || 'Unnamed organization'}</td><td>{site.hours}h</td><td>{Math.max(1, Math.round(site.hours / Math.max(1, count * 4)))}h</td><td className="text-muted-foreground">{dateRangeLabel([row])}</td><td>{row.supervisor || row.contact || 'Add verifier'}</td><td>{row.tags[0] || 'Non-clinical'}</td><td className="pr-4"><button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><Copy className="size-3.5" /> Copy</button></td></tr> })}
       </tbody></table></div>
     </section>
   )
@@ -334,13 +334,13 @@ function ApprovedEntityWorkspace({ category, entity, notes, onAddEntry, onPatchE
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">
           <span className={cn('grid size-12 shrink-0 place-items-center rounded-xl text-primary', categoryAccent(category))}>{categoryIcon(category)}</span>
-          <div className="min-w-0"><h2 className="truncate font-display text-2xl font-extrabold">{entity.name}</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{entity.role || entity.subtitle} · {dateRangeLabel(entity.rows)}</p></div>
+          <div className="min-w-0"><h2 className="truncate font-display text-lg font-semibold">{entity.name}</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">{entity.role || entity.subtitle} · {dateRangeLabel(entity.rows)}</p></div>
         </div>
-        <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{entity.totalHours}h logged</span><span className={cn('rounded-full px-3 py-1 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span></div>
+        <div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{entity.totalHours}h logged</span><span className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusTone(entity.status))}>{entity.status}</span></div>
       </div>
 
       {category === 'clinical' && <ClinicalWorkspace entity={entity} latest={latest} onPatch={onPatchEntry} onRemove={onRemoveEntry} addLog={addLog} />}
@@ -352,7 +352,7 @@ function ApprovedEntityWorkspace({ category, entity, notes, onAddEntry, onPatchE
 }
 
 function ClinicalWorkspace({ entity, latest, onPatch, onRemove, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; onPatch: ApprovedPillarProps['onPatchEntry']; onRemove: (id: string) => void; addLog: (values: string[]) => void }) {
-  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Certifications" icon={ShieldCheck}>{['BLS / CPR', 'HIPAA', 'Site onboarding'].map((name, index) => <div key={name} className="flex items-center justify-between rounded-lg bg-muted/25 px-3 py-2 text-sm"><span className="font-bold">{name}</span><span className={cn('text-xs font-bold', index ? 'text-muted-foreground' : 'text-emerald-500')}>{index ? 'Add expiry' : 'Current'}</span></div>)}</WorkspaceBlock><WorkspaceBlock title="Skills observed / performed" icon={ClipboardCheck}><div className="flex flex-wrap gap-2">{SKILLS.slice(0, 5).map((skill, index) => <span key={skill} className={cn('rounded-full border px-2.5 py-1 text-xs font-bold', index < Math.min(3, entity.rows.length) ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground')}>{skill}</span>)}</div></WorkspaceBlock></div><div className="p-5"><LogList title="Shift log" rows={latest} onPatch={onPatch} onRemove={onRemove} addLog={addLog} /></div></div>
+  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Certifications" icon={ShieldCheck}>{['BLS / CPR', 'HIPAA', 'Site onboarding'].map((name, index) => <div key={name} className="flex items-center justify-between rounded-lg bg-muted/25 px-3 py-2 text-sm"><span className="font-semibold">{name}</span><span className={cn('text-xs font-semibold', index ? 'text-muted-foreground' : 'text-emerald-500')}>{index ? 'Add expiry' : 'Current'}</span></div>)}</WorkspaceBlock><WorkspaceBlock title="Skills observed / performed" icon={ClipboardCheck}><div className="flex flex-wrap gap-2">{SKILLS.slice(0, 5).map((skill, index) => <span key={skill} className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', index < Math.min(3, entity.rows.length) ? 'border-primary/30 bg-primary/10 text-primary' : 'text-muted-foreground')}>{skill}</span>)}</div></WorkspaceBlock></div><div className="p-5"><LogList title="Shift log" rows={latest} onPatch={onPatch} onRemove={onRemove} addLog={addLog} /></div></div>
 }
 
 function VolunteeringWorkspace({ entity, latest, contacts, onDraftStory, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; contacts: ExperienceEntry[]; onDraftStory: ApprovedPillarProps['onDraftStory']; addLog: (values: string[]) => void }) {
@@ -362,18 +362,18 @@ function VolunteeringWorkspace({ entity, latest, contacts, onDraftStory, addLog 
 
 function ShadowingWorkspace({ entity, latest, contacts, onRequestLetter, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; contacts: ExperienceEntry[]; onRequestLetter: ApprovedPillarProps['onRequestLetter']; addLog: (values: string[]) => void }) {
   const base = entity.rows[0]
-  return <div className="grid gap-0 lg:grid-cols-[0.75fr_1.25fr]"><div className="space-y-4 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Physician relationship" icon={UserRound}>{contacts.length ? contacts.map((row) => <div key={row.id} className="rounded-lg bg-muted/25 p-3"><p className="font-bold">{row.supervisor || row.contact}</p><p className="text-xs text-muted-foreground">{row.contact || 'Add contact details'}</p></div>) : <p className="text-sm text-muted-foreground">Add the physician and contact details.</p>}{base && <Button size="sm" variant="outline" onClick={() => onRequestLetter(base)}><Mail className="size-4" /> Track relationship</Button>}</WorkspaceBlock><div className="grid grid-cols-2 gap-2"><MiniMetric label="Thank-you" value={base?.tags.some((tag) => /thank/i.test(tag)) ? 'Sent' : 'Due'} /><MiniMetric label="Letter potential" value={entity.totalHours >= 20 ? 'Strong' : 'Developing'} /></div></div><div className="p-5"><SimpleLog title="Shadowing sessions" rows={latest} addLog={addLog} prompt="Capture the setting, specialty, and one clinical insight." /></div></div>
+  return <div className="grid gap-0 lg:grid-cols-[0.75fr_1.25fr]"><div className="space-y-4 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Physician relationship" icon={UserRound}>{contacts.length ? contacts.map((row) => <div key={row.id} className="rounded-lg bg-muted/25 p-3"><p className="font-semibold">{row.supervisor || row.contact}</p><p className="text-xs text-muted-foreground">{row.contact || 'Add contact details'}</p></div>) : <p className="text-sm text-muted-foreground">Add the physician and contact details.</p>}{base && <Button size="sm" variant="outline" onClick={() => onRequestLetter(base)}><Mail className="size-4" /> Track relationship</Button>}</WorkspaceBlock><div className="grid grid-cols-2 gap-2"><MiniMetric label="Thank-you" value={base?.tags.some((tag) => /thank/i.test(tag)) ? 'Sent' : 'Due'} /><MiniMetric label="Letter potential" value={entity.totalHours >= 20 ? 'Strong' : 'Developing'} /></div></div><div className="p-5"><SimpleLog title="Shadowing sessions" rows={latest} addLog={addLog} prompt="Capture the setting, specialty, and one clinical insight." /></div></div>
 }
 
 function ResearchWorkspace({ entity, latest, notes, onAddLabNote, addLog }: { entity: ExperienceEntity; latest: ExperienceEntry[]; notes: NotePage[]; onAddLabNote: () => void; addLog: (values: string[]) => void }) {
-  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Meetings with PI" icon={Users}><div className="space-y-2">{['Clarify next analysis', 'Confirm authorship expectations', 'Ask about the next abstract deadline'].map((item) => <label key={item} className="flex items-center gap-2 rounded-lg bg-muted/25 px-3 py-2 text-sm"><input type="checkbox" className="size-4 rounded" /> {item}</label>)}</div></WorkspaceBlock><WorkspaceBlock title="Output trajectory" icon={Award}><p className="text-sm text-muted-foreground">{categorySpecificInsight('research', entity).detail}</p></WorkspaceBlock></div><div className="space-y-5 p-5"><div className="flex items-center justify-between"><h3 className="font-display text-lg font-extrabold">Lab notebook</h3><Button size="sm" variant="outline" onClick={onAddLabNote}><Plus className="size-4" /> Note</Button></div>{notes.slice(0, 3).map((note) => <div key={note.id} className="rounded-lg bg-muted/25 px-3 py-2"><p className="font-bold">{note.title}</p><p className="text-xs text-muted-foreground">{new Date(note.updatedAt).toLocaleDateString()}</p></div>)}<SimpleLog title="Hours and milestones" rows={latest} addLog={addLog} prompt="Record the experiment, decision, result, or output." /></div></div>
+  return <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]"><div className="space-y-5 border-b p-5 lg:border-b-0 lg:border-r"><WorkspaceBlock title="Meetings with PI" icon={Users}><div className="space-y-2">{['Clarify next analysis', 'Confirm authorship expectations', 'Ask about the next abstract deadline'].map((item) => <label key={item} className="flex items-center gap-2 rounded-lg bg-muted/25 px-3 py-2 text-sm"><input type="checkbox" className="size-4 rounded" /> {item}</label>)}</div></WorkspaceBlock><WorkspaceBlock title="Output trajectory" icon={Award}><p className="text-sm text-muted-foreground">{categorySpecificInsight('research', entity).detail}</p></WorkspaceBlock></div><div className="space-y-5 p-5"><div className="flex items-center justify-between"><h3 className="font-display text-lg font-semibold">Lab notebook</h3><Button size="sm" variant="outline" onClick={onAddLabNote}><Plus className="size-4" /> Note</Button></div>{notes.slice(0, 3).map((note) => <div key={note.id} className="rounded-lg bg-muted/25 px-3 py-2"><p className="font-semibold">{note.title}</p><p className="text-xs text-muted-foreground">{new Date(note.updatedAt).toLocaleDateString()}</p></div>)}<SimpleLog title="Hours and milestones" rows={latest} addLog={addLog} prompt="Record the experiment, decision, result, or output." /></div></div>
 }
 
-function WorkspaceBlock({ title, icon: Icon, children }: { title: string; icon: typeof Clock; children: ReactNode }) { return <section><div className="mb-3 flex items-center gap-2"><Icon className="size-4 text-primary" /><h3 className="font-display text-base font-extrabold">{title}</h3></div><div className="space-y-2">{children}</div></section> }
+function WorkspaceBlock({ title, icon: Icon, children }: { title: string; icon: typeof Clock; children: ReactNode }) { return <section><div className="mb-3 flex items-center gap-2"><Icon className="size-4 text-primary" /><h3 className="font-display text-sm font-semibold">{title}</h3></div><div className="space-y-2">{children}</div></section> }
 
-function SimpleLog({ title, rows, addLog, prompt }: { title: string; rows: ExperienceEntry[]; addLog: (values: string[]) => void; prompt: string }) { return <section className="space-y-3"><div><h3 className="font-display text-lg font-extrabold">{title}</h3><p className="text-xs text-muted-foreground">{prompt}</p></div><div className="space-y-2">{rows.slice(0, 6).map((row) => <div key={row.id} className="grid gap-2 rounded-lg border bg-muted/10 px-3 py-2 sm:grid-cols-[7rem_4rem_1fr]"><span className="text-xs font-bold text-muted-foreground">{formatDate(row.startDate)}</span><span className="font-extrabold">{row.hours || 0}h</span><span className="text-sm text-muted-foreground">{row.description || row.role || 'Add detail'}</span></div>)}</div><InlineAddRow label="Add log" fields={['Date', 'Hours', 'What happened?']} onAdd={addLog} /></section> }
+function SimpleLog({ title, rows, addLog, prompt }: { title: string; rows: ExperienceEntry[]; addLog: (values: string[]) => void; prompt: string }) { return <section className="space-y-3"><div><h3 className="font-display text-lg font-semibold">{title}</h3><p className="text-xs text-muted-foreground">{prompt}</p></div><div className="space-y-2">{rows.slice(0, 6).map((row) => <div key={row.id} className="grid gap-2 rounded-lg border bg-muted/10 px-3 py-2 sm:grid-cols-[7rem_4rem_1fr]"><span className="text-xs font-semibold text-muted-foreground">{formatDate(row.startDate)}</span><span className="font-semibold">{row.hours || 0}h</span><span className="text-sm text-muted-foreground">{row.description || row.role || 'Add detail'}</span></div>)}</div><InlineAddRow label="Add log" fields={['Date', 'Hours', 'What happened?']} onAdd={addLog} /></section> }
 
-function LogList({ title, rows, onPatch, onRemove, addLog }: { title: string; rows: ExperienceEntry[]; onPatch: ApprovedPillarProps['onPatchEntry']; onRemove: (id: string) => void; addLog: (values: string[]) => void }) { return <section className="space-y-3"><h3 className="font-display text-lg font-extrabold">{title}</h3>{rows.slice(0, 6).map((row) => <ExpandableEntryRow key={row.id} entry={row} onPatch={(patch) => onPatch(row.id, patch)} onDelete={() => onRemove(row.id)} />)}<InlineAddRow label="Add shift" fields={['Date', 'Hours', 'Call type / note']} onAdd={addLog} /></section> }
+function LogList({ title, rows, onPatch, onRemove, addLog }: { title: string; rows: ExperienceEntry[]; onPatch: ApprovedPillarProps['onPatchEntry']; onRemove: (id: string) => void; addLog: (values: string[]) => void }) { return <section className="space-y-3"><h3 className="font-display text-lg font-semibold">{title}</h3>{rows.slice(0, 6).map((row) => <ExpandableEntryRow key={row.id} entry={row} onPatch={(patch) => onPatch(row.id, patch)} onDelete={() => onRemove(row.id)} />)}<InlineAddRow label="Add shift" fields={['Date', 'Hours', 'Call type / note']} onAdd={addLog} /></section> }
 
 function PillarInsightStrip({
   category,
@@ -439,11 +439,11 @@ function InsightCard({
       tone === 'good' && 'border-emerald-500/25 bg-emerald-500/5',
       tone === 'warn' && 'border-amber-500/25 bg-amber-500/5'
     )}>
-      <div className="mb-3 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         <Icon className="size-4 text-primary" />
         {label}
       </div>
-      <p className="font-display text-lg font-extrabold leading-tight">{title}</p>
+      <p className="font-display text-lg font-semibold leading-tight">{title}</p>
       <p className="mt-1 text-sm font-semibold text-muted-foreground">{detail}</p>
     </div>
   )
@@ -466,7 +466,7 @@ function ExperienceEntityCatalog({
     <section className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-extrabold">{title}</h2>
+          <h2 className="font-display text-lg font-semibold">{title}</h2>
           <p className="text-sm text-muted-foreground">Open a workspace to see trajectory, relationships, stories, and gaps.</p>
         </div>
         <Button onClick={onAdd}>
@@ -490,10 +490,10 @@ function ExperienceEntityCatalog({
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="truncate font-display text-lg font-extrabold">{entity.name}</h3>
+                    <h3 className="truncate font-display text-lg font-semibold">{entity.name}</h3>
                     <p className="truncate text-sm font-semibold text-muted-foreground">{entity.role || entity.subtitle}</p>
                   </div>
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span>
+                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', statusTone(entity.status))}>{entity.status}</span>
                 </div>
               </div>
             </div>
@@ -511,10 +511,10 @@ function ExperienceEntityCatalog({
               <div className="flex flex-wrap gap-1">
                 {entity.openLoops.length ? (
                   entity.openLoops.slice(0, 2).map((loop) => (
-                    <span key={loop} className="rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-200">{loop}</span>
+                    <span key={loop} className="rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-200">{loop}</span>
                   ))
                 ) : (
-                  <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-200">verification-ready</span>
+                  <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-200">verification-ready</span>
                 )}
               </div>
             </div>
@@ -524,7 +524,7 @@ function ExperienceEntityCatalog({
         <button
           type="button"
           onClick={onAdd}
-          className="flex min-h-[13rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 p-4 text-center font-extrabold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          className="flex min-h-[13rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 p-4 text-center font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
         >
           <Plus className="mb-2 size-5" />
           Add {categoryNoun(category)}
@@ -538,8 +538,8 @@ function ExperienceEntityCatalog({
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-muted/35 px-2 py-2">
-      <p className="text-[0.65rem] font-extrabold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 truncate text-sm font-extrabold">{value}</p>
+      <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 truncate text-sm font-semibold">{value}</p>
     </div>
   )
 }
@@ -564,23 +564,23 @@ function ExperienceEntityWorkspace({
 
   return (
     <section className="mt-6 space-y-5">
-      <div className="rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <Button variant="ghost" size="icon" aria-label="Back to catalog" onClick={onBack} className="shrink-0">
               <ArrowLeft className="size-4" />
             </Button>
-            <span className={cn('grid size-12 shrink-0 place-items-center rounded-2xl text-primary', categoryAccent(category))}>
+            <span className={cn('grid size-12 shrink-0 place-items-center rounded-xl text-primary', categoryAccent(category))}>
               {categoryIcon(category)}
             </span>
             <div className="min-w-0">
-              <h2 className="truncate font-display text-2xl font-extrabold">{entity.name}</h2>
+              <h2 className="truncate font-display text-lg font-semibold">{entity.name}</h2>
               <p className="text-sm font-semibold text-muted-foreground">{entity.subtitle}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">{total}h logged</span>
-            <span className={cn('rounded-full px-3 py-1 text-xs font-bold', statusTone(entity.status))}>{entity.status}</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{total}h logged</span>
+            <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusTone(entity.status))}>{entity.status}</span>
           </div>
         </div>
       </div>
@@ -589,14 +589,14 @@ function ExperienceEntityWorkspace({
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">What this means</CardTitle>
+              <CardTitle className="text-sm">What this means</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-3">
               <MiniMetric label="Readiness" value={`${pct}%`} />
               <MiniMetric label="Last touch" value={entity.lastActivityLabel} />
               <MiniMetric label="Evidence" value={`${stories.length} stories`} />
               <div className="md:col-span-3 rounded-xl bg-muted/25 p-3">
-                <p className="font-bold">{insight.title}</p>
+                <p className="font-semibold">{insight.title}</p>
                 <p className="mt-1 text-sm font-semibold text-muted-foreground">{insight.detail}</p>
               </div>
             </CardContent>
@@ -604,18 +604,18 @@ function ExperienceEntityWorkspace({
 
           <Card>
             <CardHeader className="flex-row items-center justify-between pb-3">
-              <CardTitle className="text-base">Timeline</CardTitle>
-              <span className="text-xs font-bold text-muted-foreground">{entity.rows.length} logs</span>
+              <CardTitle className="text-sm">Timeline</CardTitle>
+              <span className="text-xs font-semibold text-muted-foreground">{entity.rows.length} logs</span>
             </CardHeader>
             <CardContent className="space-y-2">
               {latestRows.map((row) => (
                 <div key={row.id} className="grid gap-3 rounded-xl border bg-muted/15 p-3 md:grid-cols-[8rem_1fr_5rem] md:items-center">
-                  <span className="text-sm font-bold text-muted-foreground">{formatDate(row.startDate)}</span>
+                  <span className="text-sm font-semibold text-muted-foreground">{formatDate(row.startDate)}</span>
                   <div className="min-w-0">
-                    <p className="truncate font-bold">{row.role || entity.role}</p>
+                    <p className="truncate font-semibold">{row.role || entity.role}</p>
                     <p className="line-clamp-2 text-sm text-muted-foreground">{row.description || row.mostMeaningful || 'No reflection yet'}</p>
                   </div>
-                  <span className="text-right font-extrabold">{row.hours || 0}h</span>
+                  <span className="text-right font-semibold">{row.hours || 0}h</span>
                 </div>
               ))}
             </CardContent>
@@ -625,11 +625,11 @@ function ExperienceEntityWorkspace({
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Open loops</CardTitle>
+              <CardTitle className="text-sm">Open loops</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {(entity.openLoops.length ? entity.openLoops : ['No major gaps flagged']).map((loop) => (
-                <div key={loop} className="flex items-center gap-2 rounded-xl bg-muted/25 p-3 text-sm font-bold">
+                <div key={loop} className="flex items-center gap-2 rounded-xl bg-muted/25 p-3 text-sm font-semibold">
                   <AlertTriangle className={cn('size-4', entity.openLoops.length ? 'text-amber-500' : 'text-emerald-500')} />
                   {loop}
                 </div>
@@ -639,12 +639,12 @@ function ExperienceEntityWorkspace({
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Relationships</CardTitle>
+              <CardTitle className="text-sm">Relationships</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {contacts.length ? contacts.map((row) => (
                 <div key={row.id} className="rounded-xl bg-muted/25 p-3">
-                  <p className="font-bold">{row.supervisor || row.contact || row.org}</p>
+                  <p className="font-semibold">{row.supervisor || row.contact || row.org}</p>
                   <p className="text-xs font-semibold text-muted-foreground">{row.role || 'contact'} · {row.contact || 'add email/phone'}</p>
                 </div>
               )) : (
@@ -671,7 +671,7 @@ function PillarTabStrip({ tabs, value, onChange }: { tabs: PillarTab[]; value: s
               type="button"
               onClick={() => onChange(tab.id)}
               className={cn(
-                'relative inline-flex items-center gap-2 px-3 pb-3 pt-1 text-sm font-extrabold text-muted-foreground transition hover:text-foreground',
+                'relative inline-flex items-center gap-2 px-3 pb-3 pt-1 text-sm font-semibold text-muted-foreground transition hover:text-foreground',
                 active && 'text-primary'
               )}
             >
@@ -708,7 +708,7 @@ function HoursAndSitesView({
         <WeeklyHoursCard rows={rows} />
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2 text-sm">
               <Users className="size-4 text-primary" /> Sites and roles
             </CardTitle>
           </CardHeader>
@@ -717,7 +717,7 @@ function HoursAndSitesView({
               <div key={site.key} className="rounded-xl border bg-muted/20 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-bold">{site.org || 'Unnamed site'}</p>
+                    <p className="truncate font-semibold">{site.org || 'Unnamed site'}</p>
                     <p className="truncate text-xs font-semibold text-muted-foreground">{site.role || 'Role TBD'} · {site.hours}h</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => requestLetter(site.entry)}>{requestLabel}</Button>
@@ -734,7 +734,7 @@ function HoursAndSitesView({
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">{label} log</CardTitle>
+          <CardTitle className="text-sm">{label} log</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {rows.map((row) => (
@@ -763,7 +763,7 @@ function WeeklyHoursCard({ rows }: { rows: ExperienceEntry[] }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base"><Clock className="size-4 text-primary" /> Weekly hours</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm"><Clock className="size-4 text-primary" /> Weekly hours</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex h-44 items-end gap-2">
@@ -772,7 +772,7 @@ function WeeklyHoursCard({ rows }: { rows: ExperienceEntry[] }) {
               <div className="flex h-32 w-full items-end rounded-lg bg-muted/30 p-1">
                 <div className="w-full rounded-md bg-primary/80" style={{ height: `${Math.max(6, (week.hours / max) * 100)}%` }} />
               </div>
-              <span className="text-[0.68rem] font-bold text-muted-foreground">{week.label}</span>
+              <span className="text-[0.68rem] font-semibold text-muted-foreground">{week.label}</span>
             </div>
           ))}
         </div>
@@ -795,10 +795,10 @@ function ExpandableEntryRow({
       <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center gap-3 p-3 text-left">
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition', open && 'rotate-180')} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-bold">{entry.org || 'Unnamed entry'}</p>
+          <p className="truncate font-semibold">{entry.org || 'Unnamed entry'}</p>
           <p className="truncate text-xs font-semibold text-muted-foreground">{entry.role || 'Role TBD'} · {entry.hours || 0}h · {formatDate(entry.startDate)}</p>
         </div>
-        <span className={cn('rounded-full px-2 py-1 text-xs font-bold', entry.status === 'active' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground')}>
+        <span className={cn('rounded-full px-2 py-1 text-xs font-semibold', entry.status === 'active' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground')}>
           {entry.status}
         </span>
       </button>
@@ -852,7 +852,7 @@ function SkillsView({ rows, onPatch, onAdd }: { rows: ExperienceEntry[]; onPatch
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base"><ListChecks className="size-4 text-primary" /> Skills closest to competent</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm"><ListChecks className="size-4 text-primary" /> Skills closest to competent</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {SKILLS.map((skill) => {
@@ -861,11 +861,11 @@ function SkillsView({ rows, onPatch, onAdd }: { rows: ExperienceEntry[]; onPatch
           return (
             <div key={skill} className="grid gap-3 rounded-xl border bg-card/70 p-3 md:grid-cols-[1fr_11rem_8rem_auto] md:items-center">
               <div>
-                <p className="font-bold">{skill}</p>
+                <p className="font-semibold">{skill}</p>
                 <p className="text-xs font-semibold text-muted-foreground">{count} observed {count === 1 ? 'time' : 'times'}</p>
               </div>
               <div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${readiness}%` }} /></div>
-              <span className="text-sm font-bold text-muted-foreground">{readiness >= 70 ? 'competent' : readiness >= 35 ? 'building' : 'needs reps'}</span>
+              <span className="text-sm font-semibold text-muted-foreground">{readiness >= 70 ? 'competent' : readiness >= 35 ? 'building' : 'needs reps'}</span>
               <Button size="sm" variant="outline" onClick={() => onAdd({ description: `Observed skill: ${skill}`, tags: [skill] })}>Log rep</Button>
             </div>
           )
@@ -891,7 +891,7 @@ function ShadowingSessionsView({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1 rounded-full bg-muted p-1">
           {SHADOW_SPECIALTIES.map((item) => (
-            <button key={item} type="button" onClick={() => setFilter(item)} className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold', filter === item ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
+            <button key={item} type="button" onClick={() => setFilter(item)} className={cn('rounded-full px-3 py-1.5 text-xs font-semibold', filter === item ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
               {item}
             </button>
           ))}
@@ -914,11 +914,11 @@ function ShadowingRow({ entry, onPatch, onDelete }: { entry: ExperienceEntry; on
     <div className="rounded-xl border bg-card">
       <button type="button" onClick={() => setOpen((value) => !value)} className="grid w-full gap-3 p-3 text-left md:grid-cols-[1fr_8rem_8rem] md:items-center">
         <div>
-          <p className="font-bold">{entry.org || 'Physician / clinic'}</p>
+          <p className="font-semibold">{entry.org || 'Physician / clinic'}</p>
           <p className="text-xs font-semibold text-muted-foreground">{entry.role || 'Shadowing'} · {formatDate(entry.startDate)} · {entry.hours || 0}h</p>
         </div>
-        <span className="rounded-full bg-muted px-2 py-1 text-center text-xs font-bold">fit {fit}/5</span>
-        <span className="text-sm font-bold text-primary">Reflect</span>
+        <span className="rounded-full bg-muted px-2 py-1 text-center text-xs font-semibold">fit {fit}/5</span>
+        <span className="text-sm font-semibold text-primary">Reflect</span>
       </button>
       {open && (
         <div className="grid gap-3 border-t border-border p-3 md:grid-cols-2">
@@ -968,7 +968,7 @@ function LabNotebookView({ notes, onAdd }: { notes: NotePage[]; onAdd: () => voi
           <div className="space-y-2">
             {visible.map((note) => (
               <div key={note.id} className="rounded-xl border bg-muted/15 p-3">
-                <Input value={note.title} onChange={(event) => patchItem('notePages', note.id, { title: event.target.value, updatedAt: Date.now() })} className="h-8 border-0 bg-transparent px-0 font-bold" />
+                <Input value={note.title} onChange={(event) => patchItem('notePages', note.id, { title: event.target.value, updatedAt: Date.now() })} className="h-8 border-0 bg-transparent px-0 font-semibold" />
                 <p className="text-xs font-semibold text-muted-foreground">{note.tag || 'lab'} · {new Date(note.updatedAt).toLocaleDateString()}</p>
               </div>
             ))}
@@ -979,7 +979,7 @@ function LabNotebookView({ notes, onAdd }: { notes: NotePage[]; onAdd: () => voi
         <CardContent className="space-y-3 p-4">
           {visible[0] ? (
             <>
-              <Input value={visible[0].title} onChange={(event) => patchItem('notePages', visible[0].id, { title: event.target.value, updatedAt: Date.now() })} className="border-0 bg-transparent px-0 font-display text-2xl font-extrabold" />
+              <Input value={visible[0].title} onChange={(event) => patchItem('notePages', visible[0].id, { title: event.target.value, updatedAt: Date.now() })} className="border-0 bg-transparent px-0 font-display text-lg font-semibold" />
               <Textarea value={visible[0].body} onChange={(event) => patchItem('notePages', visible[0].id, { body: event.target.value, updatedAt: Date.now() })} className="min-h-[24rem]" />
               <div className="flex justify-end"><Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => removeItem('notePages', visible[0].id)}>Delete note</Button></div>
             </>
@@ -1011,7 +1011,7 @@ function ResearchProgressView({
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="flex flex-wrap gap-1 rounded-full bg-muted p-1">
             {(projects.length ? projects : ['General']).map((item) => (
-              <button key={item} type="button" onClick={() => setProject(item)} className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold', project === item ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
+              <button key={item} type="button" onClick={() => setProject(item)} className={cn('rounded-full px-3 py-1.5 text-xs font-semibold', project === item ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
                 {item}
               </button>
             ))}
@@ -1025,14 +1025,14 @@ function ResearchProgressView({
       <div className="grid gap-3 lg:grid-cols-5">
         {RESEARCH_STAGES.map((stage) => (
           <div key={stage} className="rounded-xl border bg-card p-3">
-            <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{stage}</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{stage}</p>
             <div className="space-y-2">
               {projectRows.filter((row) => (row.tags ?? []).includes(stage.toLowerCase()) || row.role.toLowerCase().includes(stage.toLowerCase())).map((row) => (
                 <button key={row.id} type="button" onClick={() => onPatch(row.id, { tags: [...new Set([...row.tags, stage.toLowerCase()])] })} className="w-full rounded-lg bg-muted/25 p-2 text-left text-sm font-semibold">
                   {row.description || row.role || 'Milestone'}
                 </button>
               ))}
-              <button type="button" onClick={() => onAdd({ org: project, role: stage, tags: [stage.toLowerCase()] })} className="w-full rounded-lg border border-dashed border-border p-2 text-xs font-bold text-muted-foreground hover:text-primary">
+              <button type="button" onClick={() => onAdd({ org: project, role: stage, tags: [stage.toLowerCase()] })} className="w-full rounded-lg border border-dashed border-border p-2 text-xs font-semibold text-muted-foreground hover:text-primary">
                 Add {stage.toLowerCase()}
               </button>
             </div>
@@ -1054,7 +1054,7 @@ function EventsView({ rows, onAdd, onPatch, onDraftStory }: { rows: ExperienceEn
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
-        <CardTitle className="text-base">One-off service events</CardTitle>
+        <CardTitle className="text-sm">One-off service events</CardTitle>
         <Button onClick={() => onAdd({ role: 'Service event', tags: ['event'] })}><Plus className="size-4" /> Add event</Button>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -1062,7 +1062,7 @@ function EventsView({ rows, onAdd, onPatch, onDraftStory }: { rows: ExperienceEn
           <div key={entry.id} className="grid gap-3 rounded-xl border bg-card/70 p-3 md:grid-cols-[9rem_1fr_auto] md:items-center">
             <DateField value={entry.startDate ?? ''} onChange={(startDate) => onPatch(entry.id, { startDate })} />
             <div>
-              <Input value={entry.org} onChange={(event) => onPatch(entry.id, { org: event.target.value })} placeholder="Organization or event" className="h-8 border-0 bg-transparent px-0 font-bold" />
+              <Input value={entry.org} onChange={(event) => onPatch(entry.id, { org: event.target.value })} placeholder="Organization or event" className="h-8 border-0 bg-transparent px-0 font-semibold" />
               <p className="text-xs font-semibold text-muted-foreground">{entry.hours || 0}h · {(entry.tags ?? []).join(', ') || 'service'}</p>
             </div>
             <Button variant="outline" onClick={() => onDraftStory(entry, 'service')}>Draft the story</Button>
@@ -1080,8 +1080,8 @@ function ThemeRollup({ rows, themes }: { rows: ExperienceEntry[]; themes: string
         const count = rows.filter((row) => textFor(row).toLowerCase().includes(theme.toLowerCase()) || row.tags.includes(theme)).length
         return (
           <div key={theme} className="rounded-xl border bg-card/70 p-3">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{theme}</p>
-            <p className="mt-1 text-lg font-extrabold">{count}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{theme}</p>
+            <p className="mt-1 text-lg font-semibold">{count}</p>
           </div>
         )
       })}
@@ -1095,12 +1095,12 @@ function ContactCard({ name, role, detail, followUp, onLetter, onTouch }: { name
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><UserRound className="size-5" /></span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-bold">{name}</p>
+          <p className="truncate font-semibold">{name}</p>
           <p className="truncate text-xs font-semibold text-muted-foreground">{role}{detail ? ` · ${detail}` : ''}</p>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">{followUp}</span>
+        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{followUp}</span>
         <div className="flex gap-1">
           <Button size="sm" variant="outline" onClick={onTouch}>Follow up</Button>
           <Button size="sm" onClick={onLetter}><Mail className="size-4" /> Letter</Button>
@@ -1111,7 +1111,7 @@ function ContactCard({ name, role, detail, followUp, onLetter, onTouch }: { name
 }
 
 function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
-  return <label className={cn('space-y-1.5 text-sm font-bold', className)}><span>{label}</span>{children}</label>
+  return <label className={cn('space-y-1.5 text-sm font-semibold', className)}><span>{label}</span>{children}</label>
 }
 
 function buildWeeks(rows: ExperienceEntry[]) {
