@@ -74,7 +74,7 @@ function StoryBank() {
           key={st.id}
           defaultOpen={false}
           title={st.prompt}
-          badge={st.commentary.trim() ? <span className="rounded-full bg-[color-mix(in_srgb,var(--success)_16%,transparent)] px-2 py-0.5 text-xs font-bold text-[color-mix(in_srgb,var(--success)_60%,var(--foreground))]">written</span> : <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">empty</span>}
+          badge={st.commentary.trim() ? <span className="rounded-full bg-[color-mix(in_srgb,var(--success)_16%,transparent)] px-2 py-0.5 text-xs font-semibold text-[color-mix(in_srgb,var(--success)_60%,var(--foreground))]">written</span> : <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">empty</span>}
         >
           <div className="space-y-3">
             <Input defaultValue={st.title} placeholder="Give this story a title…" onBlur={(e) => patchItem('stories', st.id, { title: e.target.value })} />
@@ -175,7 +175,7 @@ function InterviewPrep() {
         <Button size="sm" variant="outline" onClick={() => addItem('interviewQs', { id: uid(), question: 'New question', answer: '', category: 'Behavioral', order: 0 })}><Plus className="size-4" /> Add question</Button>
       </div>
       {groups.map(([cat, qs]) => (
-        <Collapsible key={cat} defaultOpen title={cat} badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{qs.length}</span>}>
+        <Collapsible key={cat} defaultOpen title={cat} badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{qs.length}</span>}>
           <div className="space-y-3">
             {qs.map((q) => (
               <div key={q.id}>
