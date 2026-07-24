@@ -44,7 +44,7 @@ export function McatSessionSetupDialog({
         </DialogHeader>
         <form onSubmit={start} className="space-y-3">
           <fieldset>
-            <legend className="mb-2 text-sm font-bold">MCAT section</legend>
+            <legend className="mb-2 text-sm font-semibold">MCAT section</legend>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {MCAT_SECTIONS.map((value) => (
                 <button
@@ -52,7 +52,7 @@ export function McatSessionSetupDialog({
                   type="button"
                   onClick={() => setSection(value)}
                   className={cn(
-                    'rounded-2xl border px-3 py-2 text-left text-sm font-extrabold transition',
+                    'rounded-xl border px-3 py-2 text-left text-sm font-semibold transition',
                     section === value ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-card hover:bg-muted'
                   )}
                 >
@@ -62,7 +62,7 @@ export function McatSessionSetupDialog({
             </div>
           </fieldset>
           <fieldset>
-            <legend className="mb-2 text-sm font-bold">Session length</legend>
+            <legend className="mb-2 text-sm font-semibold">Session length</legend>
             <DurationWheel value={minutes} onChange={setMinutes} />
           </fieldset>
           <DialogFooter>
@@ -83,8 +83,8 @@ function DurationWheel({ value, onChange }: { value: number; onChange: (value: n
   }, [value])
 
   return (
-    <div className="relative mx-auto w-full max-w-xs overflow-hidden rounded-3xl border border-border bg-muted/45 p-2">
-      <div className="pointer-events-none absolute inset-x-2 top-1/2 h-11 -translate-y-1/2 rounded-2xl border border-primary/30 bg-primary/12 shadow-sm" />
+    <div className="relative mx-auto w-full max-w-xs overflow-hidden rounded-xl border border-border bg-muted/45 p-2">
+      <div className="pointer-events-none absolute inset-x-2 top-1/2 h-11 -translate-y-1/2 rounded-xl border border-primary/30 bg-primary/12 shadow-sm" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-card to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
       <div className="relative h-36 snap-y snap-mandatory overflow-y-auto px-1 py-[50px] text-center">
@@ -97,7 +97,7 @@ function DurationWheel({ value, onChange }: { value: number; onChange: (value: n
             type="button"
             onClick={() => onChange(minutes)}
             className={cn(
-              'flex h-11 w-full snap-center items-center justify-center rounded-2xl text-lg font-extrabold leading-none tabular-nums transition',
+              'flex h-11 w-full snap-center items-center justify-center rounded-xl text-lg font-semibold leading-none tabular-nums transition',
               value === minutes ? 'scale-105 text-primary' : 'text-muted-foreground hover:text-foreground'
             )}
           >
