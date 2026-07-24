@@ -20,7 +20,7 @@ const TooltipContent = React.forwardRef<
         animate={{ opacity: 1, y: 0 }}
         transition={MOTION_TRANSITION.micro}
         className={cn(
-          'z-50 max-w-xs rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-md',
+          'glass-surface z-50 max-w-xs rounded-lg px-3 py-1.5 text-xs font-medium text-foreground shadow-md',
           className
         )}
       >

@@ -24,7 +24,7 @@ export function SidePeek({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-[2px] motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border bg-card shadow-2xl outline-none',
+            'fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border glass-surface shadow-2xl outline-none',
             'duration-300 motion-reduce:duration-0 motion-reduce:transition-none motion-safe:data-[state=open]:animate-in motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:slide-out-to-right motion-safe:data-[state=open]:slide-in-from-right',
             !fullScreen && (width === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg')
           )}

@@ -101,7 +101,7 @@ export function CenterPeek({
 
   const content = (
     <>
-      <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border bg-card px-3 py-2 md:px-4">
+      <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border bg-card/70 px-3 py-2 md:px-4">
         <span className="min-w-0 truncate text-sm font-bold text-muted-foreground">{label}</span>
         {controls}
       </div>
@@ -140,7 +140,7 @@ export function CenterPeek({
             <DialogPrimitive.Content
               aria-label={label}
               className={cn(
-                'fixed z-50 flex overflow-hidden border border-border bg-card shadow-2xl outline-none',
+                'fixed z-50 flex overflow-hidden border border-border glass-surface shadow-2xl outline-none',
                 'inset-0 h-svh w-screen flex-col rounded-none',
                 'lg:inset-auto lg:left-1/2 lg:top-1/2 lg:h-[85vh] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-3xl',
                 mode === 'peek' && 'lg:w-[min(920px,72vw)]',
