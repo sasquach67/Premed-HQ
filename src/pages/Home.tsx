@@ -458,17 +458,17 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
           />
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[.8fr_.8fr_1.1fr]">
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60">
+            <div className="rounded-2xl bg-card p-3 ring-1 ring-border/60">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">QOTD</p>
               <p className="mt-1 text-sm font-bold">1 waiting</p>
               <p className="text-xs font-semibold text-muted-foreground">{qotd.section}</p>
             </div>
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60">
+            <div className="rounded-2xl bg-card p-3 ring-1 ring-border/60">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">Missed Qs</p>
               <p className="mt-1 text-sm font-bold"><NumberFlow value={misses} /> review</p>
               <Link to="/mcat" className="text-xs font-bold text-primary">open bank</Link>
             </div>
-            <div className="rounded-2xl bg-card/70 p-3 ring-1 ring-border/60 sm:col-span-2 xl:col-span-1">
+            <div className="rounded-2xl bg-card p-3 ring-1 ring-border/60 sm:col-span-2 xl:col-span-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-bold">Plan progress</span>
                 <span className="text-xs font-bold text-primary"><NumberFlow value={planProgress} />%</span>
@@ -480,7 +480,7 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border/65 bg-card/58 p-4">
+        <div className="rounded-3xl border border-border/65 bg-card p-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="grid size-8 place-items-center rounded-full bg-primary/12 text-primary"><Target className="size-4" /></span>
             <div className="min-w-0 flex-1">
@@ -531,7 +531,7 @@ function McatOverviewCard({ qotd }: { qotd: (typeof MCAT_QOTD)[number] }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Quick resources</span>
           {['UWorld', 'Anki', 'Notes'].map((label) => (
-            <Link key={label} to="/mcat" className="rounded-full bg-card/70 px-3 py-1.5 text-xs font-extrabold text-primary ring-1 ring-border/60 hover:bg-muted">
+            <Link key={label} to="/mcat" className="rounded-full bg-card px-3 py-1.5 text-xs font-extrabold text-primary ring-1 ring-border/60 hover:bg-muted">
               {label}
             </Link>
           ))}

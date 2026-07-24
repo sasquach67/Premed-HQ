@@ -791,7 +791,7 @@ function ExpandableEntryRow({
 }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl border bg-card/70">
+    <div className="rounded-xl border bg-card">
       <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center gap-3 p-3 text-left">
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition', open && 'rotate-180')} />
         <div className="min-w-0 flex-1">
@@ -859,7 +859,7 @@ function SkillsView({ rows, onPatch, onAdd }: { rows: ExperienceEntry[]; onPatch
           const count = observations(skill)
           const readiness = Math.min(100, count * 28 + rows.length * 6)
           return (
-            <div key={skill} className="grid gap-3 rounded-xl border bg-card/70 p-3 md:grid-cols-[1fr_11rem_8rem_auto] md:items-center">
+            <div key={skill} className="grid gap-3 rounded-xl border bg-card p-3 md:grid-cols-[1fr_11rem_8rem_auto] md:items-center">
               <div>
                 <p className="font-bold">{skill}</p>
                 <p className="text-xs font-semibold text-muted-foreground">{count} observed {count === 1 ? 'time' : 'times'}</p>
@@ -1059,7 +1059,7 @@ function EventsView({ rows, onAdd, onPatch, onDraftStory }: { rows: ExperienceEn
       </CardHeader>
       <CardContent className="space-y-2">
         {dated.length ? dated.map((entry) => (
-          <div key={entry.id} className="grid gap-3 rounded-xl border bg-card/70 p-3 md:grid-cols-[9rem_1fr_auto] md:items-center">
+          <div key={entry.id} className="grid gap-3 rounded-xl border bg-card p-3 md:grid-cols-[9rem_1fr_auto] md:items-center">
             <DateField value={entry.startDate ?? ''} onChange={(startDate) => onPatch(entry.id, { startDate })} />
             <div>
               <Input value={entry.org} onChange={(event) => onPatch(entry.id, { org: event.target.value })} placeholder="Organization or event" className="h-8 border-0 bg-transparent px-0 font-bold" />
@@ -1079,7 +1079,7 @@ function ThemeRollup({ rows, themes }: { rows: ExperienceEntry[]; themes: string
       {themes.map((theme) => {
         const count = rows.filter((row) => textFor(row).toLowerCase().includes(theme.toLowerCase()) || row.tags.includes(theme)).length
         return (
-          <div key={theme} className="rounded-xl border bg-card/70 p-3">
+          <div key={theme} className="rounded-xl border bg-card p-3">
             <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{theme}</p>
             <p className="mt-1 text-lg font-extrabold">{count}</p>
           </div>

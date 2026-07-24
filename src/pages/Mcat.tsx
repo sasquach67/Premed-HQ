@@ -374,7 +374,7 @@ function McatFocusLaunchStrip({
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-xs font-bold text-muted-foreground">
+          <div className="rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-bold text-muted-foreground">
             {openTasks ? `${openTasks} unfinished MCAT items` : 'No MCAT debt logged'}
           </div>
           <McatSessionSetupDialog
@@ -1196,7 +1196,7 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
               <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">On this page</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {block.items.map((item) => (
-                  <div key={item} className="rounded-xl border border-border bg-card/70 px-3 py-2 text-sm font-bold leading-snug text-foreground">
+                  <div key={item} className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold leading-snug text-foreground">
                     {item}
                   </div>
                 ))}
@@ -1488,7 +1488,7 @@ function FormulaLine({ line }: { line: string }) {
       {pieces.map((piece, index) => {
         const [formula, note] = piece.split(/←|—/, 2).map((part) => part.trim())
         return (
-          <span key={index} className="inline-flex min-h-8 items-center gap-2 rounded-xl border border-border bg-card/85 px-3 py-1.5 font-mono text-sm font-bold text-foreground shadow-sm">
+          <span key={index} className="inline-flex min-h-8 items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5 font-mono text-sm font-bold text-foreground shadow-sm">
             <span>{renderMathText(formula)}</span>
             {note && <span className="font-sans text-xs font-semibold text-muted-foreground">{note}</span>}
           </span>

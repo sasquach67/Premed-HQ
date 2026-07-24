@@ -516,7 +516,7 @@ function TarHeelTracker() {
   return (
     <div className="relative">
       {toast && <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold shadow-xl">{toast}</div>}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/70 p-3 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary"><GraduationCap className="size-5" /></div>
           <div>
@@ -548,7 +548,7 @@ function TarHeelTracker() {
       </div>
 
       <div className={cn('grid gap-4', libraryOpen ? 'xl:grid-cols-[20rem_minmax(0,1fr)_22rem]' : 'xl:grid-cols-[20rem_minmax(0,1fr)]')}>
-        <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
+        <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h4 className="font-display text-lg font-bold">Degree Progress</h4>
             <Button size="icon" variant="ghost" className="size-8 xl:hidden" onClick={() => setLibraryOpen(false)}><X className="size-4" /></Button>
@@ -670,7 +670,7 @@ function TarHeelTracker() {
         </main>
 
         {libraryOpen && (
-          <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card/85 p-4 shadow-sm">
+          <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h4 className="font-display text-lg font-bold">Course Library</h4>

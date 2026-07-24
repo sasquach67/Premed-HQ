@@ -221,7 +221,7 @@ export function Settings() {
 function BackupCheck({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
   const Icon = ok ? ShieldCheck : CloudOff
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-border bg-card/50 px-3 py-2">
+    <div className="flex items-start gap-2 rounded-xl border border-border bg-card px-3 py-2">
       <Icon className={cn('mt-0.5 size-4 shrink-0', ok ? 'text-success' : 'text-warning')} />
       <div className="min-w-0">
         <p className="font-bold">{label}</p>
@@ -272,7 +272,7 @@ function CloudSyncSection({ onMessage }: { onMessage: (msg: string) => void }) {
       <CardContent className="space-y-3">
         {cloud.user ? (
           <>
-            <div className="flex items-start gap-3 rounded-lg border bg-card/70 p-3">
+            <div className="flex items-start gap-3 rounded-lg border bg-card p-3">
               <ShieldCheck className="mt-0.5 size-4 text-success" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold break-words">{cloud.user.email}</p>

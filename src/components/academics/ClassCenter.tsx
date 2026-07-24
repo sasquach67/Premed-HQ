@@ -271,7 +271,7 @@ function ClassCenterDashboard({
   return (
     <div className="space-y-5">
       {!archiveOnly && (
-        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card/78 p-3 shadow-sm lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-3 shadow-sm lg:flex-row lg:items-center">
           <div className="flex gap-1 overflow-x-auto rounded-full bg-muted/55 p-1">
             {semesters.map((item) => (
               <button
@@ -357,7 +357,7 @@ function ClassCenterDashboard({
         {!archiveOnly && (
           <button
             onClick={() => setEditor({ open: true, form: emptyClassForm(semester === 'Archived' || semester === 'All active' ? 'Fall 2026' : semester) })}
-            className="flex min-h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/45 p-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
+            className="flex min-h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card p-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
           >
             <Plus className="mb-2 size-6 text-muted-foreground" />
             <span className="font-display text-lg font-bold">Add class from your course plan</span>
@@ -643,7 +643,7 @@ function ClassWorkspace({
           </div>
         </section>
         <div className="mt-4 grid gap-5 lg:grid-cols-[225px_minmax(0,1fr)] lg:items-start">
-          <aside className="rounded-3xl border border-border bg-card/82 p-3 pt-4 shadow-sm lg:mt-1">
+          <aside className="rounded-3xl border border-border bg-card p-3 pt-4 shadow-sm lg:mt-1">
             <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
               <TabsList className="flex h-auto min-w-max flex-row gap-2 rounded-none bg-transparent p-0 lg:min-w-0 lg:flex-col">
                 <ClassRailTab value="today" icon={BookOpen} label="Today" />
@@ -759,7 +759,7 @@ function OverviewTab({
                 key={item.label}
                 type="button"
                 onClick={item.onClick}
-                className="flex w-full items-center justify-between rounded-xl bg-card/70 px-3 py-2 text-left text-sm font-extrabold transition hover:bg-card disabled:cursor-default disabled:hover:bg-card/70"
+                className="flex w-full items-center justify-between rounded-xl bg-card px-3 py-2 text-left text-sm font-extrabold transition hover:bg-muted/45 disabled:cursor-default disabled:hover:bg-card"
                 disabled={!item.onClick}
               >
                 <span>{item.label}</span>
@@ -1025,7 +1025,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
       {activeExam && (
         <PracticeExamRunner exam={activeExam} data={data} mutate={mutate} onClose={() => setActiveExamId('')} />
       )}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/80 p-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setGeneratorOpen(true)}><Plus className="size-4" /> Practice exam</Button>
           <DropdownMenu>
@@ -1122,7 +1122,7 @@ function TopicMatrixRow({ topic, data, mutate }: { topic: ClassTopic; data: Clas
   return (
     <div className={cn(
       'grid gap-3 rounded-xl px-3 py-3 text-sm lg:grid-cols-[1fr_120px_140px_140px_140px_92px] lg:items-center',
-      weakAreas.length ? 'border border-destructive/25 bg-destructive/8' : 'bg-card/55'
+      weakAreas.length ? 'border border-destructive/25 bg-destructive/8' : 'bg-card'
     )}>
       <div className="min-w-0">
         <p className="truncate font-bold">{topic.title}</p>
@@ -1286,7 +1286,7 @@ function PracticeExamRunner({
       </CardHeader>
       <CardContent className="space-y-4">
         <ProgressLine value={Math.round(((index + 1) / questions.length) * 100)} />
-        <div className="rounded-2xl bg-card/80 p-4">
+        <div className="rounded-2xl bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <Badge variant="secondary">Question {index + 1} / {questions.length}</Badge>
             <button type="button" className="text-xs font-extrabold text-primary" onClick={() => patchQuestion(question.id, { flagged: !question.flagged })}>{question.flagged ? 'Flagged' : 'Flag'}</button>
@@ -1611,7 +1611,7 @@ function TopicRow({ topic, current, data, mutate }: { topic: ClassTopic; current
   const StatusIcon = normalizedTopicStatus(topic.status) === 'ready' ? CheckCircle2 : Circle
   return (
     <div className={cn(
-      'grid gap-3 rounded-xl border border-border bg-card/60 p-3 text-sm md:grid-cols-[1.4fr_90px_130px_130px_auto] md:items-center',
+      'grid gap-3 rounded-xl border border-border bg-card p-3 text-sm md:grid-cols-[1.4fr_90px_130px_130px_auto] md:items-center',
       current && 'border-primary/35 bg-primary/8'
     )}>
       <div className="flex min-w-0 items-center gap-2">
@@ -1791,7 +1791,7 @@ function TopicPicker({
   return (
     <div className={cn('space-y-2', compact && 'min-w-[180px]')}>
       <p className="text-xs font-extrabold uppercase text-muted-foreground">{label}</p>
-      <div className="flex max-h-36 flex-wrap gap-1 overflow-y-auto rounded-xl border border-border bg-card/60 p-2">
+      <div className="flex max-h-36 flex-wrap gap-1 overflow-y-auto rounded-xl border border-border bg-card p-2">
         {topics.map((topic) => (
           <ToggleChip key={topic.id} selected={value.includes(topic.id)} onClick={() => onChange(toggleValue(value, topic.id))}>
             {topic.title}
