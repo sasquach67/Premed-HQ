@@ -47,8 +47,8 @@ export function ReflectionList({
           onClick={() => onOpen(reflection.id)}
           className="w-full rounded-xl border border-border bg-card p-4 text-left transition hover:border-primary/40 hover:bg-muted/25"
         >
-          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{reflection.date}</p>
-          <h3 className="mt-1 font-display text-lg font-extrabold">{reflection.title || 'Untitled reflection'}</h3>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{reflection.date}</p>
+          <h3 className="mt-1 font-display text-lg font-semibold">{reflection.title || 'Untitled reflection'}</h3>
           <p
             className="mt-1 overflow-hidden text-sm text-muted-foreground"
             style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
@@ -60,7 +60,7 @@ export function ReflectionList({
       <button
         type="button"
         onClick={onNew}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 p-3 text-sm font-extrabold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 p-3 text-sm font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-primary"
       >
         <Plus className="size-4" /> New reflection
       </button>

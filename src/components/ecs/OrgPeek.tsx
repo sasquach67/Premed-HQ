@@ -99,7 +99,7 @@ export function OrgPeek({
                   >
                     <Users className="size-4 shrink-0 text-primary" aria-hidden="true" />
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold">{related.name || 'Untitled organization'}</span>
+                      <span className="block truncate text-sm font-semibold">{related.name || 'Untitled organization'}</span>
                       <span className="block text-xs text-muted-foreground">
                         Backlink · same {related.type || 'organization'} group
                       </span>
@@ -118,7 +118,7 @@ export function OrgPeek({
               href={org.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-xl bg-muted/35 p-3 text-sm font-bold text-primary hover:bg-muted/60"
+              className="flex items-center gap-2 rounded-xl bg-muted/35 p-3 text-sm font-semibold text-primary hover:bg-muted/60"
             >
               <ExternalLink className="size-4" aria-hidden="true" />
               Organization website
@@ -132,7 +132,7 @@ export function OrgPeek({
             <ol className="space-y-3">
               {reflections.slice(0, 4).map((reflection) => (
                 <li key={reflection.id} className="border-l-2 border-primary/35 pl-3">
-                  <p className="text-sm font-bold">{reflection.title || 'Untitled reflection'}</p>
+                  <p className="text-sm font-semibold">{reflection.title || 'Untitled reflection'}</p>
                   <p className="text-xs text-muted-foreground">{reflection.date}</p>
                 </li>
               ))}
