@@ -30,6 +30,12 @@ export const fadeThrough: Variants = {
   exit: { opacity: 0, y: -MOTION_DISTANCE.small, transition: MOTION_TRANSITION.micro },
 }
 
+export const crossfade: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: MOTION_TRANSITION.standard },
+  exit: { opacity: 0, transition: MOTION_TRANSITION.micro },
+}
+
 export const microScaleFade: Variants = {
   hidden: { opacity: 0, scale: 0.98 },
   visible: { opacity: 1, scale: 1, transition: MOTION_TRANSITION.standard },
@@ -67,4 +73,3 @@ export const MOTION_MECHANISM = {
   chartDraw: 'SVG pathLength',
   milestoneOnly: 'spring',
 } as const
-

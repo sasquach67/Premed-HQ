@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, m } from 'motion/react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { ModeSwitch } from '@/components/common/ModeSwitch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/common/useToast'
+import { crossfade } from '@/lib/motion'
 
 const GRADES: LetterGrade[] = ['', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'P', 'IP']
 const COURSE_COLUMNS: ColumnDef[] = [
@@ -114,24 +116,26 @@ export function Academics() {
         />
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(tab) => setSearchParams({ mode, tab })}
-      >
-        <TabsList>
-          {mode === 'daily' ? (
-            <>
-              <TabsTrigger value="class-center"><GraduationCap className="size-4" /> Class Center</TabsTrigger>
-              <TabsTrigger value="assignments"><CalendarDays className="size-4" /> Assignments</TabsTrigger>
-            </>
-          ) : (
-            <>
-              <TabsTrigger value="planner"><Calculator className="size-4" /> Planner & GPA</TabsTrigger>
-              <TabsTrigger value="tracker"><ListChecks className="size-4" /> Tar Heel Tracker</TabsTrigger>
-              <TabsTrigger value="archive"><Archive className="size-4" /> Archive</TabsTrigger>
-            </>
-          )}
-        </TabsList>
+      <AnimatePresence mode="wait" initial={false}>
+        <m.div key={mode} variants={crossfade} initial="hidden" animate="visible" exit="exit">
+          <Tabs
+            value={activeTab}
+            onValueChange={(tab) => setSearchParams({ mode, tab })}
+          >
+            <TabsList>
+              {mode === 'daily' ? (
+                <>
+                  <TabsTrigger value="class-center"><GraduationCap className="size-4" /> Class Center</TabsTrigger>
+                  <TabsTrigger value="assignments"><CalendarDays className="size-4" /> Assignments</TabsTrigger>
+                </>
+              ) : (
+                <>
+                  <TabsTrigger value="planner"><Calculator className="size-4" /> Planner & GPA</TabsTrigger>
+                  <TabsTrigger value="tracker"><ListChecks className="size-4" /> Tar Heel Tracker</TabsTrigger>
+                  <TabsTrigger value="archive"><Archive className="size-4" /> Archive</TabsTrigger>
+                </>
+              )}
+            </TabsList>
 
         {/* ---- Class Center (daily academic workflow) ---- */}
         <TabsContent value="class-center"><ClassCenter /></TabsContent>
@@ -197,7 +201,9 @@ export function Academics() {
           <ResourceGrid pillar="academics" />
           <NotesDB pillar="academics" title="Notes (study techniques, syllabi, brain dumps)" />
         </TabsContent>
-      </Tabs>
+          </Tabs>
+        </m.div>
+      </AnimatePresence>
     </div>
   )
 }

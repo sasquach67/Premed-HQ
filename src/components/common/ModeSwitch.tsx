@@ -1,4 +1,6 @@
+import { m } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { MOTION_TRANSITION } from '@/lib/motion'
 
 export interface ModeSwitchOption<T extends string> {
   id: T
@@ -29,24 +31,30 @@ export function ModeSwitch<T extends string>({
   const checked = value === right.id
 
   return (
-    <button
+    <m.button
       type="button"
       role="switch"
       aria-label={label}
       aria-checked={checked}
       onClick={() => onChange(checked ? left.id : right.id)}
       onKeyDown={onKeyDown}
-      className="inline-flex h-10 items-center gap-2.5 rounded-full border border-border bg-card px-3 shadow-sm transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      whileTap={{ scale: 0.985 }}
+      transition={MOTION_TRANSITION.micro}
+      className="inline-flex h-10 items-center gap-2.5 rounded-full border border-border bg-card px-3 shadow-sm transition-colors duration-200 hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
     >
-      <span className={cn('text-sm font-extrabold transition-colors', checked ? 'text-muted-foreground' : 'text-foreground')}>
+      <span className={cn('text-sm font-extrabold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-muted-foreground' : 'text-foreground')}>
         {left.label}
       </span>
-      <span className={cn('relative h-6 w-11 rounded-full transition-colors', checked ? 'bg-primary' : 'bg-muted-foreground/45')} aria-hidden="true">
-        <span className={cn('absolute left-1 top-1 size-4 rounded-full bg-card shadow-sm transition-transform duration-200 motion-reduce:transition-none', checked && 'translate-x-5')} />
+      <span className={cn('relative h-6 w-11 rounded-full transition-colors duration-200 motion-reduce:transition-none', checked ? 'bg-primary' : 'bg-muted-foreground/45')} aria-hidden="true">
+        <m.span
+          className="absolute left-1 top-1 size-4 rounded-full bg-card shadow-sm"
+          animate={{ x: checked ? 20 : 0 }}
+          transition={MOTION_TRANSITION.standard}
+        />
       </span>
-      <span className={cn('text-sm font-extrabold transition-colors', checked ? 'text-foreground' : 'text-muted-foreground')}>
+      <span className={cn('text-sm font-extrabold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-foreground' : 'text-muted-foreground')}>
         {right.label}
       </span>
-    </button>
+    </m.button>
   )
 }
