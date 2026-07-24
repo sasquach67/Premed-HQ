@@ -1,11 +1,25 @@
 import * as React from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
-function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+const cardVariants = cva(
+  'rounded-2xl border text-card-foreground',
+  {
+    variants: {
+      variant: {
+        default: 'bg-card card-soft',
+        glass: 'glass-surface',
+      },
+    },
+    defaultVariants: { variant: 'default' },
+  }
+)
+
+function Card({ className, variant, ...props }: React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>) {
   return (
     <div
       data-slot="card"
-      className={cn('glass-surface rounded-2xl border text-card-foreground', className)}
+      className={cn(cardVariants({ variant }), className)}
       {...props}
     />
   )
