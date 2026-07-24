@@ -224,7 +224,7 @@ function BackupCheck({ ok, label, detail }: { ok: boolean; label: string; detail
     <div className="flex items-start gap-2 rounded-xl border border-border bg-card/50 px-3 py-2">
       <Icon className={cn('mt-0.5 size-4 shrink-0', ok ? 'text-success' : 'text-warning')} />
       <div className="min-w-0">
-        <p className="font-semibold">{label}</p>
+        <p className="font-bold">{label}</p>
         <p className="break-words text-xs text-muted-foreground">{detail}</p>
       </div>
     </div>
@@ -339,14 +339,14 @@ function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) =>
       <CardContent className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <section className="space-y-3">
           <div className="rounded-xl border border-border bg-muted/25 px-3 py-2 text-sm">
-            <p className="font-semibold">{sync.connected ? `Connected${calendar.connectedAccount ? ` · ${calendar.connectedAccount}` : ''}` : calendar.enabled ? 'Reconnect needed' : 'Not connected'}</p>
+            <p className="font-bold">{sync.connected ? `Connected${calendar.connectedAccount ? ` · ${calendar.connectedAccount}` : ''}` : calendar.enabled ? 'Reconnect needed' : 'Not connected'}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Premed HQ requests read-only Calendar access only. It cannot edit events.</p>
             {calendar.lastSyncedAt && <p className="mt-1 text-xs text-muted-foreground">Last synced {fmtTimeAgo(calendar.lastSyncedAt)}.</p>}
             {(sync.error || calendar.lastError) && <p className="mt-1 flex items-center gap-1 text-xs text-destructive"><AlertCircle className="size-3" /> {sync.error || calendar.lastError}</p>}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-bold">
               OAuth Client ID
               <Input
                 defaultValue={calendar.googleClientId}
@@ -354,7 +354,7 @@ function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) =>
                 onBlur={(e) => update((d) => { d.settings.calendar.googleClientId = e.target.value.trim() })}
               />
             </label>
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-bold">
               API key
               <Input
                 defaultValue={calendar.googleApiKey}
@@ -381,11 +381,11 @@ function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) =>
 
         <section className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-bold">
               Timeline start
               <TimeField value={calendar.timelineStart} onChange={(value) => update((d) => { d.settings.calendar.timelineStart = value || '06:00' })} ariaLabel="Timeline start" />
             </label>
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-bold">
               Timeline end
               <TimeField value={calendar.timelineEnd} onChange={(value) => update((d) => { d.settings.calendar.timelineEnd = value || '23:00' })} ariaLabel="Timeline end" />
             </label>
@@ -424,7 +424,7 @@ function CalendarIntegrationSection({ onMessage }: { onMessage: (msg: string) =>
 function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2">
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="text-sm font-bold">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
@@ -450,7 +450,7 @@ function ArchiveSettingsSection({ highlight }: { highlight: boolean }) {
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="rounded-xl border border-border bg-muted/20 p-3">
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><CheckCircle2 className="size-4 text-success" /> Finished tasks <span className="text-xs font-normal text-muted-foreground">({doneTasks.length})</span></h3>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-bold"><CheckCircle2 className="size-4 text-success" /> Finished tasks <span className="text-xs font-normal text-muted-foreground">({doneTasks.length})</span></h3>
               <div className="space-y-1.5">
                 {doneTasks.length === 0 && <p className="py-2 text-sm text-muted-foreground">No finished tasks.</p>}
                 {doneTasks.map((t) => (
@@ -467,7 +467,7 @@ function ArchiveSettingsSection({ highlight }: { highlight: boolean }) {
             </section>
 
             <section className="rounded-xl border border-border bg-muted/20 p-3">
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><CheckCircle2 className="size-4 text-success" /> Completed focus <span className="text-xs font-normal text-muted-foreground">({doneFocus.length})</span></h3>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-bold"><CheckCircle2 className="size-4 text-success" /> Completed focus <span className="text-xs font-normal text-muted-foreground">({doneFocus.length})</span></h3>
               <div className="space-y-1.5">
                 {doneFocus.length === 0 && <p className="py-2 text-sm text-muted-foreground">No completed focus targets.</p>}
                 {doneFocus.map((f) => (
