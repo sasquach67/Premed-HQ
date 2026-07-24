@@ -1,5 +1,6 @@
-import { ExternalLink, Moon, Pin, Sun } from 'lucide-react'
+import { Coffee, ExternalLink, Moon, NotebookPen, Pause, Pin, Square, Sun } from 'lucide-react'
 import { m, useReducedMotion } from 'motion/react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { MOTION_TRANSITION } from '@/lib/motion'
 
@@ -26,6 +27,27 @@ export function ThemeToggleButton({ isDark, onToggle }: { isDark: boolean; onTog
   )
 }
 
+/**
+ * Parked for focus mode. This is presentation-only until the MCAT/focus chunk
+ * supplies pause, break, capture, and end-session behavior.
+ */
+export function FocusSessionManagementBar() {
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={MOTION_TRANSITION.standard}
+      className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm"
+      aria-label="Focus session controls"
+    >
+      <Button size="sm" variant="secondary" disabled><Pause className="size-4" /> Pause</Button>
+      <Button size="sm" variant="ghost" disabled><Coffee className="size-4" /> Break</Button>
+      <Button size="sm" variant="ghost" disabled><NotebookPen className="size-4" /> Quick capture</Button>
+      <Button size="sm" variant="destructive" disabled><Square className="size-4" /> End early</Button>
+    </m.div>
+  )
+}
+
 /** Parked for genuine milestone events only. */
 export function MilestoneFireworks({ active }: { active: boolean }) {
   const reduceMotion = useReducedMotion()
@@ -49,4 +71,3 @@ export function MilestoneFireworks({ active }: { active: boolean }) {
 export function AuthAtmosphere() {
   return <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,color-mix(in_srgb,var(--primary)_14%,transparent),transparent_35%),radial-gradient(circle_at_75%_70%,color-mix(in_srgb,var(--leaf)_12%,transparent),transparent_38%)]" aria-hidden="true" />
 }
-

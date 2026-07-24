@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Lightbulb, Menu, Plus } from 'lucide-react'
+import { Menu, Plus } from 'lucide-react'
 import { CommandSearch } from './CommandSearch'
 import { AttentionBell } from './AttentionBell'
 import { buildAttention, attentionStatus } from './attention'
@@ -10,6 +10,7 @@ import { useBackup } from '@/store/useBackup'
 import { useStore } from '@/store/store'
 import { ROUTE_MAP } from '@/app/routes'
 import { Button } from '@/components/ui/button'
+import { ThemeToggleButton } from '@/components/motion'
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
@@ -73,9 +74,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
           <LiveStatusChip label={status.label} tone={status.tone} />
           <Button variant="default" size="sm" className="h-8 rounded-full px-2.5 sm:px-3" onClick={() => openQuickAdd()} aria-label="Quick Add"><Plus className="size-4" /><span className="hidden sm:inline">Add</span></Button>
           <AttentionBell />
-          <Button variant="outline" size="icon" className="size-8 rounded-full bg-card/80" onClick={() => setTheme(isDark ? 'light' : 'dark')} aria-label={isDark ? 'Switch to light appearance' : 'Switch to dark appearance'}>
-            <Lightbulb className={cn('size-4', isDark ? 'text-primary' : 'text-amber-500')} />
-          </Button>
+          <ThemeToggleButton isDark={isDark} onToggle={() => setTheme(isDark ? 'light' : 'dark')} />
         </div>
       </div>
     </header>
