@@ -13,10 +13,8 @@ import { gpaStats, fmtGpa, GRADE_POINTS } from '@/lib/selectors'
 import type { Course, LetterGrade, RequirementItem } from '@/lib/types'
 import { uid } from '@/lib/id'
 import { PageHeader } from '@/components/common/PageHeader'
+import { Ring } from '@/components/common/Ring'
 import { TrackerTable, type ColumnDef } from '@/components/common/TrackerTable'
-import { RecordOpenWorkspace } from '@/components/common/RecordOpenWorkspace'
-import { ObjectInspector } from '@/components/common/ObjectInspector'
-import type { RecordOpenMode } from '@/components/common/CenterPeek'
 import { Collapsible } from '@/components/common/Collapsible'
 import { ResourceGrid } from '@/components/common/ResourceGrid'
 import { AssignmentsPanel } from '@/components/common/AssignmentsPanel'
@@ -162,14 +160,15 @@ export function Academics() {
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <CardHeader><CardTitle>AMCAS GPA</CardTitle></CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
-                  <AcademicStat label="Cumulative" value={fmtGpa(gpa.cum)} />
-                  <AcademicStat label="Science (BCPM)" value={fmtGpa(gpa.science)} />
-                  <AcademicStat label="All other (AO)" value={fmtGpa(gpa.ao)} />
-                  <AcademicStat label="Graded credits" value={String(gpa.credits)} detail={`${gpa.scienceCredits} BCPM · ${gpa.aoCredits} AO`} />
+              <CardContent className="flex flex-wrap items-center justify-around gap-4">
+                <Ring value={(gpa.cum / 4) * 100} color="var(--cat-gpa)" label="Cumulative" sublabel={fmtGpa(gpa.cum)} size={104} />
+                <Ring value={(gpa.science / 4) * 100} color="var(--cat-research)" label="Science (BCPM)" sublabel={fmtGpa(gpa.science)} size={104} />
+                <Ring value={(gpa.ao / 4) * 100} color="var(--cat-shadow)" label="All Other (AO)" sublabel={fmtGpa(gpa.ao)} size={104} />
+                <div className="text-sm text-muted-foreground">
+                  <p><b className="text-foreground">{gpa.credits}</b> graded credits</p>
+                  <p><b className="text-foreground">{gpa.scienceCredits}</b> BCPM · <b className="text-foreground">{gpa.aoCredits}</b> AO</p>
+                  <p className="mt-1 text-xs">No grade replacement · repeats averaged</p>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">No grade replacement · repeats averaged</p>
               </CardContent>
             </Card>
             <WhatIf baseline={courses} />
@@ -183,7 +182,7 @@ export function Academics() {
                 key={term}
                 title={term}
                 defaultOpen={term === firstEditableTerm}
-                badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{rows.length} courses · {credits} cr</span>}
+                badge={<span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{rows.length} courses · {credits} cr</span>}
               >
                 <div className="mb-2 flex justify-end">
                   <Button size="sm" variant="outline" onClick={() => addCourse(term)}><Plus className="size-4" /> Add course</Button>
@@ -213,16 +212,6 @@ export function Academics() {
           </Tabs>
         </m.div>
       </AnimatePresence>
-    </div>
-  )
-}
-
-function AcademicStat({ label, value, detail }: { label: string; value: string; detail?: string }) {
-  return (
-    <div className="min-w-0 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-display text-lg font-semibold text-foreground">{value}</p>
-      {detail && <p className="mt-1 truncate text-xs text-muted-foreground">{detail}</p>}
     </div>
   )
 }
@@ -259,15 +248,15 @@ function WhatIf({ baseline }: { baseline: Course[] }) {
             <InlineSelect value={r.grade} options={Object.keys(GRADE_POINTS)} onChange={(grade) => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, grade: grade as LetterGrade } : x))} className="h-8 w-20" />
             <button
               onClick={() => setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, bcpm: !x.bcpm } : x))}
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.bcpm ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${r.bcpm ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
             >{r.bcpm ? 'BCPM' : 'AO'}</button>
             <button onClick={() => setRows((rs) => rs.filter((x) => x.id !== r.id))} className="ml-auto text-xs text-muted-foreground hover:text-destructive">✕</button>
           </div>
         ))}
         {rows.length > 0 && (
           <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2 text-center">
-            <div><p className="font-display text-lg font-semibold text-primary">{fmtGpa(projected.cum)}</p><p className="text-xs text-muted-foreground">proj. cumulative</p></div>
-            <div><p className="font-display text-lg font-semibold" style={{ color: 'var(--cat-research)' }}>{fmtGpa(projected.science)}</p><p className="text-xs text-muted-foreground">proj. science</p></div>
+            <div><p className="font-display text-xl font-bold text-primary">{fmtGpa(projected.cum)}</p><p className="text-xs text-muted-foreground">proj. cumulative</p></div>
+            <div><p className="font-display text-xl font-bold" style={{ color: 'var(--cat-research)' }}>{fmtGpa(projected.science)}</p><p className="text-xs text-muted-foreground">proj. science</p></div>
           </div>
         )}
       </CardContent>
@@ -277,12 +266,12 @@ function WhatIf({ baseline }: { baseline: Course[] }) {
 
 function SharedPlanNote({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-primary/18 bg-primary/6 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 rounded-2xl border border-primary/18 bg-primary/6 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="font-display text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-0.5 text-xs font-semibold leading-relaxed text-muted-foreground">{detail}</p>
+        <p className="font-display text-base font-bold text-foreground">{title}</p>
+        <p className="mt-0.5 text-xs font-medium leading-relaxed text-muted-foreground">{detail}</p>
       </div>
-      <span className="shrink-0 rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary shadow-sm">One shared plan</span>
+      <span className="shrink-0 rounded-full bg-card px-3 py-1 text-xs font-extrabold text-primary shadow-sm">One shared plan</span>
     </div>
   )
 }
@@ -389,7 +378,7 @@ function SourceBadge({ reqs }: { reqs: RequirementItem[] }) {
   const premed = meta.sourceType === 'premed-advice'
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
+      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide',
       official ? 'border-primary/30 bg-primary/10 text-primary' : premed ? 'border-purple-400/30 bg-purple-500/10 text-purple-700 dark:text-purple-200' : 'border-warning/35 bg-warning/15 text-warning-foreground'
     )}>
       {official ? <ShieldCheck className="size-3" /> : premed ? <Sparkles className="size-3" /> : <AlertTriangle className="size-3" />}
@@ -428,7 +417,7 @@ function TarHeelTracker() {
   const [courseDetail, setCourseDetail] = useState<Course | null>(null)
   const [apOpen, setApOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
-  const [courseOpenMode, setCourseOpenMode] = useState<RecordOpenMode>('peek')
+  const [progressView, setProgressView] = useState<'bars' | 'rings'>('bars')
   const [toast, setToast] = useState('')
 
   const visibleRequirements = requirements.filter((req) => !/organismal/i.test(req.group) && !/^organismal$/i.test(req.label.trim()))
@@ -526,17 +515,17 @@ function TarHeelTracker() {
 
   return (
     <div className="relative">
-      {toast && <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-xl">{toast}</div>}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/70 p-3 shadow-sm">
+      {toast && <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold shadow-xl">{toast}</div>}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/70 p-3 shadow-sm">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-primary/12 text-primary"><GraduationCap className="size-5" /></div>
           <div>
-            <h3 className="font-display text-lg font-semibold">Tar Heel Tracker</h3>
+            <h3 className="font-display text-xl font-bold">Tar Heel Tracker</h3>
             <p className="text-xs text-muted-foreground">Local planner · official requirements are labeled separately from premed advice.</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">Total {totalCredits} / 120 credits</span>
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-extrabold">Total {totalCredits} / 120 credits</span>
           <Button size="sm" variant="outline" onClick={() => setApOpen(true)}><ShieldCheck className="size-4" /> AP Credit</Button>
           <Button size="sm" variant={libraryOpen ? 'default' : 'outline'} onClick={() => setLibraryOpen((open) => !open)}><Library className="size-4" /> Course Library</Button>
           <DropdownMenu>
@@ -559,15 +548,15 @@ function TarHeelTracker() {
       </div>
 
       <div className={cn('grid gap-4', libraryOpen ? 'xl:grid-cols-[20rem_minmax(0,1fr)_22rem]' : 'xl:grid-cols-[20rem_minmax(0,1fr)]')}>
-        <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl border border-border bg-card/70 p-4 shadow-sm">
+        <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h4 className="font-display text-lg font-semibold">Degree Progress</h4>
+            <h4 className="font-display text-lg font-bold">Degree Progress</h4>
             <Button size="icon" variant="ghost" className="size-8 xl:hidden" onClick={() => setLibraryOpen(false)}><X className="size-4" /></Button>
           </div>
           <div className="space-y-3">
             <FieldLabel label="Catalog Year">
               <InlineSelect value={catalogYear} options={['2026-2027', '2025-2026', '2024-2025']} onChange={setCatalogYear} />
-              <p className="mt-1 text-xs text-muted-foreground">Major/minor requirements follow the catalog year you entered under.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Major/minor requirements follow the catalog year you entered under.</p>
             </FieldLabel>
             <FieldLabel label="Major">
               <div className="rounded-lg border border-input bg-background p-2">
@@ -579,12 +568,12 @@ function TarHeelTracker() {
                   {PROGRAMS.filter((program) => program.label.toLowerCase().includes(majorQuery.toLowerCase())).map((program) => (
                     <button key={program.id} onClick={() => setSelectedMajor(program.id)} className={cn('flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted', selectedMajor === program.id && 'bg-primary/10 text-primary')}>
                       {program.label}
-                      {!program.modeled && <span className="text-xs font-semibold text-muted-foreground">future-ready</span>}
+                      {!program.modeled && <span className="text-[10px] font-bold text-muted-foreground">future-ready</span>}
                     </button>
                   ))}
                 </div>
               </div>
-              {!modeledProgram?.modeled && <p className="mt-1 text-xs text-warning-foreground">Only Neuroscience B.S. is modeled. Other programs are UI placeholders until official rules are seeded.</p>}
+              {!modeledProgram?.modeled && <p className="mt-1 text-[11px] text-warning-foreground">Only Neuroscience B.S. is modeled. Other programs are UI placeholders until official rules are seeded.</p>}
             </FieldLabel>
             <FieldLabel label="Second Major / Minor">
               <InlineSelect value="None" options={['None']} onChange={() => undefined} />
@@ -592,22 +581,27 @@ function TarHeelTracker() {
           </div>
 
           <div className="mt-5 space-y-3">
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Progress</h5>
-            <ProgressMetric label="Credits" value={completedCredits} total={120} />
-            <ProgressMetric label="Official UNC reqs" value={completedOfficial} total={officialReqs.length} />
-            <ProgressMetric label="Gen Eds" value={completedGenEd} total={genEdReqs.length} />
-            <ProgressMetric label="Major" value={completedMajor} total={majorReqs.length} />
-            <ProgressMetric label="Premed overlay" value={completedPremed} total={premedReqs.length} />
+            <div className="flex items-center justify-between">
+              <h5 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Progress</h5>
+              <button onClick={() => setProgressView((v) => v === 'bars' ? 'rings' : 'bars')} className="rounded-md px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary/10">
+                {progressView === 'bars' ? 'Chart' : 'Bars'}
+              </button>
+            </div>
+            <ProgressMetric label="Credits" value={completedCredits} total={120} ring={progressView === 'rings'} />
+            <ProgressMetric label="Official UNC reqs" value={completedOfficial} total={officialReqs.length} ring={progressView === 'rings'} />
+            <ProgressMetric label="Gen Eds" value={completedGenEd} total={genEdReqs.length} ring={progressView === 'rings'} />
+            <ProgressMetric label="Major" value={completedMajor} total={majorReqs.length} ring={progressView === 'rings'} />
+            <ProgressMetric label="Premed overlay" value={completedPremed} total={premedReqs.length} ring={progressView === 'rings'} />
           </div>
 
           <div className="mt-5 space-y-2">
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Warnings</h5>
+            <h5 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Warnings</h5>
             {warnings.length === 0 ? (
-              <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-xs font-semibold text-success"><CheckCircle2 className="size-4" /> No major planner issues detected.</div>
+              <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-xs font-bold text-success"><CheckCircle2 className="size-4" /> No major planner issues detected.</div>
             ) : (
               <div className="space-y-1.5">
                 {warnings.slice(0, 5).map((warning) => (
-                  <div key={warning} className="flex gap-2 rounded-xl bg-warning/15 px-3 py-2 text-xs font-semibold text-warning-foreground"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {warning}</div>
+                  <div key={warning} className="flex gap-2 rounded-xl bg-warning/15 px-3 py-2 text-xs font-bold text-warning-foreground"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {warning}</div>
                 ))}
               </div>
             )}
@@ -618,9 +612,9 @@ function TarHeelTracker() {
               const done = items.filter((item) => reqStatus.get(item.id) === 'completed').length
               return (
                 <details key={group} open={group.startsWith('Neuroscience') || group.startsWith('IDEAs')}>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 py-2 text-sm font-semibold hover:bg-muted/45">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 py-2 text-sm font-extrabold hover:bg-muted/45">
                     <span className="min-w-0 truncate">{group}</span>
-                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{done}/{items.length}</span>
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">{done}/{items.length}</span>
                   </summary>
                   <div className="space-y-1 pb-2 pl-1">
                     <SourceBadge reqs={items} />
@@ -630,15 +624,15 @@ function TarHeelTracker() {
               )
             })}
           </div>
-          <div className="mt-5 rounded-xl border border-border bg-muted/35 p-3 text-xs leading-relaxed text-muted-foreground">
+          <div className="mt-5 rounded-xl border border-border bg-muted/35 p-3 text-[11px] leading-relaxed text-muted-foreground">
             Carolina Compass inspired the planner layout only. Requirement labels come from Premed HQ’s seeded UNC catalog data; uncertain rules are marked needs-verification and should be checked with the UNC catalog or an advisor.
           </div>
         </aside>
 
         <main className="min-w-0 space-y-4">
-          <div className={cn('rounded-xl border p-4', warnings.length ? 'border-warning/35 bg-warning/10' : 'border-success/30 bg-success/10')}>
+          <div className={cn('rounded-2xl border p-4', warnings.length ? 'border-warning/35 bg-warning/10' : 'border-success/30 bg-success/10')}>
             <button className="flex w-full items-center justify-between gap-3 text-left">
-              <span className="flex items-center gap-2 font-semibold">
+              <span className="flex items-center gap-2 font-bold">
                 {warnings.length ? <AlertTriangle className="size-5 text-warning-foreground" /> : <CheckCircle2 className="size-5 text-success" />}
                 {warnings.length ? `${warnings.length} planning issues need attention` : 'No prerequisite or term conflicts detected'}
               </span>
@@ -652,8 +646,8 @@ function TarHeelTracker() {
             return (
               <section key={year.year} className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <h4 className="font-display text-lg font-semibold">{year.year}</h4>
-                  <span className="text-sm font-semibold text-muted-foreground">{termCredits(yearCourses)} credits</span>
+                  <h4 className="font-display text-xl font-bold">{year.year}</h4>
+                  <span className="text-sm font-bold text-muted-foreground">{termCredits(yearCourses)} credits</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
                 <div className="grid items-stretch gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -676,10 +670,10 @@ function TarHeelTracker() {
         </main>
 
         {libraryOpen && (
-          <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl border border-border bg-card/85 p-4 shadow-sm">
+          <aside className="max-h-[calc(100vh-9rem)] overflow-y-auto rounded-2xl border border-border bg-card/85 p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h4 className="font-display text-lg font-semibold">Course Library</h4>
+                <h4 className="font-display text-lg font-bold">Course Library</h4>
                 <p className="text-xs text-muted-foreground">{libraryCourses.length} courses from the seeded UNC plan</p>
               </div>
               <Button size="icon" variant="ghost" className="size-8" onClick={() => setLibraryOpen(false)}><X className="size-4" /></Button>
@@ -693,8 +687,8 @@ function TarHeelTracker() {
                 <InlineSelect value={termFilter} options={['Any term', 'Fall', 'Spring', 'Summer']} onChange={setTermFilter} />
                 <InlineSelect value={selectedTerm} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={setSelectedTerm} />
               </div>
-              <label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} /> Required only</label>
-              <label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={remainingOnly} onChange={(e) => setRemainingOnly(e.target.checked)} /> Show only remaining requirements</label>
+              <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={requiredOnly} onChange={(e) => setRequiredOnly(e.target.checked)} /> Required only</label>
+              <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={remainingOnly} onChange={(e) => setRemainingOnly(e.target.checked)} /> Show only remaining requirements</label>
             </div>
             <div className="mt-3 space-y-2">
               <Button size="sm" variant="outline" className="w-full" onClick={() => setCustomOpen(true)}><Plus className="size-4" /> Add custom course</Button>
@@ -712,28 +706,13 @@ function TarHeelTracker() {
         )}
       </div>
 
-      <RecordOpenWorkspace
-        records={libraryCourses.map((course) => ({ id: course.id, label: course.code || 'Course', description: course.title }))}
-        activeId={courseDetail?.id ?? null}
-        open={Boolean(courseDetail)}
-        mode={courseOpenMode}
-        parentLabel="Course library"
-        onOpenChange={(open) => { if (!open) setCourseDetail(null) }}
-        onModeChange={setCourseOpenMode}
-        onSelect={(id) => setCourseDetail(courses.find((course) => course.id === id) ?? null)}
-        renderRecord={(id) => {
-          const course = courses.find((candidate) => candidate.id === id)
-          return course ? (
-            <CourseInspector
-              course={course}
-              requirements={visibleRequirements}
-              selectedTerm={selectedTerm}
-              onTerm={setSelectedTerm}
-              onClose={() => setCourseDetail(null)}
-              onAdd={(selectedCourse) => addCourseToTerm(selectedCourse, selectedTerm)}
-            />
-          ) : null
-        }}
+      <CourseDetailDialog
+        course={courseDetail}
+        requirements={visibleRequirements}
+        selectedTerm={selectedTerm}
+        onTerm={setSelectedTerm}
+        onClose={() => setCourseDetail(null)}
+        onAdd={(course) => addCourseToTerm(course, selectedTerm)}
       />
       <ApCreditDialog open={apOpen} onOpenChange={setApOpen} onAdd={(course) => addItem('courses', course)} />
       <CustomCourseDialog open={customOpen} onOpenChange={setCustomOpen} selectedTerm={selectedTerm} onAdd={addCustomCourse} />
@@ -744,17 +723,25 @@ function TarHeelTracker() {
 function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{label}</span>
       {children}
     </label>
   )
 }
 
-function ProgressMetric({ label, value, total }: { label: string; value: number; total: number }) {
+function ProgressMetric({ label, value, total, ring }: { label: string; value: number; total: number; ring: boolean }) {
   const pct = progressPercent(value, total)
+  if (ring) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl bg-muted/35 px-3 py-2">
+        <Ring value={pct} color="var(--primary)" label={label} sublabel={`${value}/${total}`} size={54} />
+        <div className="min-w-0"><p className="text-sm font-bold">{label}</p><p className="text-xs text-muted-foreground">{pct}% complete</p></div>
+      </div>
+    )
+  }
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs font-semibold"><span>{label}</span><span>{value}/{total}</span></div>
+      <div className="mb-1 flex items-center justify-between text-xs font-bold"><span>{label}</span><span>{value}/{total}</span></div>
       <div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
     </div>
   )
@@ -766,7 +753,7 @@ function RequirementMini({ item, status }: { item: RequirementItem; status: Requ
       {status === 'completed' ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" /> : status === 'missing' ? <CircleIcon /> : <Clock className={cn('mt-0.5 size-3.5 shrink-0', statusTone(status))} />}
       <div className="min-w-0">
         <p className={cn('font-semibold leading-snug', status === 'completed' && 'text-muted-foreground line-through')}>{item.label}</p>
-        <p className={cn('text-xs font-semibold uppercase tracking-wide', statusTone(status))}>{statusLabel(status)}</p>
+        <p className={cn('text-[10px] font-bold uppercase tracking-wide', statusTone(status))}>{statusLabel(status)}</p>
       </div>
     </div>
   )
@@ -800,17 +787,17 @@ function TermCard({
         isSummer && 'bg-sky-50 text-sky-950 dark:bg-sky-950/20 dark:text-sky-100'
       )}>
         <div>
-          <h5 className="font-display text-lg font-semibold">{term.replace(/\s\d{4}/, '')}</h5>
-          <p className="text-xs font-semibold opacity-70">{term.match(/\d{4}/)?.[0] ?? ''}</p>
+          <h5 className="font-display text-lg font-bold">{term.replace(/\s\d{4}/, '')}</h5>
+          <p className="text-[11px] font-bold opacity-70">{term.match(/\d{4}/)?.[0] ?? ''}</p>
         </div>
         <span className={cn(
-          'rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold dark:bg-background/40',
+          'rounded-full bg-white/60 px-2 py-0.5 text-xs font-extrabold dark:bg-background/40',
           credits === 0 ? 'text-muted-foreground' : credits < 12 && !isSummer ? 'text-warning-foreground' : 'text-primary'
         )}>{credits} cr</span>
       </div>
       <CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {courses.length === 0 ? (
-          <button onClick={onOpenLibrary} className="grid min-h-20 w-full place-items-center rounded-xl border border-dashed border-border text-sm font-semibold text-muted-foreground transition hover:border-primary/40 hover:bg-primary/5">
+          <button onClick={onOpenLibrary} className="grid min-h-20 w-full place-items-center rounded-xl border border-dashed border-border text-sm font-bold text-muted-foreground transition hover:border-primary/40 hover:bg-primary/5">
             <span><Plus className="mx-auto mb-1 size-4" /> Plan {term.replace(/\s\d{4}/, '')}</span>
           </button>
         ) : courses.map((course) => (
@@ -829,15 +816,15 @@ function CoursePlanCard({ course, requirements, allTerms, onMove, onRemove }: { 
     <div className="rounded-xl border border-border bg-background/60 p-3 transition hover:bg-muted/35">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-display text-sm font-semibold">{course.code || 'Custom'}</p>
+          <p className="font-display text-base font-bold">{course.code || 'Custom'}</p>
           <p className="line-clamp-2 text-sm text-muted-foreground">{course.title || 'Untitled course'}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{course.credits} cr</span>
+        <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{course.credits} cr</span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1">
         <StatusBadge status={course.status} />
-        {PREMED_TAGS[prefix] && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-xs font-semibold text-purple-700 dark:text-purple-200">{PREMED_TAGS[prefix]}</span>}
-        {tags.slice(0, 2).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{tag}</span>)}
+        {PREMED_TAGS[prefix] && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-200">{PREMED_TAGS[prefix]}</span>}
+        {tags.slice(0, 2).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{tag}</span>)}
       </div>
       <div className="mt-2 flex items-center gap-2">
         <InlineSelect value={course.term} options={[...allTerms, 'Unscheduled', 'Transfer / AP Credit']} onChange={(term) => onMove(course, term)} className="h-8 min-w-0 flex-1 text-xs" />
@@ -848,7 +835,7 @@ function CoursePlanCard({ course, requirements, allTerms, onMove, onRemove }: { 
 }
 
 function StatusBadge({ status }: { status: Course['status'] }) {
-  return <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', status === 'completed' ? 'bg-success/10 text-success' : status === 'in-progress' ? 'bg-primary/10 text-primary' : 'bg-warning/15 text-warning-foreground')}>{status}</span>
+  return <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold', status === 'completed' ? 'bg-success/10 text-success' : status === 'in-progress' ? 'bg-primary/10 text-primary' : 'bg-warning/15 text-warning-foreground')}>{status}</span>
 }
 
 function requirementTags(course: Course, requirements: RequirementItem[]) {
@@ -865,14 +852,14 @@ function CourseLibraryCard({ course, requirements, onOpen, onAdd }: { course: Co
       <button onClick={onOpen} className="block w-full text-left">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-display text-sm font-semibold">{course.code}</p>
+            <p className="font-display text-base font-bold">{course.code}</p>
             <p className="line-clamp-2 text-sm text-muted-foreground">{course.title}</p>
           </div>
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{course.credits} cr</span>
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">{course.credits} cr</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{/Fall/.test(course.term) ? 'Fall' : /Spring/.test(course.term) ? 'Spring' : /Summer/.test(course.term) ? 'Summer' : 'Any term'}</span>
-          {tags.slice(0, 3).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{tag}</span>)}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{/Fall/.test(course.term) ? 'Fall' : /Spring/.test(course.term) ? 'Spring' : /Summer/.test(course.term) ? 'Summer' : 'Any term'}</span>
+          {tags.slice(0, 3).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{tag}</span>)}
         </div>
       </button>
       <Button size="sm" variant="outline" className="mt-2 w-full" onClick={onAdd}><Plus className="size-4" /> Add to selected term</Button>
@@ -880,42 +867,33 @@ function CourseLibraryCard({ course, requirements, onOpen, onAdd }: { course: Co
   )
 }
 
-function CourseInspector({ course, requirements, selectedTerm, onTerm, onClose, onAdd }: { course: Course; requirements: RequirementItem[]; selectedTerm: string; onTerm: (term: string) => void; onClose: () => void; onAdd: (course: Course) => void }) {
-  const tags = requirementTags(course, requirements)
+function CourseDetailDialog({ course, requirements, selectedTerm, onTerm, onClose, onAdd }: { course: Course | null; requirements: RequirementItem[]; selectedTerm: string; onTerm: (term: string) => void; onClose: () => void; onAdd: (course: Course) => void }) {
+  const tags = course ? requirementTags(course, requirements) : []
   return (
-    <ObjectInspector
-      title={`${course.code} · ${course.title}`}
-      subtitle={`${course.credits} credits · Course ID ${course.id}`}
-      config={{
-        overview: {
-          emptyLabel: 'No course details.',
-          content: (
+    <Dialog open={Boolean(course)} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent>
+        {course && (
+          <>
+            <DialogHeader>
+              <DialogTitle>{course.code} · {course.title}</DialogTitle>
+              <DialogDescription>{course.credits} credits · Course ID {course.id}</DialogDescription>
+            </DialogHeader>
             <div className="space-y-3 text-sm">
               <p className="text-muted-foreground">{course.notes || 'No official course description is seeded yet. Use the UNC catalog/course library to verify details before relying on this plan.'}</p>
-              <div className="flex flex-wrap gap-1">{tags.length ? tags.map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{tag}</span>) : <span className="text-xs text-muted-foreground">No mapped requirement tags.</span>}</div>
-              <label className="block text-sm font-semibold">
-                Add to schedule
-                <InlineSelect value={selectedTerm} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={onTerm} className="mt-1 h-10" />
-              </label>
+              <div className="flex flex-wrap gap-1">{tags.length ? tags.map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{tag}</span>) : <span className="text-xs text-muted-foreground">No mapped requirement tags.</span>}</div>
+              <div className="rounded-xl bg-muted/45 p-3">
+                <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Add to schedule</p>
+                <InlineSelect value={selectedTerm} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={onTerm} className="h-10" />
+              </div>
             </div>
-          ),
-        },
-        relations: { emptyLabel: 'No additional relations.' },
-        files: { emptyLabel: 'No files attached.' },
-        activity: { emptyLabel: 'No course activity yet.' },
-        actions: {
-          emptyLabel: 'No actions available.',
-          content: (
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => onAdd(course)}>Add course</Button>
-              <Button variant="outline" onClick={onClose}>Close</Button>
-            </div>
-          ),
-        },
-        notes: { emptyLabel: 'No additional notes.' },
-        dataQuality: { emptyLabel: 'Verify course details in the UNC catalog before relying on this plan.' },
-      }}
-    />
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={() => onAdd(course)}>Add</Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -933,9 +911,9 @@ function ApCreditDialog({ open, onOpenChange, onAdd }: { open: boolean; onOpenCh
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <FieldInput label="Exam" value={exam} onChange={setExam} />
-          <label className="text-sm font-semibold">Score<input type="number" min={1} max={5} value={score} onChange={(e) => setScore(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
+          <label className="text-sm font-bold">Score<input type="number" min={1} max={5} value={score} onChange={(e) => setScore(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
           <FieldInput label="Mapped course" value={mappedCourse} onChange={setMappedCourse} />
-          <label className="text-sm font-semibold">Credits<input type="number" min={0} value={credits} onChange={(e) => setCredits(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
+          <label className="text-sm font-bold">Credits<input type="number" min={0} value={credits} onChange={(e) => setCredits(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -965,9 +943,9 @@ function CustomCourseDialog({ open, onOpenChange, selectedTerm, onAdd }: { open:
         <div className="grid gap-3 sm:grid-cols-2">
           <FieldInput label="Course code" value={code} onChange={setCode} />
           <FieldInput label="Title" value={title} onChange={setTitle} />
-          <label className="text-sm font-semibold">Credits<input type="number" min={0} value={credits} onChange={(e) => setCredits(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
-          <label className="text-sm font-semibold">Term<InlineSelect value={term} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={setTerm} className="mt-1 h-10" /></label>
-          <label className="sm:col-span-2 text-sm font-semibold">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-2 py-2" /></label>
+          <label className="text-sm font-bold">Credits<input type="number" min={0} value={credits} onChange={(e) => setCredits(Number(e.target.value) || 0)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
+          <label className="text-sm font-bold">Term<InlineSelect value={term} options={TERM_PLAN.flatMap((plan) => plan.terms)} onChange={setTerm} className="mt-1 h-10" /></label>
+          <label className="sm:col-span-2 text-sm font-bold">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-2 py-2" /></label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -979,7 +957,7 @@ function CustomCourseDialog({ open, onOpenChange, selectedTerm, onAdd }: { open:
 }
 
 function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <label className="text-sm font-semibold">{label}<input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
+  return <label className="text-sm font-bold">{label}<input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2" /></label>
 }
 
 function InlineSelect({

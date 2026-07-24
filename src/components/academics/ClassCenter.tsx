@@ -190,7 +190,7 @@ export function ClassCenter({ archiveOnly = false }: { archiveOnly?: boolean }) 
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Archive className="size-8 text-muted-foreground" />
             <div>
-              <h2 className="font-display text-lg font-semibold">Class not found</h2>
+              <h2 className="font-display text-2xl font-bold">Class not found</h2>
               <p className="mt-1 text-sm text-muted-foreground">It may have been archived or deleted.</p>
             </div>
             <Button asChild><Link to="/academics">Back to Class Center</Link></Button>
@@ -271,14 +271,14 @@ function ClassCenterDashboard({
   return (
     <div className="space-y-5">
       {!archiveOnly && (
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/78 p-3 shadow-sm lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card/78 p-3 shadow-sm lg:flex-row lg:items-center">
           <div className="flex gap-1 overflow-x-auto rounded-full bg-muted/55 p-1">
             {semesters.map((item) => (
               <button
                 key={item}
                 onClick={() => setSemester(item)}
                 className={cn(
-                  'shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition',
+                  'shrink-0 rounded-full px-3 py-2 text-sm font-extrabold transition',
                   semester === item ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -357,10 +357,10 @@ function ClassCenterDashboard({
         {!archiveOnly && (
           <button
             onClick={() => setEditor({ open: true, form: emptyClassForm(semester === 'Archived' || semester === 'All active' ? 'Fall 2026' : semester) })}
-            className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/45 p-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
+            className="flex min-h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/45 p-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
           >
             <Plus className="mb-2 size-6 text-muted-foreground" />
-            <span className="font-display text-lg font-semibold">Add class from your course plan</span>
+            <span className="font-display text-lg font-bold">Add class from your course plan</span>
             <span className="mt-1 text-sm font-semibold text-muted-foreground">or start blank</span>
           </button>
         )}
@@ -369,7 +369,7 @@ function ClassCenterDashboard({
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
               <BookOpen className="size-8 text-muted-foreground" />
               <div>
-                <p className="font-display text-lg font-semibold">No classes here yet</p>
+                <p className="font-display text-xl font-bold">No classes here yet</p>
                 <p className="text-sm text-muted-foreground">Create a class or switch semesters to see the workspace grid.</p>
               </div>
               <Button onClick={() => setEditor({ open: true, form: emptyClassForm() })}><Plus className="size-4" /> New Class</Button>
@@ -434,8 +434,8 @@ function ClassCard({
           <Link to={`/academics/classes/${row.id}`} className="flex min-w-0 items-start gap-2.5">
             <ClassIcon icon={row.icon} className="size-9 rounded-xl bg-muted text-muted-foreground" />
             <span className="min-w-0">
-              <span className="block text-sm font-semibold leading-tight text-foreground group-hover:text-primary">{row.courseCode || row.nickname}</span>
-              <span className="line-clamp-1 text-sm font-semibold text-muted-foreground">{row.courseTitle || row.nickname}</span>
+              <span className="block text-base font-extrabold leading-tight text-foreground group-hover:text-primary">{row.courseCode || row.nickname}</span>
+              <span className="line-clamp-1 text-sm font-medium text-muted-foreground">{row.courseTitle || row.nickname}</span>
             </span>
           </Link>
           <DropdownMenu>
@@ -457,7 +457,7 @@ function ClassCard({
             <ClassMetaChip icon={MapPin} label={row.location || 'Room TBD'} />
             <ClassMetaChip icon={Clock3} label={meetingText || 'Time TBD'} className="col-span-2" />
           </div>
-          <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-semibold text-foreground">
+          <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-extrabold text-foreground">
             <span className="shrink-0 uppercase text-primary">Up next</span>
             <span className="min-w-0 truncate text-muted-foreground">{nextText}</span>
           </p>
@@ -466,9 +466,9 @@ function ClassCard({
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-primary" style={{ width: `${stats.revision}%` }} />
           </div>
-          <p className="mt-1 text-right text-xs font-semibold text-muted-foreground">{stats.revision}% revised</p>
+          <p className="mt-1 text-right text-[11px] font-bold text-muted-foreground">{stats.revision}% revised</p>
         </div>
-        <div className="flex flex-wrap gap-1.5 text-xs font-semibold text-muted-foreground">
+        <div className="flex flex-wrap gap-1.5 text-xs font-bold text-muted-foreground">
           {stats.weakCount > 0 && <span className="rounded-full bg-destructive/12 px-2 py-0.5 text-destructive">{stats.weakCount} weak</span>}
           {stats.notesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.notesCount} notes</span>}
           {stats.filesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.filesCount} files</span>}
@@ -481,7 +481,7 @@ function ClassCard({
 
 function ClassMetaChip({ icon: Icon, label, className }: { icon: LucideIcon; label: string; className?: string }) {
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-xs font-semibold text-muted-foreground', className)} title={label}>
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-[11px] font-bold text-muted-foreground', className)} title={label}>
       <Icon className="size-3 shrink-0 text-primary/75" aria-hidden="true" />
       <span className="truncate">{label}</span>
     </span>
@@ -507,7 +507,7 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-display text-lg font-semibold">Across your classes</h3>
+            <h3 className="font-display text-lg font-bold">Across your classes</h3>
             <p className="text-xs font-semibold text-muted-foreground">Deadlines and review targets from active courses.</p>
           </div>
           <Button asChild variant="link" className="h-auto px-0 text-primary">
@@ -516,21 +516,21 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[0.95fr_1.15fr]">
-          <section className="rounded-xl border border-border/70 bg-muted/25 p-3">
+          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
                 <CalendarDays className="size-4 text-primary" /> Due next
               </p>
-              <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{upcoming.length} active</span>
+              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{upcoming.length} active</span>
             </div>
             <div className="space-y-1.5">
               {upcoming.slice(0, 3).map((item) => (
                 <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-background/65 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{item.title}</p>
+                    <p className="truncate text-sm font-extrabold">{item.title}</p>
                     <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
                   </div>
-                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
+                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-extrabold text-destructive">
                     {item.dueDate ? daysUntil(item.dueDate) : 'TBD'}
                   </span>
                 </div>
@@ -539,22 +539,22 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
             </div>
           </section>
 
-          <section className="rounded-xl border border-border/70 bg-muted/25 p-3">
+          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
                 <Target className="size-4 text-primary" /> Review queue
               </p>
-              <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs font-semibold text-muted-foreground">Weakest first</span>
+              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Weakest first</span>
             </div>
             <div className="grid gap-1.5">
               {reviewItems.map((item) => (
                 <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-background/65 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{item.label}</p>
+                    <p className="truncate text-sm font-extrabold">{item.label}</p>
                     <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
                   </div>
                   <Badge variant={String(item.status).includes('weak') || item.status === 'active' ? 'danger' : 'warning'}>{String(item.status).replace(/-/g, ' ')}</Badge>
-                  <Link to={`/academics/classes/${item.classId}`} className="text-xs font-semibold text-primary">Review →</Link>
+                  <Link to={`/academics/classes/${item.classId}`} className="text-xs font-extrabold text-primary">Review →</Link>
                 </div>
               ))}
               {reviewItems.length === 0 && <p className="rounded-xl bg-background/55 px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
@@ -594,7 +594,7 @@ function ClassWorkspace({
   return (
     <div className="space-y-5">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <section className="relative overflow-hidden rounded-xl border border-border bg-card/84 shadow-sm">
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-card/84 shadow-sm">
           {row.background && (
             <>
               <img src={row.background} alt="" className="absolute inset-0 size-full object-cover opacity-20" />
@@ -604,10 +604,10 @@ function ClassWorkspace({
           <div className="relative flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to Class Center"><ArrowLeft className="size-4" /></Button>
-              <ClassIcon icon={row.icon} className={cn('size-11 rounded-xl bg-gradient-to-br', COLOR_STYLES[row.color])} />
+              <ClassIcon icon={row.icon} className={cn('size-11 rounded-2xl bg-gradient-to-br', COLOR_STYLES[row.color])} />
               <div className="min-w-0">
-                <h2 className="font-display text-lg font-semibold leading-tight">{row.courseCode} <span className="text-muted-foreground">{row.courseTitle}</span></h2>
-                <p className="truncate text-sm font-semibold text-muted-foreground">{row.instructor || 'Instructor TBD'} · {compactMeeting(row) || 'Meeting details TBD'} · {row.semester}</p>
+                <h2 className="font-display text-2xl font-extrabold leading-tight">{row.courseCode} <span className="text-muted-foreground">{row.courseTitle}</span></h2>
+                <p className="truncate text-sm font-bold text-muted-foreground">{row.instructor || 'Instructor TBD'} · {compactMeeting(row) || 'Meeting details TBD'} · {row.semester}</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -643,7 +643,7 @@ function ClassWorkspace({
           </div>
         </section>
         <div className="mt-4 grid gap-5 lg:grid-cols-[225px_minmax(0,1fr)] lg:items-start">
-          <aside className="rounded-xl border border-border bg-card/82 p-3 pt-4 shadow-sm lg:mt-1">
+          <aside className="rounded-3xl border border-border bg-card/82 p-3 pt-4 shadow-sm lg:mt-1">
             <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
               <TabsList className="flex h-auto min-w-max flex-row gap-2 rounded-none bg-transparent p-0 lg:min-w-0 lg:flex-col">
                 <ClassRailTab value="today" icon={BookOpen} label="Today" />
@@ -660,7 +660,7 @@ function ClassWorkspace({
                 <ClassRailTab value="kit" icon={FolderOpen} label="Course kit" />
               </TabsList>
             </div>
-            <p className="mt-3 hidden border-t border-border/70 px-2 pt-3 text-xs font-semibold text-muted-foreground lg:block">{assignmentCount || noteCount ? `${assignmentCount || noteCount} class item${(assignmentCount || noteCount) === 1 ? '' : 's'} active` : 'Class workspace'}</p>
+            <p className="mt-3 hidden border-t border-border/70 px-2 pt-3 text-xs font-bold text-muted-foreground lg:block">{assignmentCount || noteCount ? `${assignmentCount || noteCount} class item${(assignmentCount || noteCount) === 1 ? '' : 's'} active` : 'Class workspace'}</p>
           </aside>
           <div className="min-w-0 space-y-5">
             <TabsContent value="today" className="mt-0">
@@ -696,7 +696,7 @@ function ClassRailTab({ value, icon: Icon, label, count }: { value: string; icon
     <TabsTrigger
       value={value}
       className={cn(
-        'group min-h-12 min-w-[150px] justify-start gap-2.5 rounded-xl border border-transparent border-l-4 border-l-transparent bg-transparent px-3.5 py-3 text-sm font-semibold text-muted-foreground shadow-none transition',
+        'group min-h-12 min-w-[150px] justify-start gap-2.5 rounded-xl border border-transparent border-l-4 border-l-transparent bg-transparent px-3.5 py-3 text-sm font-extrabold text-muted-foreground shadow-none transition',
         'data-[state=active]:border-primary/20 data-[state=active]:border-l-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none',
         'hover:bg-muted/45 hover:text-foreground lg:w-full'
       )}
@@ -704,7 +704,7 @@ function ClassRailTab({ value, icon: Icon, label, count }: { value: string; icon
       <Icon className="size-4" />
       <span>{label}</span>
       {typeof count === 'number' && count > 0 && (
-        <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground group-data-[state=active]:bg-primary/15 group-data-[state=active]:text-primary">{count}</span>
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground group-data-[state=active]:bg-primary/15 group-data-[state=active]:text-primary">{count}</span>
       )}
     </TabsTrigger>
   )
@@ -722,12 +722,12 @@ function ClassRailLink({
     <button
       type="button"
       onClick={onClick}
-      className="group inline-flex min-h-12 min-w-[150px] items-center justify-start gap-2.5 rounded-xl border border-transparent border-l-4 border-l-transparent bg-transparent px-3.5 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted/45 hover:text-foreground lg:w-full"
+      className="group inline-flex min-h-12 min-w-[150px] items-center justify-start gap-2.5 rounded-xl border border-transparent border-l-4 border-l-transparent bg-transparent px-3.5 py-3 text-sm font-extrabold text-muted-foreground transition hover:bg-muted/45 hover:text-foreground lg:w-full"
     >
       <Icon className="size-4" />
       <span>{label}</span>
       {typeof count === 'number' && count > 0 && (
-        <span className="ml-auto rounded-full bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive">{count}</span>
+        <span className="ml-auto rounded-full bg-destructive/15 px-1.5 py-0.5 text-[11px] text-destructive">{count}</span>
       )}
     </button>
   )
@@ -753,13 +753,13 @@ function OverviewTab({
       <div className="space-y-5">
         <Card className="border-leaf/30 bg-leaf/8">
           <CardContent className="space-y-2 p-4">
-            <h3 className="font-display text-lg font-semibold">Do this next</h3>
+            <h3 className="font-display text-lg font-bold">Do this next</h3>
             {(actionRows.length ? actionRows : [{ label: 'Pick one topic and make notes for it', meta: 'Open', onClick: undefined }]).map((item) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={item.onClick}
-                className="flex w-full items-center justify-between rounded-xl bg-card/70 px-3 py-2 text-left text-sm font-semibold transition hover:bg-card disabled:cursor-default disabled:hover:bg-card/70"
+                className="flex w-full items-center justify-between rounded-xl bg-card/70 px-3 py-2 text-left text-sm font-extrabold transition hover:bg-card disabled:cursor-default disabled:hover:bg-card/70"
                 disabled={!item.onClick}
               >
                 <span>{item.label}</span>
@@ -788,15 +788,15 @@ function OverviewTab({
             {upcoming.map((item) => (
               <button key={item.id} type="button" onClick={openAssignments} className="flex w-full items-center justify-between gap-3 rounded-xl bg-muted/45 p-3 text-left transition hover:bg-muted">
                 <div>
-                  <p className="font-semibold">{item.title}</p>
+                  <p className="font-bold">{item.title}</p>
                   <p className="text-sm text-muted-foreground">{statusLabel(item.type)}</p>
                   {item.type === 'exam' && weakCoveredTopics(item, data).length > 0 && (
-                    <p className="mt-1 text-xs font-semibold text-destructive">
+                    <p className="mt-1 text-xs font-extrabold text-destructive">
                       Weak covered: {weakCoveredTopics(item, data).map((topic) => topic.title).join(', ')}
                     </p>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-destructive">{item.dueDate ? daysUntil(item.dueDate) : 'no date'}</span>
+                <span className="text-xs font-extrabold text-destructive">{item.dueDate ? daysUntil(item.dueDate) : 'no date'}</span>
               </button>
             ))}
             {!upcoming.length && <p className="text-sm text-muted-foreground">No class deadlines yet.</p>}
@@ -805,12 +805,12 @@ function OverviewTab({
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Latest note</CardTitle>
-            <button type="button" onClick={openNotes} className="text-xs font-semibold text-primary">All notes →</button>
+            <button type="button" onClick={openNotes} className="text-xs font-extrabold text-primary">All notes →</button>
           </CardHeader>
           <CardContent className="space-y-2">
             {latestNote ? (
               <div className="rounded-xl bg-muted/45 p-3">
-                <p className="font-semibold">{latestNote.title}</p>
+                <p className="font-bold">{latestNote.title}</p>
                 <p className="text-sm text-muted-foreground">{statusLabel(latestNote.type)} · {latestNote.date || 'No date'}</p>
               </div>
             ) : <p className="text-sm text-muted-foreground">No notes yet.</p>}
@@ -826,15 +826,15 @@ function OverviewTab({
                 ['Anki deck', row.ankiDeckName],
                 ['Drive', row.driveFolderUrl],
               ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
-                <a key={label} href={value && value.startsWith('http') ? value : undefined} className="rounded-full bg-muted px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-secondary">
+                <a key={label} href={value && value.startsWith('http') ? value : undefined} className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-foreground hover:bg-secondary">
                   {label}
                 </a>
               ))}
               {!row.syllabusUrl && !row.canvasUrl && !row.ankiDeckName && !row.driveFolderUrl && (
-                <button type="button" className="rounded-full bg-muted px-3 py-1.5 text-sm font-semibold text-muted-foreground">Add in Course kit</button>
+                <button type="button" className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-muted-foreground">Add in Course kit</button>
               )}
             </div>
-            <p className="text-sm font-semibold text-muted-foreground">{row.instructor || 'Professor'} — {data.contacts.find((c) => c.classId === row.id)?.officeHours || 'office hours TBD'} {data.contacts.find((c) => c.classId === row.id)?.email && <a className="ml-2 text-primary" href={`mailto:${data.contacts.find((c) => c.classId === row.id)?.email}`}>email ↗</a>}</p>
+            <p className="text-sm font-bold text-muted-foreground">{row.instructor || 'Professor'} — {data.contacts.find((c) => c.classId === row.id)?.officeHours || 'office hours TBD'} {data.contacts.find((c) => c.classId === row.id)?.email && <a className="ml-2 text-primary" href={`mailto:${data.contacts.find((c) => c.classId === row.id)?.email}`}>email ↗</a>}</p>
           </CardContent>
         </Card>
       </div>
@@ -881,8 +881,8 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
               onClick={() => setSelectedId(note.id)}
               className={cn('w-full rounded-xl p-3 text-left transition hover:bg-muted', selected?.id === note.id && 'bg-primary/10 text-primary')}
             >
-              <p className="font-semibold">{note.title}</p>
-              <p className="text-xs font-semibold text-muted-foreground">{statusLabel(note.type)} · {note.date || 'No date'}</p>
+              <p className="font-bold">{note.title}</p>
+              <p className="text-xs font-medium text-muted-foreground">{statusLabel(note.type)} · {note.date || 'No date'}</p>
               <TopicChipList ids={note.topicIds} data={data} />
             </button>
           ))}
@@ -893,7 +893,7 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
         {selected ? (
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <Input value={selected.title} onChange={(e) => patchNote(selected.id, { title: e.target.value }, mutate)} className="font-display text-lg font-semibold" />
+              <Input value={selected.title} onChange={(e) => patchNote(selected.id, { title: e.target.value }, mutate)} className="font-display text-lg font-bold" />
               <Badge variant={selected.syncStatus === 'synced' ? 'success' : selected.syncStatus === 'error' ? 'danger' : selected.externalDocUrl ? 'secondary' : 'warning'}>
                 {selected.externalDocUrl ? 'Linked doc' : selected.syncStatus === 'synced' ? 'Synced' : selected.syncStatus === 'error' ? 'Sync issue' : 'Local note'}
               </Badge>
@@ -911,7 +911,7 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
             />
             <Textarea className="min-h-[420px]" value={selected.content} onChange={(e) => patchNote(selected.id, { content: e.target.value }, mutate)} placeholder="Type lecture notes, question logs, study guides, or exam review notes here..." />
             <details className="rounded-xl border border-border bg-muted/25 px-3 py-2">
-              <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">More note options</summary>
+              <summary className="cursor-pointer text-xs font-extrabold text-muted-foreground">More note options</summary>
               <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
                 <Input placeholder="Google Doc or external note link" value={selected.externalDocUrl ?? ''} onChange={(e) => patchNote(selected.id, { externalDocUrl: e.target.value, syncStatus: e.target.value ? 'sync-ready' : 'local-only' }, mutate)} />
                 {selected.externalDocUrl && (
@@ -953,7 +953,7 @@ function CourseKitTab({ row, data, mutate }: ClassTabProps) {
                 key={label}
                 href={value && value.startsWith('http') ? value : undefined}
                 className={cn(
-                  'flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-semibold transition',
+                  'flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-bold transition',
                   value ? 'border-border bg-muted/45 text-foreground hover:bg-muted' : 'border-dashed border-border/80 text-muted-foreground'
                 )}
               >
@@ -1025,7 +1025,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
       {activeExam && (
         <PracticeExamRunner exam={activeExam} data={data} mutate={mutate} onClose={() => setActiveExamId('')} />
       )}
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/80 p-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/80 p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setGeneratorOpen(true)}><Plus className="size-4" /> Practice exam</Button>
           <DropdownMenu>
@@ -1040,7 +1040,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
           </DropdownMenu>
         </div>
         <div className="min-w-[220px] space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase text-muted-foreground">
+          <div className="flex items-center justify-between text-xs font-extrabold uppercase text-muted-foreground">
             <span>{nextExam ? `${nextExam.title} readiness` : 'Exam readiness'}</span>
             <span className="text-destructive">{readyCount}/{coveredTopics.length} ready</span>
           </div>
@@ -1053,7 +1053,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
             <CardTitle>Topic intelligence</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="hidden grid-cols-[1fr_120px_140px_140px_140px_92px] gap-3 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground lg:grid">
+            <div className="hidden grid-cols-[1fr_120px_140px_140px_140px_92px] gap-3 px-3 py-2 text-xs font-extrabold uppercase text-muted-foreground lg:grid">
               <span>Topic</span>
               <span>Status</span>
               <span>Confidence</span>
@@ -1074,7 +1074,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
               {revisionQueue.map(({ topic, readiness, practice }) => (
                 <div key={topic.id} className="flex items-center justify-between gap-3 rounded-xl bg-muted/45 p-3">
                   <div>
-                    <p className="font-semibold">{topic.title}</p>
+                    <p className="font-bold">{topic.title}</p>
                     <p className="text-xs font-semibold text-muted-foreground">
                       {practice.total ? `${practice.correct}/${practice.total} practice correct` : 'Not tested'} · {activeWeakAreasForTopic(topic.id, data).length} weak
                     </p>
@@ -1089,8 +1089,8 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
             <CardContent className="space-y-2">
               {exams.slice(0, 4).map((exam) => (
                 <button key={exam.id} type="button" onClick={() => setActiveExamId(exam.id)} className="flex w-full items-center justify-between rounded-xl bg-muted/45 p-3 text-left hover:bg-muted">
-                  <span className="font-semibold">{exam.title}</span>
-                  <span className="text-xs font-semibold text-muted-foreground">{exam.status === 'submitted' || exam.status === 'reviewed' ? `${exam.score ?? 0}/${exam.totalAutoGradable ?? exam.questionCount}` : statusLabel(exam.status)}</span>
+                  <span className="font-bold">{exam.title}</span>
+                  <span className="text-xs font-extrabold text-muted-foreground">{exam.status === 'submitted' || exam.status === 'reviewed' ? `${exam.score ?? 0}/${exam.totalAutoGradable ?? exam.questionCount}` : statusLabel(exam.status)}</span>
                 </button>
               ))}
               {!exams.length && <p className="text-sm text-muted-foreground">No practice attempts yet.</p>}
@@ -1125,7 +1125,7 @@ function TopicMatrixRow({ topic, data, mutate }: { topic: ClassTopic; data: Clas
       weakAreas.length ? 'border border-destructive/25 bg-destructive/8' : 'bg-card/55'
     )}>
       <div className="min-w-0">
-        <p className="truncate font-semibold">{topic.title}</p>
+        <p className="truncate font-bold">{topic.title}</p>
         <p className="text-xs font-semibold text-muted-foreground">{topic.unit || 'No unit'}{weakAreas.length ? ` · ${weakAreas.length} active weak` : ''}</p>
       </div>
       <TinySelect value={topic.status} options={TOPIC_STATUSES} onChange={(value) => mutate((draft) => {
@@ -1214,7 +1214,7 @@ function PracticeExamGenerator({
             </Field>
           </div>
           {generating && (
-            <div className="rounded-xl bg-primary/10 p-4 text-sm font-semibold text-primary">
+            <div className="rounded-2xl bg-primary/10 p-4 text-sm font-bold text-primary">
               Building a balanced local practice set from your topics...
             </div>
           )}
@@ -1286,12 +1286,12 @@ function PracticeExamRunner({
       </CardHeader>
       <CardContent className="space-y-4">
         <ProgressLine value={Math.round(((index + 1) / questions.length) * 100)} />
-        <div className="rounded-xl bg-card/80 p-4">
+        <div className="rounded-2xl bg-card/80 p-4">
           <div className="flex items-center justify-between gap-3">
             <Badge variant="secondary">Question {index + 1} / {questions.length}</Badge>
-            <button type="button" className="text-xs font-semibold text-primary" onClick={() => patchQuestion(question.id, { flagged: !question.flagged })}>{question.flagged ? 'Flagged' : 'Flag'}</button>
+            <button type="button" className="text-xs font-extrabold text-primary" onClick={() => patchQuestion(question.id, { flagged: !question.flagged })}>{question.flagged ? 'Flagged' : 'Flag'}</button>
           </div>
-          <p className="mt-3 font-semibold">{question.prompt}</p>
+          <p className="mt-3 font-bold">{question.prompt}</p>
           <TopicChipList ids={question.topicIds} data={data} />
           {question.type === 'multiple-choice' ? (
             <div className="mt-3 space-y-2">
@@ -1302,7 +1302,7 @@ function PracticeExamRunner({
                   disabled={submitted}
                   onClick={() => patchQuestion(question.id, { userAnswer: choice })}
                   className={cn(
-                    'w-full rounded-xl border border-border p-3 text-left text-sm font-semibold transition hover:bg-muted',
+                    'w-full rounded-xl border border-border p-3 text-left text-sm font-bold transition hover:bg-muted',
                     question.userAnswer === choice && 'border-primary bg-primary/10',
                     submitted && choice === question.correctAnswer && 'border-leaf bg-leaf/15',
                     submitted && question.userAnswer === choice && choice !== question.correctAnswer && 'border-destructive bg-destructive/10'
@@ -1323,7 +1323,7 @@ function PracticeExamRunner({
           )}
           {submitted && (
             <div className="mt-4 space-y-3 rounded-xl bg-muted/45 p-3">
-              <p className="text-sm font-semibold">{question.explanation}</p>
+              <p className="text-sm font-bold">{question.explanation}</p>
               {question.type !== 'multiple-choice' && (
                 <div className="flex flex-wrap gap-2">
                   {(['correct', 'partial', 'missed'] as const).map((grade) => (
@@ -1369,7 +1369,7 @@ function ClassEditorDialog({
         </DialogHeader>
         <div className="space-y-5">
           <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Basics</h3>
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Basics</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Course code"><Input value={form.courseCode} onChange={(e) => onChange({ courseCode: e.target.value })} placeholder="BIOL 103" /></Field>
               <Field label="Course title"><Input value={form.courseTitle} onChange={(e) => onChange({ courseTitle: e.target.value })} placeholder="How Cells Function" /></Field>
@@ -1382,7 +1382,7 @@ function ClassEditorDialog({
             </div>
           </section>
           <section className="space-y-3 border-t border-border pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Look</h3>
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Look</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Icon">
                 <div className="flex flex-wrap gap-1.5">
@@ -1406,7 +1406,7 @@ function ClassEditorDialog({
               <Field label="Color">
                 <div className="flex flex-wrap gap-1.5">
                   {COLORS.map((color) => (
-                    <button type="button" key={color} onClick={() => onChange({ color })} className={cn('rounded-full px-2.5 py-1 text-xs font-semibold capitalize', PILL_STYLES[color], form.color === color && 'ring-2 ring-primary')}>
+                    <button type="button" key={color} onClick={() => onChange({ color })} className={cn('rounded-full px-2.5 py-1 text-xs font-bold capitalize', PILL_STYLES[color], form.color === color && 'ring-2 ring-primary')}>
                       {color}
                     </button>
                   ))}
@@ -1418,8 +1418,8 @@ function ClassEditorDialog({
               </Field>
             </div>
           </section>
-          <details className="rounded-xl border border-border bg-muted/25 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Links</summary>
+          <details className="rounded-2xl border border-border bg-muted/25 p-3">
+            <summary className="cursor-pointer text-sm font-extrabold">Links</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Field label="Syllabus"><Input value={form.syllabusUrl ?? ''} onChange={(e) => onChange({ syllabusUrl: e.target.value })} placeholder="Paste URL" /></Field>
               <Field label="Canvas"><Input value={form.canvasUrl ?? ''} onChange={(e) => onChange({ canvasUrl: e.target.value })} placeholder="Paste URL" /></Field>
@@ -1772,7 +1772,7 @@ function statusLabel(value: string) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="space-y-1.5 text-sm font-semibold">
+    <label className="space-y-1.5 text-sm font-bold">
       <span>{label}</span>
       {children}
     </label>
@@ -1790,7 +1790,7 @@ function TopicPicker({
 }) {
   return (
     <div className={cn('space-y-2', compact && 'min-w-[180px]')}>
-      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <p className="text-xs font-extrabold uppercase text-muted-foreground">{label}</p>
       <div className="flex max-h-36 flex-wrap gap-1 overflow-y-auto rounded-xl border border-border bg-card/60 p-2">
         {topics.map((topic) => (
           <ToggleChip key={topic.id} selected={value.includes(topic.id)} onClick={() => onChange(toggleValue(value, topic.id))}>
@@ -1809,9 +1809,9 @@ function TopicChipList({ ids, data }: { ids: string[]; data: ClassCenterData }) 
   return (
     <div className="mt-2 flex flex-wrap gap-1">
       {topics.slice(0, 4).map((topic) => (
-        <span key={topic.id} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{topic.title}</span>
+        <span key={topic.id} className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-extrabold text-primary">{topic.title}</span>
       ))}
-      {topics.length > 4 && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">+{topics.length - 4}</span>}
+      {topics.length > 4 && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-extrabold text-muted-foreground">+{topics.length - 4}</span>}
     </div>
   )
 }
@@ -1822,7 +1822,7 @@ function ToggleChip({ selected, onClick, children }: { selected: boolean; onClic
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-full border px-2.5 py-1 text-xs font-semibold transition',
+        'rounded-full border px-2.5 py-1 text-xs font-extrabold transition',
         selected ? 'border-primary bg-primary/14 text-primary' : 'border-border bg-card text-muted-foreground hover:bg-muted'
       )}
     >
@@ -1835,7 +1835,7 @@ function InlineGauge({ value, meta, muted }: { value: number; meta: string; mute
   return (
     <div className="space-y-1">
       <ProgressLine value={value} muted={muted} />
-      <p className={cn('text-xs font-semibold', muted ? 'text-muted-foreground' : 'text-foreground')}>{meta}</p>
+      <p className={cn('text-xs font-extrabold', muted ? 'text-muted-foreground' : 'text-foreground')}>{meta}</p>
     </div>
   )
 }
@@ -1850,7 +1850,7 @@ function ProgressLine({ value, muted }: { value: number; muted?: boolean }) {
 
 function TopicReferenceBadge({ label, count }: { label: string; count: number }) {
   if (!count) return null
-  return <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{count} {label}</span>
+  return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{count} {label}</span>
 }
 
 function toggleValue<T>(items: T[], item: T) {
@@ -1871,7 +1871,7 @@ function BannerField({ value, onChange }: { value: string; onChange: (value: str
   return (
     <div className="space-y-2 md:col-span-2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold">Background / banner</span>
+        <span className="text-sm font-bold">Background / banner</span>
         {value && (
           <Button type="button" size="sm" variant="ghost" onClick={() => onChange('')}>
             Clear
@@ -1884,7 +1884,7 @@ function BannerField({ value, onChange }: { value: string; onChange: (value: str
           onChange={(e) => onChange(e.target.value === 'Attached image' ? value : e.target.value)}
           placeholder="Paste an image URL..."
         />
-        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-semibold shadow-sm transition hover:bg-muted">
+        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-bold shadow-sm transition hover:bg-muted">
           <Upload className="size-4" />
           Choose image
           <input
@@ -1896,7 +1896,7 @@ function BannerField({ value, onChange }: { value: string; onChange: (value: str
         </label>
       </div>
       {value && (
-        <div className="overflow-hidden rounded-xl border border-border bg-muted">
+        <div className="overflow-hidden rounded-2xl border border-border bg-muted">
           <img src={value} alt="Class banner preview" className="h-28 w-full object-cover" />
         </div>
       )}
@@ -1918,7 +1918,7 @@ function InlineInput({ value, onChange, placeholder }: { value: string; onChange
 function TinySelect({ value, options, labels, onChange }: { value: string; options: readonly string[]; labels?: Record<string, string>; onChange: (value: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 max-w-full rounded-full text-xs font-semibold"><SelectValue /></SelectTrigger>
+      <SelectTrigger className="h-8 max-w-full rounded-full text-xs font-bold"><SelectValue /></SelectTrigger>
       <SelectContent>{options.map((item) => <SelectItem key={item} value={item}>{labels?.[item] ?? statusLabel(item)}</SelectItem>)}</SelectContent>
     </Select>
   )
