@@ -14,3 +14,10 @@ export const CHART_DATA_RULES = {
   ai: 'AI-estimated chart values are prohibited',
 } as const
 
+export type ChartType = keyof typeof CHART_TYPE_DATA_MAP
+
+export function chartTypeFor(intent: (typeof CHART_TYPE_DATA_MAP)[ChartType]): ChartType {
+  const entry = Object.entries(CHART_TYPE_DATA_MAP).find(([, value]) => value === intent)
+  if (!entry) throw new Error(`No approved chart type for: ${intent}`)
+  return entry[0] as ChartType
+}

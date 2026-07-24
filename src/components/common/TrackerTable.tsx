@@ -15,6 +15,7 @@ import {
   getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel,
   useReactTable, type ColumnDef as TanStackColumnDef, type PaginationState, type SortingState,
 } from '@tanstack/react-table'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import type { CollectionKey } from '@/lib/types'
 import { useStore } from '@/store/store'
 import { cn } from '@/lib/utils'
@@ -42,6 +43,7 @@ import { BulkActionBar } from '@/components/common/BulkActionBar'
 import { SavedViewControls } from '@/components/common/SavedViewControls'
 import { useSavedViews } from '@/components/common/useSavedViews'
 import { useToast } from '@/components/common/useToast'
+import { MOTION_DISTANCE, MOTION_TRANSITION } from '@/lib/motion'
 
 export type CellType = 'text' | 'number' | 'date' | 'select' | 'longtext' | 'link' | 'toggle' | 'read' | 'custom'
 
@@ -223,7 +225,7 @@ export function TrackerTable({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="overflow-hidden rounded-2xl border border-border bg-card/70 shadow-sm">
+      <div className="glass-surface overflow-hidden rounded-2xl border">
         <div className="flex min-h-10 flex-wrap items-center justify-end gap-3 border-b border-border px-3 py-1.5">
           <div className="relative mr-auto min-w-48 flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -266,7 +268,13 @@ export function TrackerTable({
                     return <Icon className="size-3.5 opacity-65" aria-hidden="true" />
                   })()}
                   {c.header}
-                  <ArrowUpDown className={cn('size-3 opacity-35', dataTable.getColumn(c.key)?.getIsSorted() && 'text-primary opacity-100')} aria-hidden="true" />
+                  <m.span
+                    animate={{ rotate: dataTable.getColumn(c.key)?.getIsSorted() === 'desc' ? 180 : 0 }}
+                    transition={MOTION_TRANSITION.micro}
+                    className="inline-flex"
+                  >
+                    <ArrowUpDown className={cn('size-3 opacity-35', dataTable.getColumn(c.key)?.getIsSorted() && 'text-primary opacity-100')} aria-hidden="true" />
+                  </m.span>
                 </button>
               </th>
             ))}
@@ -275,29 +283,39 @@ export function TrackerTable({
           </thead>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <tbody>
-              {displayedRows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  row={row}
-                  columns={visibleColumns}
-                  checkKey={checkKey}
-                  reorder={reorder}
-                  rowActions={rowActions}
-                  onChange={(k, v) => patch(row.id, k, v)}
-                  onDelete={() => (onDelete ? onDelete(row.id) : toggleSelected(row.id))}
-                  onOpen={onOpen ? () => onOpen(row.id) : undefined}
-                  selected={effectiveSelectedIds.has(row.id)}
-                  onToggleSelected={() => toggleSelected(row.id)}
-                  density={views.state.density}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {displayedRows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    row={row}
+                    columns={visibleColumns}
+                    checkKey={checkKey}
+                    reorder={reorder}
+                    rowActions={rowActions}
+                    onChange={(k, v) => patch(row.id, k, v)}
+                    onDelete={() => (onDelete ? onDelete(row.id) : toggleSelected(row.id))}
+                    onOpen={onOpen ? () => onOpen(row.id) : undefined}
+                    selected={effectiveSelectedIds.has(row.id)}
+                    onToggleSelected={() => toggleSelected(row.id)}
+                    density={views.state.density}
+                  />
+                ))}
+              </AnimatePresence>
             </tbody>
           </SortableContext>
         </table>
         </div>
         <div className={cn('max-h-[42rem] overflow-y-auto p-3 md:hidden', views.state.density === 'compact' ? 'space-y-1.5' : 'space-y-3')}>
+          <AnimatePresence initial={false}>
           {displayedRows.map((row) => (
-            <article key={row.id} className={cn('rounded-xl border border-border bg-card', views.state.density === 'compact' ? 'p-2' : 'p-3')}>
+            <m.article
+              key={row.id}
+              initial={{ opacity: 0, y: MOTION_DISTANCE.small }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -MOTION_DISTANCE.small }}
+              transition={MOTION_TRANSITION.standard}
+              className={cn('rounded-xl border border-border bg-card/70 shadow-sm backdrop-blur-md', views.state.density === 'compact' ? 'p-2' : 'p-3')}
+            >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Checkbox checked={effectiveSelectedIds.has(row.id)} onCheckedChange={() => toggleSelected(row.id)} aria-label="Select record" />
                 {onOpen && <button type="button" className="ml-auto text-sm font-bold text-primary" onClick={() => onOpen(row.id)}>Open</button>}
@@ -313,8 +331,9 @@ export function TrackerTable({
                   </div>
                 ))}
               </dl>
-            </article>
+            </m.article>
           ))}
+          </AnimatePresence>
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <span>{dataTable.getFilteredRowModel().rows.length} records · page {dataTable.getState().pagination.pageIndex + 1} of {Math.max(1, dataTable.getPageCount())}</span>
@@ -346,13 +365,18 @@ function TableRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
   const checked = checkKey ? Boolean(field(row, checkKey)) : false
+  const reduceMotion = useReducedMotion()
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <tr
+        <m.tr
           ref={setNodeRef}
           style={{ transform: CSS.Transform.toString(transform), transition }}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: isDragging ? 0.6 : checked ? 0.55 : 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
+          transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
           className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
         >
       {reorder && (
@@ -385,7 +409,7 @@ function TableRow({
           </button>
         </div>
       </td>
-        </tr>
+        </m.tr>
       </ContextMenuTrigger>
       <ContextMenuContent>
         {onOpen && <ContextMenuItem onSelect={onOpen}>Open record</ContextMenuItem>}
