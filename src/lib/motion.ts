@@ -36,6 +36,31 @@ export const crossfade: Variants = {
   exit: { opacity: 0, transition: MOTION_TRANSITION.micro },
 }
 
+/** Horizontal Shared-Axis transition. A positive direction moves forward. */
+export const sharedAxis: Variants = {
+  hidden: (direction = 1) => ({
+    opacity: 0,
+    x: direction * MOTION_DISTANCE.medium,
+  }),
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: MOTION_TRANSITION.standard,
+  },
+  exit: (direction = 1) => ({
+    opacity: 0,
+    x: direction * -MOTION_DISTANCE.medium,
+    transition: MOTION_TRANSITION.micro,
+  }),
+}
+
+/** Reduced-motion counterpart: preserve orientation without spatial movement. */
+export const instantCrossfade: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0 } },
+  exit: { opacity: 0, transition: { duration: 0 } },
+}
+
 export const microScaleFade: Variants = {
   hidden: { opacity: 0, scale: 0.98 },
   visible: { opacity: 1, scale: 1, transition: MOTION_TRANSITION.standard },

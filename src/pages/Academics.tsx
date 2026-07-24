@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, m } from 'motion/react'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils'
 import { ModeSwitch } from '@/components/common/ModeSwitch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/common/useToast'
-import { crossfade } from '@/lib/motion'
+import { instantCrossfade, sharedAxis } from '@/lib/motion'
 
 const GRADES: LetterGrade[] = ['', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'P', 'IP']
 const COURSE_COLUMNS: ColumnDef[] = [
@@ -46,6 +46,7 @@ const COURSE_COLUMNS: ColumnDef[] = [
 ]
 
 export function Academics() {
+  const reduceMotion = useReducedMotion()
   const [searchParams, setSearchParams] = useSearchParams()
   const { classId } = useParams()
   const courses = useStore((s) => s.courses)
@@ -116,8 +117,15 @@ export function Academics() {
         />
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <m.div key={mode} variants={crossfade} initial="hidden" animate="visible" exit="exit">
+      <AnimatePresence mode="wait" initial={false} custom={mode === 'planning' ? 1 : -1}>
+        <m.div
+          key={mode}
+          custom={mode === 'planning' ? 1 : -1}
+          variants={reduceMotion ? instantCrossfade : sharedAxis}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+        >
           <Tabs
             value={activeTab}
             onValueChange={(tab) => setSearchParams({ mode, tab })}
