@@ -17,6 +17,7 @@ export const MOTION_EASE = {
 } as const
 
 export const MOTION_TRANSITION = {
+  instant: { duration: 0 },
   micro: { duration: MOTION_DURATION.micro, ease: MOTION_EASE.enter },
   standard: { duration: MOTION_DURATION.standard, ease: MOTION_EASE.enter },
   entrance: { duration: MOTION_DURATION.entrance, ease: MOTION_EASE.enter },
@@ -57,8 +58,8 @@ export const sharedAxis: Variants = {
 /** Reduced-motion counterpart: preserve orientation without spatial movement. */
 export const instantCrossfade: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0 } },
-  exit: { opacity: 0, transition: { duration: 0 } },
+  visible: { opacity: 1, transition: MOTION_TRANSITION.instant },
+  exit: { opacity: 0, transition: MOTION_TRANSITION.instant },
 }
 
 export const microScaleFade: Variants = {
@@ -82,6 +83,39 @@ export const staggerContainer: Variants = {
     },
   },
 }
+
+export const surfaceEntrance: Variants = {
+  hidden: { opacity: 0, y: MOTION_DISTANCE.medium, scale: 0.99 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: MOTION_TRANSITION.entrance,
+  },
+  exit: {
+    opacity: 0,
+    y: -MOTION_DISTANCE.small,
+    transition: MOTION_TRANSITION.micro,
+  },
+}
+
+export const listItemEntrance: Variants = {
+  hidden: { opacity: 0, y: MOTION_DISTANCE.small },
+  visible: { opacity: 1, y: 0, transition: MOTION_TRANSITION.standard },
+  exit: { opacity: 0, y: -MOTION_DISTANCE.small, transition: MOTION_TRANSITION.micro },
+}
+
+export const MOTION_GESTURE = {
+  press: { scale: 0.97 },
+  subtlePress: { scale: 0.985 },
+  lift: { y: -2 },
+  glowLift: { y: -3, scale: 1.005 },
+} as const
+
+export const MOTION_VIEWPORT = {
+  once: true,
+  amount: 0.2,
+} as const
 
 /** Shared mechanism map. Motion is presentational and must never alter source values. */
 export const MOTION_MECHANISM = {

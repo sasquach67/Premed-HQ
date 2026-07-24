@@ -3,11 +3,10 @@ import { MOTION_TRANSITION } from '@/lib/motion'
 
 export function AppMotionProvider({ children }: { children: React.ReactNode }) {
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user" transition={MOTION_TRANSITION.standard}>
         {children}
       </MotionConfig>
     </LazyMotion>
   )
 }
-
