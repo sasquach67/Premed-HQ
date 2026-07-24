@@ -55,7 +55,7 @@ function IdentityHeader() {
       <CardContent className="flex flex-col gap-5 py-6 sm:flex-row sm:items-center">
         <AvatarUpload value={profile.avatarDataUrl} name={profile.name} onChange={(v) => update((d) => { d.profile.avatarDataUrl = v })} />
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-2xl font-bold">{profile.name}</h2>
+          <h2 className="font-display text-lg font-semibold">{profile.name}</h2>
           <p className="text-sm text-muted-foreground">{profile.major} · {profile.track} · {profile.school}</p>
           <p className="text-xs text-muted-foreground">{profile.classYear} · matriculate {profile.matriculationTarget} · {profile.applicationCycle}</p>
         </div>
@@ -72,8 +72,8 @@ function IdentityHeader() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
-      <p className="font-display text-xl font-bold text-primary">{value}</p>
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="font-display text-lg font-semibold text-primary">{value}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
     </div>
   )
 }
@@ -97,7 +97,7 @@ function AvatarUpload({ value, name, onChange }: { value?: string; name: string;
     >
       {value
         ? <img src={value} alt="" className="size-full object-cover" />
-        : <span className="font-display text-3xl font-bold text-muted-foreground">{name.slice(0, 1)}</span>}
+        : <span className="font-display text-3xl font-semibold text-muted-foreground">{name.slice(0, 1)}</span>}
       <button onClick={() => inputRef.current?.click()} className="absolute inset-0 grid place-items-center bg-foreground/40 text-background opacity-0 transition-opacity group-hover:opacity-100" title="Upload or drag a photo">
         <Camera className="size-5" />
       </button>
@@ -135,19 +135,19 @@ function AutoCv() {
       <Card>
         <CardContent className="prose-sm mx-auto max-w-3xl space-y-6 py-8">
           <header className="border-b border-border pb-4 text-center">
-            <h2 className="font-display text-3xl font-bold">{profile.name}</h2>
+            <h2 className="font-display text-3xl font-semibold">{profile.name}</h2>
             <p className="text-sm text-muted-foreground">{profile.major} · {profile.track} · {profile.school} · {profile.classYear}</p>
           </header>
 
           <section>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary"><GraduationCap className="size-4" /> Education</h3>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-primary"><GraduationCap className="size-4" /> Education</h3>
             <p className="text-sm font-semibold">{profile.school} — {profile.major}</p>
             <p className="text-sm text-muted-foreground">Expected {profile.classYear}</p>
           </section>
 
           {[...byCat.entries()].map(([cat, items]) => (
             <section key={cat}>
-              <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-primary">{CATEGORY_LABEL[cat]}</h3>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">{CATEGORY_LABEL[cat]}</h3>
               <ul className="space-y-2">
                 {items.map((e) => (
                   <li key={e.id} className="text-sm">
