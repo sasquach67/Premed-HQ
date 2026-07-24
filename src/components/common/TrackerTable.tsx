@@ -29,6 +29,13 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { AutosaveStatus, type SaveStatus } from '@/components/common/AutosaveStatus'
 import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
 import { BulkActionBar } from '@/components/common/BulkActionBar'
@@ -341,11 +348,13 @@ function TableRow({
   const checked = checkKey ? Boolean(field(row, checkKey)) : false
 
   return (
-    <tr
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
-    >
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <tr
+          ref={setNodeRef}
+          style={{ transform: CSS.Transform.toString(transform), transition }}
+          className={cn('group border-b border-border/70 last:border-0 hover:bg-muted/35', density === 'compact' ? 'min-h-10' : 'min-h-14', isDragging && 'opacity-60', checked && 'opacity-55')}
+        >
       {reorder && (
         <td className="px-1 text-muted-foreground">
           <button {...attributes} {...listeners} className="grid size-7 cursor-grab place-items-center rounded-md opacity-55 transition hover:bg-muted hover:text-foreground hover:opacity-100 active:cursor-grabbing" aria-label="Drag to reorder">
@@ -376,7 +385,19 @@ function TableRow({
           </button>
         </div>
       </td>
-    </tr>
+        </tr>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        {onOpen && <ContextMenuItem onSelect={onOpen}>Open record</ContextMenuItem>}
+        <ContextMenuItem onSelect={onToggleSelected}>
+          <CheckSquare2 className="size-4" /> {selected ? 'Clear selection' : 'Select record'}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem variant="destructive" onSelect={onDelete}>
+          <Trash2 className="size-4" /> Select for removal
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
 
