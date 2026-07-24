@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ExternalLink, Link2, FileText, FolderOpen, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AspectRatio } from '@/components/ui/aspect-ratio'
 
 /** Turn a Google share URL into an embeddable preview src. */
 function toEmbedSrc(url: string): string | null {
@@ -23,7 +24,7 @@ function toEmbedSrc(url: string): string | null {
  *  read-only (Google blocks editing in iframes), so we pair it with an
  *  "Open to edit" button — the practical, honest version of inline editing. */
 export function DocEmbed({
-  value, onChange, kind = 'doc', height = 460, title,
+  value, onChange, kind = 'doc', title,
 }: {
   value: string
   onChange: (url: string) => void
@@ -70,7 +71,11 @@ export function DocEmbed({
           </Button>
         </div>
       </div>
-      {src && <iframe src={src} title={title ?? 'Embedded document'} style={{ height }} className="w-full" loading="lazy" />}
+      {src && (
+        <AspectRatio ratio={16 / 9}>
+          <iframe src={src} title={title ?? 'Embedded document'} className="size-full" loading="lazy" />
+        </AspectRatio>
+      )}
     </div>
   )
 }
