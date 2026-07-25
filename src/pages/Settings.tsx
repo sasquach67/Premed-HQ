@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Archive as ArchiveIcon, Cloud, CloudOff, Download, Upload, RotateCcw, Check, AlertCircle,
-  Palette, ExternalLink, CheckCircle2, Trash2, CalendarClock, RefreshCw, Unplug, Wifi, ShieldCheck,
+  Palette, ExternalLink, CheckCircle2, Trash2, CalendarClock, RefreshCw, Unplug, Wifi, ShieldCheck, BellOff,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
 import { useBackup } from '@/store/useBackup'
@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { TimeField } from '@/components/common/DateField'
 import { TrashRecovery } from '@/components/common/TrashRecovery'
+import { mutedRecommendationRules } from '@/lib/intelligence'
 
 export function Settings() {
   const route = ROUTE_MAP.settings
@@ -196,6 +197,8 @@ export function Settings() {
             )}
           </CardContent>
         </Card>
+
+        <MutedSuggestionsSection />
 
         <Card className="border-destructive/30">
           <CardHeader><CardTitle className="text-destructive">Danger zone</CardTitle></CardHeader>
@@ -485,6 +488,44 @@ function ArchiveSettingsSection({ highlight }: { highlight: boolean }) {
         )}
         <div className="mt-6 border-t border-border pt-6">
           <TrashRecovery />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Muted suggestions (foundation L6 alert-fatigue guard).
+ *
+ *  Muting a rule must never be a silent black hole: anything the engine has
+ *  stopped suggesting is listed here and can be turned back on in one click.
+ *  Blocking items are never mutable, so they can never appear in this list. */
+function MutedSuggestionsSection() {
+  const data = useStore()
+  const unmute = useStore((s) => s.unmuteRecommendationRule)
+  const muted = mutedRecommendationRules(data)
+  if (!muted.length) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><BellOff className="size-4 text-primary" /> Muted suggestions</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          These suggestions stopped appearing after you dismissed them repeatedly. Urgent and blocking items are never muted.
+        </p>
+        <div className="space-y-1.5">
+          {muted.map((rule) => (
+            <div key={rule.ruleId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{rule.label}</p>
+                <p className="text-xs text-muted-foreground">Muted {fmtTimeAgo(rule.at)}</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => unmute(rule.ruleId)}>
+                <RotateCcw className="size-3.5" /> Turn back on
+              </Button>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

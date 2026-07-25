@@ -14,6 +14,8 @@ import type {
 } from '@/lib/types'
 import { createSeedData } from '@/data/seed'
 import { uid } from '@/lib/id'
+import { isMutableSeverity } from '@/lib/intelligence/recommendations'
+import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
 
 export const STORAGE_KEY = 'premed_hq_v1'
 const SEED_VERSION = 1
@@ -41,6 +43,12 @@ interface Actions {
   setNote: (id: string, value: string) => void
   touchRoute: (routeId: string) => void
   logActivity: (pillar: string, label: string) => void
+
+  /** Recommendation lifecycle (foundation L6). These record an OUTCOME — they
+   *  never perform the recommended action, which stays the user's to take. */
+  acceptRecommendation: (id: string) => void
+  dismissRecommendation: (rec: { id: string; ruleId: string; severity: Severity }, reason?: string) => void
+  unmuteRecommendationRule: (ruleId: string) => void
 
   replaceAll: (data: AppData) => void
   resetToSeed: () => void
@@ -88,6 +96,15 @@ export function migrateSafetyNets(data: AppData): AppData {
   data.settings.activeSavedViewIds ??= {}
   data.settings.attentionSnoozedUntil ??= {}
   data.meta.recoveryStack ??= []
+  return data
+}
+
+/** Additive L6 migration: legacy backups gain the deterministic-intelligence
+ *  containers without reshaping any record. Idempotent (`??=`) and lossless —
+ *  it only ever adds empty maps, never drops or rewrites user data. */
+export function migrateIntelligence(data: AppData): AppData {
+  data.settings.recommendationState ??= {}
+  data.settings.mutedRecommendationRules ??= {}
   return data
 }
 
@@ -521,8 +538,39 @@ export const useStore = create<Store>()(
           s.meta.activity = s.meta.activity.slice(0, 30)
         }),
 
+      acceptRecommendation: (id) =>
+        set((s) => {
+          s.settings.recommendationState[id] = { status: 'accepted', at: Date.now() }
+        }),
+
+      dismissRecommendation: (rec, reason) =>
+        set((s) => {
+          s.settings.recommendationState[rec.id] = { status: 'dismissed', at: Date.now(), reason }
+          // Alert-fatigue guard. Dismissal is per-instance by default; only once
+          // the same rule has been waved away repeatedly do we mute the rule
+          // itself — and never for blocking items, which must always surface
+          // no matter how often they are dismissed.
+          if (!isMutableSeverity(rec.severity)) return
+          const dismissals = Object.entries(s.settings.recommendationState)
+            .filter(([key, record]) => record.status === 'dismissed' && key.startsWith(`${rec.ruleId}:`))
+            .length
+          if (dismissals >= INTELLIGENCE_THRESHOLDS.ruleMuteAfterDismissals) {
+            s.settings.mutedRecommendationRules[rec.ruleId] = { at: Date.now() }
+          }
+        }),
+
+      unmuteRecommendationRule: (ruleId) =>
+        set((s) => {
+          delete s.settings.mutedRecommendationRules[ruleId]
+          // Clear this rule's dismissal history too, otherwise the very next
+          // dismissal would instantly re-trip the mute threshold.
+          for (const key of Object.keys(s.settings.recommendationState)) {
+            if (key.startsWith(`${ruleId}:`)) delete s.settings.recommendationState[key]
+          }
+        }),
+
       replaceAll: (data) => set(() => ({
-        ...migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags({ ...createSeedData(), ...data } as AppData)))),
+        ...migrateIntelligence(migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags({ ...createSeedData(), ...data } as AppData))))),
       })),
 
       resetToSeed: () => set(() => ({ ...createSeedData() })),
@@ -553,6 +601,8 @@ export const useStore = create<Store>()(
             savedViews: p.settings?.savedViews ?? current.settings.savedViews,
             activeSavedViewIds: p.settings?.activeSavedViewIds ?? current.settings.activeSavedViewIds,
             attentionSnoozedUntil: p.settings?.attentionSnoozedUntil ?? current.settings.attentionSnoozedUntil,
+            recommendationState: p.settings?.recommendationState ?? current.settings.recommendationState,
+            mutedRecommendationRules: p.settings?.mutedRecommendationRules ?? current.settings.mutedRecommendationRules,
           },
           mcat: { ...current.mcat, ...p.mcat },
           meta: {
@@ -565,7 +615,7 @@ export const useStore = create<Store>()(
           profile: { ...current.profile, ...p.profile },
           goals: { ...current.goals, ...p.goals },
         }
-        return migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags(merged as AppData)))) as unknown as Store
+        return migrateIntelligence(migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags(merged as AppData))))) as unknown as Store
       },
     }
   )

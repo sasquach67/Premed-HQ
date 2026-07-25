@@ -683,6 +683,8 @@ export function createSeedData(): AppData {
       savedViews: {},
       activeSavedViewIds: {},
       attentionSnoozedUntil: {},
+      recommendationState: {},
+      mutedRecommendationRules: {},
     },
     meta: {
       recentRoutes: [],

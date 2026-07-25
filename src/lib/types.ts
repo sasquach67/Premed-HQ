@@ -712,6 +712,24 @@ export interface Settings {
   savedViews: Record<string, SavedListView[]>
   activeSavedViewIds: Record<string, ID | undefined>
   attentionSnoozedUntil: Record<string, number>
+  /** Per-instance recommendation lifecycle — an accepted or dismissed
+   *  recommendation never returns. Keyed by `${ruleId}:${entityId}`. */
+  recommendationState: Record<string, RecommendationRecord>
+  /** Rules muted wholesale after repeated dismissals (alert-fatigue guard).
+   *  Never applied to blocking items, and always re-enableable from Settings. */
+  mutedRecommendationRules: Record<string, MutedRuleRecord>
+}
+
+/** Outcome of a single recommendation instance (architecture/02 lifecycle). */
+export interface RecommendationRecord {
+  status: 'accepted' | 'dismissed'
+  at: number              // epoch ms
+  /** Optional dismiss-with-reason (general.md → Review queue). */
+  reason?: string
+}
+
+export interface MutedRuleRecord {
+  at: number              // epoch ms
 }
 
 export interface ActivityEvent {
