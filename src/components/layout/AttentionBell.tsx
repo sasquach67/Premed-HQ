@@ -24,7 +24,7 @@ export function AttentionBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative size-8 rounded-full bg-card/80" aria-label={`Attention${count ? `, ${count} important items` : ''}`}>
+        <Button variant="outline" size="icon" className="relative size-8 rounded-full bg-card" aria-label={`Attention${count ? `, ${count} important items` : ''}`}>
           {count ? <BellRing className="size-4" /> : <Bell className="size-4" />}
           {count > 0 && <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-extrabold leading-4 text-destructive-foreground">{count > 9 ? '9+' : count}</span>}
         </Button>

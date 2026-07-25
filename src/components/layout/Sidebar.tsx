@@ -113,7 +113,7 @@ export function Sidebar({
                       className={cn(
                         'group relative grid h-12 grid-cols-[3rem_minmax(0,1fr)] items-center overflow-hidden rounded-lg border border-transparent text-base font-semibold transition-[background-color,color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [@media(max-height:1000px)]:h-10 [@media(max-height:1000px)]:grid-cols-[2.5rem_minmax(0,1fr)] [@media(max-height:1000px)]:text-sm',
                         expanded ? 'px-1.5' : 'mx-auto w-12 px-0 [@media(max-height:1000px)]:w-10',
-                        r.id === 'home' && expanded && 'border-sidebar-border bg-card/70 shadow-sm',
+                        r.id === 'home' && expanded && 'border-sidebar-border bg-card shadow-sm',
                         expanded
                           ? isActive
                             ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--sidebar-primary)]'

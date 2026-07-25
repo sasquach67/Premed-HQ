@@ -88,7 +88,7 @@ function LiveStatusChip({ label, tone }: { label: string; tone: 'alert' | 'due' 
       tone === 'alert' && 'border-destructive/35 bg-destructive/10 text-destructive',
       tone === 'due' && 'border-primary/30 bg-primary/10 text-primary',
       tone === 'system' && 'border-warning/35 bg-warning/10 text-warning',
-      tone === 'clear' && 'border-primary/20 bg-card/80 text-primary'
+      tone === 'clear' && 'border-primary/20 bg-card text-primary'
     )}>
       <span className="size-1.5 rounded-full bg-current" /><span className="truncate">{label}</span>
     </Link>
