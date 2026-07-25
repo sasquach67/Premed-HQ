@@ -31,7 +31,7 @@ export function AnimatedFileUpload({
   return (
     <m.button
       type="button"
-      className={cn('glass-surface grid w-full place-items-center rounded-2xl border border-dashed px-4 py-5 text-center hover:border-primary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', dragging && 'border-primary bg-primary/10', className)}
+      className={cn('grid w-full place-items-center rounded-2xl border border-dashed border-border bg-card card-soft px-4 py-5 text-center hover:border-primary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', dragging && 'border-primary bg-primary/10', className)}
       animate={reduceMotion ? undefined : { scale: dragging ? 1.01 : 1, y: dragging ? -MOTION_DISTANCE.small / 2 : 0 }}
       whileTap={reduceMotion ? undefined : MOTION_GESTURE.subtlePress}
       transition={MOTION_TRANSITION.micro}

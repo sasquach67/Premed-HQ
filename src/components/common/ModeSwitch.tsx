@@ -40,7 +40,7 @@ export function ModeSwitch<T extends string>({
       onKeyDown={onKeyDown}
       whileTap={{ scale: 0.985 }}
       transition={MOTION_TRANSITION.micro}
-      className="interactive-glass relative inline-grid h-10 min-w-56 grid-cols-2 items-stretch rounded-full border p-1 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+      className="relative inline-grid h-10 min-w-56 grid-cols-2 items-stretch rounded-full border border-border bg-muted p-1 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
     >
       <m.span
         aria-hidden
