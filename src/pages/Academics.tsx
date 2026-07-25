@@ -560,7 +560,7 @@ function TarHeelTracker() {
             </FieldLabel>
             <FieldLabel label="Major">
               <div className="rounded-lg border border-input bg-background p-2">
-                <div className="mb-1 flex items-center gap-1.5 rounded-md bg-muted/45 px-2 py-1">
+                <div className="mb-1 flex items-center gap-1.5 rounded-md bg-muted px-2 py-1">
                   <Search className="size-3.5 text-muted-foreground" />
                   <input value={majorQuery} onChange={(e) => setMajorQuery(e.target.value)} placeholder="Search UNC programs..." className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
                 </div>
