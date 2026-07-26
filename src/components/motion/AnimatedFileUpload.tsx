@@ -9,11 +9,15 @@ export function AnimatedFileUpload({
   accept,
   multiple = true,
   className,
+  label = 'Drop class files here or browse',
+  description = 'Stored as references in this class kit.',
 }: {
   onFiles: (files: File[]) => void
   accept?: string
   multiple?: boolean
   className?: string
+  label?: string
+  description?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -44,8 +48,8 @@ export function AnimatedFileUpload({
       <m.span animate={reduceMotion ? undefined : { y: dragging ? -2 : 0 }} transition={MOTION_TRANSITION.micro}>
         {lastCount ? <CheckCircle2 className="size-5 text-success" /> : <FileUp className="size-5 text-primary" />}
       </m.span>
-      <span className="mt-2 text-sm font-bold">{lastCount ? `${lastCount} ${lastCount === 1 ? 'file' : 'files'} added` : 'Drop class files here or browse'}</span>
-      <span className="mt-1 text-xs text-muted-foreground">{dragging ? 'Release to add these files.' : 'Stored as references in this class kit.'}</span>
+      <span className="mt-2 text-sm font-bold">{lastCount ? `${lastCount} ${lastCount === 1 ? 'file' : 'files'} added` : label}</span>
+      <span className="mt-1 text-xs text-muted-foreground">{dragging ? 'Release to add these files.' : description}</span>
       <input ref={inputRef} hidden type="file" accept={accept} multiple={multiple} onChange={(event) => { deliver(event.target.files); event.currentTarget.value = '' }} />
     </m.button>
   )
