@@ -14,8 +14,10 @@ import {
 import { Line, LineChart, RadialBar, RadialBarChart, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
 import { PaceProjectionLine } from '@/components/common/PaceProjectionLine'
+import { MascotNote } from '@/components/common/MascotNote'
 import { NumberFlow } from '@/components/motion'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { daysUntil } from '@/lib/date'
@@ -216,39 +218,42 @@ export function GpaStatTile() {
   const stats = gpaStats(courses)
   const delta = series.length > 1 ? series.at(-1)!.cumulative - series.at(-2)!.cumulative : null
 
-  return (
-    <Link to="/academics" className="block h-full">
-      <Card className="h-full min-h-48 transition-transform duration-200 hover:-translate-y-0.5" role="region" aria-label="GPA trend">
-        <CardContent className="flex h-full flex-col p-4">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">Cumulative GPA</p>
-          {!series.length ? (
-            <div className="grid flex-1 place-items-center text-center">
-              <div>
-                <p className="font-display text-lg font-bold">Not enough graded work yet</p>
-                <p className="mt-1 text-xs text-muted-foreground">A term trend appears after grades are recorded.</p>
-              </div>
+  const card = (
+    <Card className="h-full min-h-48 transition-transform duration-200 hover:-translate-y-0.5" role="region" aria-label="GPA trend">
+      <CardContent className="flex h-full flex-col p-4">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">Cumulative GPA</p>
+        {!series.length ? (
+          <MascotNote
+            variant="empty-state"
+            priority={30}
+            title="Not enough graded work yet"
+            actions={<Button asChild size="sm"><Link to="/academics">Open Academics</Link></Button>}
+            className="mt-3 flex-1 items-center"
+          >
+            Record a grade first; a term trend appears only when there is real work to calculate.
+          </MascotNote>
+        ) : (
+          <>
+            <div className="mt-2 flex items-end gap-2">
+              <NumberFlow value={stats.cum} format={(value) => value.toFixed(2)} className="font-display text-4xl font-extrabold text-[var(--cat-gpa)]" />
+              {delta != null && <Badge variant={delta >= 0 ? 'success' : 'warning'}>{delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(2)}</Badge>}
             </div>
-          ) : (
-            <>
-              <div className="mt-2 flex items-end gap-2">
-                <NumberFlow value={stats.cum} format={(value) => value.toFixed(2)} className="font-display text-4xl font-extrabold text-[var(--cat-gpa)]" />
-                {delta != null && <Badge variant={delta >= 0 ? 'success' : 'warning'}>{delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(2)}</Badge>}
-              </div>
-              <ChartContainer config={GPA_CHART} className="mt-2 h-20 w-full aspect-auto">
-                <LineChart data={series} margin={{ top: 6, right: 5, bottom: 4, left: 5 }}>
-                  <YAxis domain={[0, 4]} hide />
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                  <Line type="monotone" dataKey="cumulative" stroke="var(--color-cumulative)" strokeWidth={3} dot={false} isAnimationActive />
-                  <Line type="monotone" dataKey="science" stroke="var(--color-science)" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
-                </LineChart>
-              </ChartContainer>
-              <p className="mt-auto text-xs font-semibold text-muted-foreground">Science {fmtGpa(stats.science)} · {series.length} terms</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+            <ChartContainer config={GPA_CHART} className="mt-2 h-20 w-full aspect-auto">
+              <LineChart data={series} margin={{ top: 6, right: 5, bottom: 4, left: 5 }}>
+                <YAxis domain={[0, 4]} hide />
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <Line type="monotone" dataKey="cumulative" stroke="var(--color-cumulative)" strokeWidth={3} dot={false} isAnimationActive />
+                <Line type="monotone" dataKey="science" stroke="var(--color-science)" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
+              </LineChart>
+            </ChartContainer>
+            <p className="mt-auto text-xs font-semibold text-muted-foreground">Science {fmtGpa(stats.science)} · {series.length} terms</p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
+
+  return series.length ? <Link to="/academics" className="block h-full">{card}</Link> : card
 }
 
 const MCAT_CHART = { score: { label: 'Score', color: 'var(--chart-2)' } } satisfies ChartConfig
@@ -260,35 +265,40 @@ export function McatStatTile() {
   const goal = mcat.goalScore ?? fallbackGoal
   const normalized = best ? Math.max(0, Math.min(100, ((best - 472) / Math.max(1, goal - 472)) * 100)) : 0
 
-  return (
-    <Link to="/mcat" className="block h-full">
-      <Card className="h-full min-h-48 transition-transform duration-200 hover:-translate-y-0.5" role="region" aria-label="MCAT score against target">
-        <CardContent className="grid h-full place-items-center p-4 text-center">
-          {!best ? (
-            <div>
-              <p className="font-display text-lg font-bold">No scored practice yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">Questions completed are not tracked yet.</p>
-            </div>
-          ) : (
-            <div className="relative size-36">
-              <ChartContainer config={MCAT_CHART} className="size-36 aspect-square">
-                <RadialBarChart data={[{ score: normalized }]} innerRadius={49} outerRadius={64} startAngle={90} endAngle={-270}>
-                  <RadialBar dataKey="score" background fill="var(--color-score)" cornerRadius={10} />
-                </RadialBarChart>
-              </ChartContainer>
-              <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                <div>
-                  <NumberFlow value={best} className="font-display text-3xl font-extrabold" />
-                  <p className="text-xs font-semibold text-muted-foreground">of {goal}</p>
-                </div>
+  const card = (
+    <Card className="h-full min-h-48 transition-transform duration-200 hover:-translate-y-0.5" role="region" aria-label="MCAT score against target">
+      <CardContent className="grid h-full place-items-center p-4 text-center">
+        {!best ? (
+          <MascotNote
+            variant="empty-state"
+            priority={31}
+            title="No scored practice yet"
+            actions={<Button asChild size="sm"><Link to="/mcat">Open MCAT</Link></Button>}
+            className="w-full text-left"
+          >
+            Log your first scored practice and this target view will use the real result.
+          </MascotNote>
+        ) : (
+          <div className="relative size-36">
+            <ChartContainer config={MCAT_CHART} className="size-36 aspect-square">
+              <RadialBarChart data={[{ score: normalized }]} innerRadius={49} outerRadius={64} startAngle={90} endAngle={-270}>
+                <RadialBar dataKey="score" background fill="var(--color-score)" cornerRadius={10} />
+              </RadialBarChart>
+            </ChartContainer>
+            <div className="pointer-events-none absolute inset-0 grid place-items-center">
+              <div>
+                <NumberFlow value={best} className="font-display text-3xl font-extrabold" />
+                <p className="text-xs font-semibold text-muted-foreground">of {goal}</p>
               </div>
             </div>
-          )}
-          <p className="text-xs font-semibold text-muted-foreground">MCAT · questions not tracked</p>
-        </CardContent>
-      </Card>
-    </Link>
+          </div>
+        )}
+        <p className="text-xs font-semibold text-muted-foreground">MCAT · questions not tracked</p>
+      </CardContent>
+    </Card>
   )
+
+  return best ? <Link to="/mcat" className="block h-full">{card}</Link> : card
 }
 
 export function HoursStatTile() {

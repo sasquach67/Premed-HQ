@@ -12,6 +12,7 @@ import {
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/common/useToast'
+import { MascotNote } from '@/components/common/MascotNote'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -132,16 +133,17 @@ export function OverviewTasks() {
 
         <div className="mt-4 min-h-0 flex-1">
           {!visible.length ? (
-            <div className="grid min-h-56 place-items-center rounded-2xl border border-dashed border-border px-5 text-center">
-              <div>
-                <p className="font-display text-base font-bold">
-                  {tab === 'done' ? 'Nothing completed yet.' : `Nothing in ${tab}.`}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {tab === 'done' ? 'Completed tasks will collect here.' : 'Add a title below or move work here from Timeline.'}
-                </p>
-              </div>
-            </div>
+            <MascotNote
+              variant="empty-state"
+              priority={20}
+              title={tab === 'done' ? 'Nothing completed yet' : `Nothing in ${tab}`}
+              actions={tab === 'done'
+                ? <Button asChild size="sm"><Link to="/timeline">Open Timeline</Link></Button>
+                : <Button type="button" size="sm" onClick={() => document.getElementById('overview-quick-task')?.focus()}>Add a task</Button>}
+              className="min-h-56 items-center"
+            >
+              {tab === 'done' ? 'Finish a task and it will collect here.' : 'Add a title below or move work here from Timeline.'}
+            </MascotNote>
           ) : (
             <Reorder.Group axis="y" values={visible} onReorder={applyOrder} className="space-y-3">
               <TaskGroup label="Important" tasks={important} tab={tab} reduceMotion={Boolean(reduceMotion)} />
@@ -153,6 +155,7 @@ export function OverviewTasks() {
         {tab !== 'done' && (
           <form onSubmit={quickAdd} className="mt-4 flex items-center gap-2 border-t border-dashed border-border pt-3">
             <Input
+              id="overview-quick-task"
               value={quickTitle}
               onChange={(event) => setQuickTitle(event.target.value)}
               placeholder="Quick add — type and hit enter…"

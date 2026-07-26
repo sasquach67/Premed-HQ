@@ -711,6 +711,7 @@ export function createSeedData(): AppData {
       recommendationState: {},
       mutedRecommendationRules: {},
       projectionDismissals: {},
+      mascotNoteDismissals: {},
     },
     meta: {
       recentRoutes: [],

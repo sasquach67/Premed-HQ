@@ -1,7 +1,7 @@
 /* Tests for the data-migration functions that run on every load/import.
    These are the functions most likely to corrupt user data if broken. */
 import { describe, expect, it } from 'vitest'
-import { migrateAcademicTags, migrateOrgReflections, migrateOverviewSchema, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
+import { migrateAcademicTags, migrateMascotNotes, migrateOrgReflections, migrateOverviewSchema, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
 import { createSeedData } from '@/data/seed'
 import type { AppData, ClassTopic, ClassWeakArea, Org, RequirementItem, TaskItem } from '@/lib/types'
 
@@ -144,6 +144,29 @@ describe('migrateOverviewSchema', () => {
     const once = migrateOverviewSchema(data)
     const twice = migrateOverviewSchema(JSON.parse(JSON.stringify(once)) as AppData)
     expect(twice.captures).toEqual(once.captures)
+  })
+})
+
+describe('migrateMascotNotes', () => {
+  it('adds the dismissal map without changing existing settings', () => {
+    const data = freshData()
+    data.settings.theme = 'dark'
+    delete (data.settings as Partial<AppData['settings']>).mascotNoteDismissals
+
+    const out = migrateMascotNotes(data)
+
+    expect(out.settings.mascotNoteDismissals).toEqual({})
+    expect(out.settings.theme).toBe('dark')
+  })
+
+  it('is idempotent and preserves recorded dismissals', () => {
+    const data = freshData()
+    data.settings.mascotNoteDismissals = { 'academics-review-queue': 1234 }
+
+    const once = migrateMascotNotes(data)
+    const twice = migrateMascotNotes(JSON.parse(JSON.stringify(once)) as AppData)
+
+    expect(twice.settings.mascotNoteDismissals).toEqual({ 'academics-review-queue': 1234 })
   })
 })
 

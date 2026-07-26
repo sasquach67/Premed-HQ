@@ -745,6 +745,8 @@ export interface Settings {
   mutedRecommendationRules: Record<string, MutedRuleRecord>
   /** Per-line pacing dismissal; false/absent means the projection may render. */
   projectionDismissals: Record<string, boolean>
+  /** Persisted one-time MascotNote dismissals, keyed by stable concept id. */
+  mascotNoteDismissals: Record<string, number>
 }
 
 /** Outcome of a single recommendation instance (architecture/02 lifecycle). */

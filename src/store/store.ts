@@ -18,7 +18,7 @@ import { isMutableSeverity } from '@/lib/intelligence/recommendations'
 import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
 
 export const STORAGE_KEY = 'premed_hq_v1'
-const SEED_VERSION = 2
+const SEED_VERSION = 3
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -135,6 +135,13 @@ export function migrateOverviewSchema(data: AppData): AppData {
     })
   }
 
+  return data
+}
+
+/** Version 3: add persisted MascotNote dismissal keys without rewriting any
+ * existing setting or record. */
+export function migrateMascotNotes(data: AppData): AppData {
+  data.settings.mascotNoteDismissals ??= {}
   return data
 }
 
@@ -381,12 +388,14 @@ export function migrateRequirementMetadata(data: AppData): AppData {
 }
 
 function migrateAll(data: AppData): AppData {
-  return migrateOverviewSchema(
-    migrateIntelligence(
-      migrateSafetyNets(
-        migrateOrgReflections(
-          migrateRequirementMetadata(
-            migrateAcademicTags(data),
+  return migrateMascotNotes(
+    migrateOverviewSchema(
+      migrateIntelligence(
+        migrateSafetyNets(
+          migrateOrgReflections(
+            migrateRequirementMetadata(
+              migrateAcademicTags(data),
+            ),
           ),
         ),
       ),
@@ -649,6 +658,7 @@ export const useStore = create<Store>()(
             recommendationState: p.settings?.recommendationState ?? current.settings.recommendationState,
             mutedRecommendationRules: p.settings?.mutedRecommendationRules ?? current.settings.mutedRecommendationRules,
             projectionDismissals: p.settings?.projectionDismissals ?? current.settings.projectionDismissals,
+            mascotNoteDismissals: p.settings?.mascotNoteDismissals ?? current.settings.mascotNoteDismissals,
           },
           mcat: { ...current.mcat, ...p.mcat },
           meta: {

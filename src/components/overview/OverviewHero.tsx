@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { NumberFlow } from '@/components/motion'
 import { useHeroScheduleSource } from '@/components/common/HeroDailySchedule'
+import { MascotNote } from '@/components/common/MascotNote'
+import { Button } from '@/components/ui/button'
 import { formatClock, formatEventTimeRange, normalizeTimedEvents } from '@/lib/schedule'
 import { homeBanner, type VisualTheme } from '@/lib/themeAssets'
 import { useStore } from '@/store/store'
@@ -150,7 +153,7 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
 
   return (
     <div className="relative rounded-3xl border border-white/14 bg-slate-950/58 p-4 shadow-xl backdrop-blur-md">
-      {!schedule.connected && (
+      {!schedule.connected && !!visible.length && (
         <button
           type="button"
           onClick={() => { void schedule.connect(new Date()) }}
@@ -161,7 +164,30 @@ function TodaySchedulePanel({ schedule, now }: { schedule: ReturnType<typeof use
         </button>
       )}
       <div className="rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-4 shadow-inner shadow-black/10">
-        {!visible.length && <p className="py-7 text-sm font-semibold text-white/65">No timed events today.</p>}
+        {!visible.length && (
+          <MascotNote
+            variant="empty-state"
+            priority={10}
+            title="No timed events today"
+            actions={!schedule.connected
+              ? schedule.configured ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => { void schedule.connect(new Date()) }}
+                  disabled={!schedule.configured || schedule.status === 'connecting'}
+                >
+                  Connect calendar
+                </Button>
+              ) : <Button asChild size="sm"><Link to="/settings">Set up calendar</Link></Button>
+              : <Button type="button" size="sm" onClick={() => document.getElementById('overview-tasks-heading')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>Review today’s tasks</Button>}
+            className="border-white/20 text-white"
+          >
+            <span className="text-white/75">
+              {schedule.connected ? 'Your calendar is clear—use this window for the next important task.' : 'Connect your calendar to place today’s real schedule here.'}
+            </span>
+          </MascotNote>
+        )}
         {!!visible.length && (
           <>
             <div className="relative h-8" role="img" aria-label="Today’s schedule timeline">

@@ -10,6 +10,7 @@ import {
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { CenterPeek, type RecordOpenMode } from '@/components/common/CenterPeek'
+import { MascotNote } from '@/components/common/MascotNote'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { AnimatedFileUpload, NumberFlow } from '@/components/motion'
 import { Badge } from '@/components/ui/badge'
@@ -103,7 +104,16 @@ export function QuarterlyGoalsPanel() {
           <Button size="sm" variant="ghost" onClick={() => setEditorOpen(true)}>Edit targets</Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {!quarterlyGoals.length && <p className="text-sm text-muted-foreground">Set a quarterly push to connect today’s work to a standing target.</p>}
+          {!quarterlyGoals.length && (
+            <MascotNote
+              variant="empty-state"
+              priority={40}
+              title="No quarterly goal yet"
+              actions={<Button type="button" size="sm" onClick={() => setEditorOpen(true)}>Set a goal</Button>}
+            >
+              Add one focused push to connect today’s work to a standing target.
+            </MascotNote>
+          )}
           {quarterlyGoals.slice(0, 4).map((goal) => {
             const target = goal.standingTarget
             const targetValue = target ? goals[target] : 0
@@ -219,7 +229,16 @@ export function ActivityAndCapture() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1">
-          {!activity.length && <p className="text-sm text-muted-foreground">No recent edits yet.</p>}
+          {!activity.length && (
+            <MascotNote
+              variant="empty-state"
+              priority={41}
+              title="No recent activity yet"
+              actions={<Button type="button" size="sm" onClick={() => document.getElementById('overview-capture')?.focus()}>Capture something</Button>}
+            >
+              Add a thought, source, or file below and your latest work will appear here.
+            </MascotNote>
+          )}
           {activity.map((entry) => (
             <div key={entry.id} className="flex items-center gap-2 rounded-lg px-1 py-1.5 text-xs">
               <span className="size-2 rounded-full bg-primary" />
