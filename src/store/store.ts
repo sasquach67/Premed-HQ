@@ -18,7 +18,7 @@ import { isMutableSeverity } from '@/lib/intelligence/recommendations'
 import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
 
 export const STORAGE_KEY = 'premed_hq_v1'
-const SEED_VERSION = 1
+const SEED_VERSION = 2
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -62,7 +62,7 @@ const DATA_KEYS: (keyof AppData)[] = [
   'persons', 'organizations',
   'academics', 'letters', 'stories', 'secondaries', 'interviewQs', 'mcat', 'schools',
   'resources', 'tips', 'focusTargets', 'quarterlyGoals', 'advisingQs',
-  'notePages', 'orgs', 'notes', 'settings', 'meta',
+  'captures', 'notePages', 'orgs', 'notes', 'settings', 'meta',
   'trash',
 ]
 
@@ -105,6 +105,36 @@ export function migrateSafetyNets(data: AppData): AppData {
 export function migrateIntelligence(data: AppData): AppData {
   data.settings.recommendationState ??= {}
   data.settings.mutedRecommendationRules ??= {}
+  return data
+}
+
+/** Version 2: add Overview's planning and capture fields without deleting or
+ * rewriting any legacy value. The old `home-ideas` note remains intact even
+ * after it is copied into the local capture inbox. */
+export function migrateOverviewSchema(data: AppData): AppData {
+  data.captures ??= []
+  data.settings.projectionDismissals ??= {}
+
+  for (const task of data.tasks ?? []) {
+    task.important ??= false
+    task.horizon ??= task.kanban === 'doing' || Boolean(task.deadline) ? 'now' : 'soon'
+  }
+
+  const legacy = data.notes?.['home-ideas']?.trim()
+  if (legacy && !data.captures.some((capture) => capture.id === 'capture-legacy-home-ideas')) {
+    const at = data.meta?.lastOpenedAt || Date.now()
+    data.captures.push({
+      id: 'capture-legacy-home-ideas',
+      kind: /^https?:\/\//i.test(legacy) ? 'source' : 'idea',
+      content: legacy,
+      url: /^https?:\/\//i.test(legacy) ? legacy : undefined,
+      createdAt: at,
+      updatedAt: at,
+      origin: 'overview',
+      order: data.captures.length,
+    })
+  }
+
   return data
 }
 
@@ -350,6 +380,20 @@ export function migrateRequirementMetadata(data: AppData): AppData {
   return data
 }
 
+function migrateAll(data: AppData): AppData {
+  return migrateOverviewSchema(
+    migrateIntelligence(
+      migrateSafetyNets(
+        migrateOrgReflections(
+          migrateRequirementMetadata(
+            migrateAcademicTags(data),
+          ),
+        ),
+      ),
+    ),
+  )
+}
+
 function nextOrder(arr: AnyRow[]): number {
   return arr.reduce((m, x) => Math.max(m, x.order ?? 0), -1) + 1
 }
@@ -570,7 +614,7 @@ export const useStore = create<Store>()(
         }),
 
       replaceAll: (data) => set(() => ({
-        ...migrateIntelligence(migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags({ ...createSeedData(), ...data } as AppData))))),
+        ...migrateAll({ ...createSeedData(), ...data } as AppData),
       })),
 
       resetToSeed: () => set(() => ({ ...createSeedData() })),
@@ -579,6 +623,7 @@ export const useStore = create<Store>()(
       name: STORAGE_KEY,
       version: SEED_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persisted) => migrateAll(persisted as AppData) as unknown as Store,
       partialize: (state) =>
         Object.fromEntries(DATA_KEYS.map((k) => [k, state[k]])) as unknown as Store,
       // shallow-merge seed defaults under persisted data so new fields appear after updates
@@ -603,6 +648,7 @@ export const useStore = create<Store>()(
             attentionSnoozedUntil: p.settings?.attentionSnoozedUntil ?? current.settings.attentionSnoozedUntil,
             recommendationState: p.settings?.recommendationState ?? current.settings.recommendationState,
             mutedRecommendationRules: p.settings?.mutedRecommendationRules ?? current.settings.mutedRecommendationRules,
+            projectionDismissals: p.settings?.projectionDismissals ?? current.settings.projectionDismissals,
           },
           mcat: { ...current.mcat, ...p.mcat },
           meta: {
@@ -611,11 +657,12 @@ export const useStore = create<Store>()(
             recoveryStack: p.meta?.recoveryStack ?? current.meta.recoveryStack,
           },
           trash: p.trash ?? current.trash,
+          captures: p.captures ?? current.captures,
           notes: { ...current.notes, ...p.notes },
           profile: { ...current.profile, ...p.profile },
           goals: { ...current.goals, ...p.goals },
         }
-        return migrateIntelligence(migrateSafetyNets(migrateOrgReflections(migrateRequirementMetadata(migrateAcademicTags(merged as AppData))))) as unknown as Store
+        return migrateAll(merged as AppData) as unknown as Store
       },
     }
   )

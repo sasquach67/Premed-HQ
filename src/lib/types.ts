@@ -363,6 +363,7 @@ export type TaskType = string
 
 export type TaskProgress = 'Not started' | 'Working on' | 'Finished'
 export type KanbanColumn = 'todo' | 'doing' | 'done'
+export type TaskHorizon = 'now' | 'soon'
 
 /** Timeline / assignment / task item — feeds the calendar + kanban + home alerts. */
 export interface TaskItem {
@@ -381,6 +382,10 @@ export interface TaskItem {
   archived: boolean
   /** pinned application-cycle milestones show on the timeline graphic */
   milestone?: boolean
+  /** Overview planning horizon. Done remains derived from progress. */
+  horizon?: TaskHorizon
+  /** The single Overview prioritization concept. */
+  important?: boolean
   order: number
 }
 
@@ -537,6 +542,26 @@ export interface QuarterlyGoal {
   quarter: string
   text: string
   done: boolean
+  /** Optional link to the long-horizon target stored in `goals`. */
+  standingTarget?: keyof Goals
+  order: number
+}
+
+export type CaptureKind = 'idea' | 'source'
+
+/** Local-first inbox item. Atlas may consume these later, but Home owns capture only. */
+export interface CaptureRecord {
+  id: ID
+  kind: CaptureKind
+  content: string
+  url?: string
+  fileName?: string
+  mimeType?: string
+  fileSize?: number
+  createdAt: number
+  updatedAt: number
+  triagedAt?: number
+  origin: 'overview'
   order: number
 }
 
@@ -718,6 +743,8 @@ export interface Settings {
   /** Rules muted wholesale after repeated dismissals (alert-fatigue guard).
    *  Never applied to blocking items, and always re-enableable from Settings. */
   mutedRecommendationRules: Record<string, MutedRuleRecord>
+  /** Per-line pacing dismissal; false/absent means the projection may render. */
+  projectionDismissals: Record<string, boolean>
 }
 
 /** Outcome of a single recommendation instance (architecture/02 lifecycle). */
@@ -784,6 +811,7 @@ export interface AppData {
   tips: CollectionRecord<TipEntry>[]
   focusTargets: CollectionRecord<FocusTarget>[]
   quarterlyGoals: CollectionRecord<QuarterlyGoal>[]
+  captures: CollectionRecord<CaptureRecord>[]
   advisingQs: CollectionRecord<AdvisingQuestion>[]
   notePages: CollectionRecord<NotePage>[]
   orgs: CollectionRecord<Org>[]
@@ -798,4 +826,4 @@ export type CollectionKey =
   | 'courses' | 'requirements' | 'experiences' | 'persons' | 'organizations' | 'tasks' | 'letters'
   | 'stories' | 'secondaries' | 'interviewQs' | 'schools' | 'resources'
   | 'tips' | 'focusTargets' | 'quarterlyGoals' | 'advisingQs'
-  | 'notePages' | 'orgs'
+  | 'captures' | 'notePages' | 'orgs'

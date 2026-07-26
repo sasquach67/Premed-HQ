@@ -1,7 +1,7 @@
 /* Tests for the data-migration functions that run on every load/import.
    These are the functions most likely to corrupt user data if broken. */
 import { describe, expect, it } from 'vitest'
-import { migrateAcademicTags, migrateOrgReflections, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
+import { migrateAcademicTags, migrateOrgReflections, migrateOverviewSchema, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
 import { createSeedData } from '@/data/seed'
 import type { AppData, ClassTopic, ClassWeakArea, Org, RequirementItem, TaskItem } from '@/lib/types'
 
@@ -92,6 +92,58 @@ describe('migrateSafetyNets', () => {
     expect(out.settings.activeSavedViewIds).toEqual({})
     expect(out.meta.recoveryStack).toEqual([])
     expect(out.courses.map((course) => course.id)).toEqual(courseIds)
+  })
+})
+
+describe('migrateOverviewSchema', () => {
+  it('adds task planning fields without changing legacy task content', () => {
+    const data = freshData()
+    const original = {
+      id: 'legacy-task',
+      title: 'Preserve every field',
+      type: 'Personal',
+      deadline: '2026-08-01',
+      progress: 'Working on',
+      kanban: 'doing',
+      notes: 'Do not lose this note.',
+      archived: false,
+      milestone: false,
+      order: 9,
+    } as TaskItem
+    data.tasks = [original]
+
+    const out = migrateOverviewSchema(data)
+    expect(out.tasks[0]).toMatchObject({
+      ...original,
+      horizon: 'now',
+      important: false,
+    })
+  })
+
+  it('copies the legacy Home scratchpad into capture inbox without deleting it', () => {
+    const data = freshData()
+    delete (data as Partial<AppData>).captures
+    delete (data.settings as Partial<AppData['settings']>).projectionDismissals
+    data.notes['home-ideas'] = 'https://example.com/source'
+
+    const out = migrateOverviewSchema(data)
+    expect(out.notes['home-ideas']).toBe('https://example.com/source')
+    expect(out.captures).toHaveLength(1)
+    expect(out.captures[0]).toMatchObject({
+      id: 'capture-legacy-home-ideas',
+      kind: 'source',
+      url: 'https://example.com/source',
+      origin: 'overview',
+    })
+    expect(out.settings.projectionDismissals).toEqual({})
+  })
+
+  it('is idempotent and never duplicates the legacy capture', () => {
+    const data = freshData()
+    data.notes['home-ideas'] = 'A thought worth keeping'
+    const once = migrateOverviewSchema(data)
+    const twice = migrateOverviewSchema(JSON.parse(JSON.stringify(once)) as AppData)
+    expect(twice.captures).toEqual(once.captures)
   })
 })
 

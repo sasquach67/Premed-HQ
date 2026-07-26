@@ -449,10 +449,34 @@ const tasks: TaskItem[] = seq<Omit<TaskItem, 'id' | 'order'>>([
   tm('Matriculate — Fall 2030 (no gap year)', '2030-08-20', 'The finish line for this plan.'),
 ])
 function t(title: string, type: TaskItem['type'], deadline: string | undefined, milestone: boolean, notes?: string): Omit<TaskItem, 'id' | 'order'> {
-  return { title, type, typeId: typeId(type), deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone }
+  return {
+    title,
+    type,
+    typeId: typeId(type),
+    deadline,
+    progress: 'Not started',
+    kanban: 'todo',
+    notes,
+    archived: false,
+    milestone,
+    horizon: deadline ? 'now' : 'soon',
+    important: false,
+  }
 }
 function tm(title: string, deadline: string, notes?: string): Omit<TaskItem, 'id' | 'order'> {
-  return { title, type: 'Application', typeId: typeId('Application'), deadline, progress: 'Not started', kanban: 'todo', notes, archived: false, milestone: true }
+  return {
+    title,
+    type: 'Application',
+    typeId: typeId('Application'),
+    deadline,
+    progress: 'Not started',
+    kanban: 'todo',
+    notes,
+    archived: false,
+    milestone: true,
+    horizon: 'soon',
+    important: false,
+  }
 }
 
 // ---- Story Bank reflection prompts (§13.4) ----
@@ -519,8 +543,8 @@ const focusTargets: FocusTarget[] = seq<Omit<FocusTarget, 'id' | 'order'>>([
 ])
 
 const quarterlyGoals: QuarterlyGoal[] = seq<Omit<QuarterlyGoal, 'id' | 'order'>>([
-  { quarter: 'Fall 2026', text: 'Lock a 3.8+ first semester; build study systems before anything else', done: false },
-  { quarter: 'Fall 2026', text: 'Start ONE longitudinal commitment (clinical, volunteering, or research)', done: false },
+  { quarter: 'Fall 2026', text: 'Lock a 3.8+ first semester; build study systems before anything else', done: false, standingTarget: 'gpaTarget' },
+  { quarter: 'Fall 2026', text: 'Start ONE longitudinal commitment (clinical, volunteering, or research)', done: false, standingTarget: 'clinical' },
 ])
 
 const schools: SchoolEntry[] = seq<Omit<SchoolEntry, 'id' | 'order'>>([
@@ -649,6 +673,7 @@ export function createSeedData(): AppData {
     tips,
     focusTargets,
     quarterlyGoals,
+    captures: [],
     advisingQs,
     notePages: [],
     orgs: [],
@@ -685,6 +710,7 @@ export function createSeedData(): AppData {
       attentionSnoozedUntil: {},
       recommendationState: {},
       mutedRecommendationRules: {},
+      projectionDismissals: {},
     },
     meta: {
       recentRoutes: [],
