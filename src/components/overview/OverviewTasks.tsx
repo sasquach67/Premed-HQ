@@ -1,4 +1,4 @@
-import { AnimatePresence, Reorder, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m, Reorder, useReducedMotion } from 'motion/react'
 import {
   CalendarDays,
   Check,
@@ -131,25 +131,36 @@ export function OverviewTasks() {
           </TabsList>
         </Tabs>
 
-        <div className="mt-4 min-h-0 flex-1">
-          {!visible.length ? (
-            <MascotNote
-              variant="empty-state"
-              priority={20}
-              title={tab === 'done' ? 'Nothing completed yet' : `Nothing in ${tab}`}
-              actions={tab === 'done'
-                ? <Button asChild size="sm"><Link to="/timeline">Open Timeline</Link></Button>
-                : <Button type="button" size="sm" onClick={() => document.getElementById('overview-quick-task')?.focus()}>Add a task</Button>}
-              className="min-h-56 items-center"
+        <div className="relative mt-4 min-h-0 flex-1">
+          <AnimatePresence initial={false} mode="popLayout">
+            <m.div
+              key={tab}
+              initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+              transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
+              className="w-full"
             >
-              {tab === 'done' ? 'Finish a task and it will collect here.' : 'Add a title below or move work here from Timeline.'}
-            </MascotNote>
-          ) : (
-            <Reorder.Group axis="y" values={visible} onReorder={applyOrder} className="space-y-3">
-              <TaskGroup label="Important" tasks={important} tab={tab} reduceMotion={Boolean(reduceMotion)} />
-              <TaskGroup label={important.length ? 'Everything else' : undefined} tasks={everythingElse} tab={tab} reduceMotion={Boolean(reduceMotion)} />
-            </Reorder.Group>
-          )}
+              {!visible.length ? (
+                <MascotNote
+                  variant="empty-state"
+                  priority={20}
+                  title={tab === 'done' ? 'Nothing completed yet' : `Nothing in ${tab}`}
+                  actions={tab === 'done'
+                    ? <Button asChild size="sm"><Link to="/timeline">Open Timeline</Link></Button>
+                    : <Button type="button" size="sm" onClick={() => document.getElementById('overview-quick-task')?.focus()}>Add a task</Button>}
+                  className="min-h-56 items-center"
+                >
+                  {tab === 'done' ? 'Finish a task and it will collect here.' : 'Add a title below or move work here from Timeline.'}
+                </MascotNote>
+              ) : (
+                <Reorder.Group axis="y" values={visible} onReorder={applyOrder} className="space-y-3">
+                  <TaskGroup label="Important" tasks={important} tab={tab} reduceMotion={Boolean(reduceMotion)} />
+                  <TaskGroup label={important.length ? 'Everything else' : undefined} tasks={everythingElse} tab={tab} reduceMotion={Boolean(reduceMotion)} />
+                </Reorder.Group>
+              )}
+            </m.div>
+          </AnimatePresence>
         </div>
 
         {tab !== 'done' && (
@@ -191,11 +202,9 @@ function TaskGroup({
           <span className="h-px flex-1 bg-border" />
         </div>
       )}
-      <AnimatePresence initial={false}>
-        {tasks.slice(0, 7).map((task) => (
-          <TaskRow key={task.id} task={task} tab={tab} reduceMotion={reduceMotion} />
-        ))}
-      </AnimatePresence>
+      {tasks.slice(0, 7).map((task) => (
+        <TaskRow key={task.id} task={task} tab={tab} reduceMotion={reduceMotion} />
+      ))}
       {tasks.length > 7 && (
         <Link to="/timeline" className="mt-2 block px-2 text-xs font-bold text-primary">
           +{tasks.length - 7} more →
@@ -269,9 +278,6 @@ function TaskRow({
     <Reorder.Item
       value={task}
       layout={reduceMotion ? undefined : 'position'}
-      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -6 }}
       transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
       className={cn(
         'group mb-1 flex min-w-0 items-center gap-2 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-border hover:bg-muted/45',
