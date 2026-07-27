@@ -40,8 +40,8 @@ export function createDemoData(seedTime = Date.now()): AppData {
   data.courses = courses
 
   data.profile = {
-    name: 'Maya Thompson',
-    email: 'maya.thompson@example.edu',
+    name: 'Andy Quach',
+    email: 'andy.quach@example.edu',
     school: 'UNC–Chapel Hill',
     major: 'Neuroscience B.S.',
     track: 'Pre-Med',
