@@ -19,9 +19,10 @@ import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types
 import { migrateAcademicsV4, syncCurrentTermWorkspaces } from '@/store/migrations/academicsV4'
 import { migrateAcademicsV5 } from '@/store/migrations/academicsV5'
 import { migrateAcademicsV6 } from '@/store/migrations/academicsV6'
+import { migrateAcademicsV7 } from '@/store/migrations/academicsV7'
 
 export const STORAGE_KEY = 'premed_hq_v1'
-const SEED_VERSION = 5
+const SEED_VERSION = 7
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -380,7 +381,7 @@ export function migrateRequirementMetadata(data: AppData): AppData {
 }
 
 function migrateAll(data: AppData): AppData {
-  return migrateAcademicsV6(migrateAcademicsV5(migrateAcademicsV4(migrateMascotNotes(
+  return migrateAcademicsV7(migrateAcademicsV6(migrateAcademicsV5(migrateAcademicsV4(migrateMascotNotes(
     migrateOverviewSchema(
       migrateIntelligence(
         migrateSafetyNets(
@@ -392,7 +393,7 @@ function migrateAll(data: AppData): AppData {
         ),
       ),
     ),
-  ))))
+  )))))
 }
 
 function nextOrder(arr: AnyRow[]): number {

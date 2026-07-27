@@ -302,6 +302,8 @@ export interface AcademicFile {
   mimeType?: string
   notes?: string
   linkedTopicIds: ID[]
+  processingStatus?: 'pending' | 'ready' | 'failed'
+  processingError?: string
   createdAt: number
   updatedAt: number
   order: number
@@ -394,6 +396,8 @@ export interface KeyPoint {
   order: number
 }
 
+export type ChunkAssignmentMethod = 'manual' | 'semantic' | 'positional' | 'document-topic' | 'pending'
+
 export interface SourceChunk {
   id: ID
   fileId: ID
@@ -401,6 +405,17 @@ export interface SourceChunk {
   topicId?: ID
   content: string
   embedding?: number[]
+  /** Character range within this stored chunk. A whole-chunk range is exact;
+   * callers must never invent a narrower citation from string similarity. */
+  characterStart?: number
+  characterEnd?: number
+  sourcePosition?: {
+    index: number
+    label?: string
+    lectureNumber?: number
+  }
+  assignmentMethod?: ChunkAssignmentMethod
+  assignmentConfirmed?: boolean
   coveredByKeyPoint: boolean
   createdAt: number
   updatedAt: number

@@ -13,6 +13,7 @@ import type {
 import { useStore } from '@/store/store'
 import { uid } from '@/lib/id'
 import { createTopicFsrsState, topicRetrievability } from '@/lib/academics/fsrs'
+import { calculateCourseCoverage } from '@/lib/academics/coverage'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/common/useToast'
 import { Badge } from '@/components/ui/badge'
@@ -277,6 +278,10 @@ function Overview({
         </div>
       </Panel>
 
+      <Panel className="col-span-12" title="Material coverage" action={<Button size="sm" variant="outline" onClick={() => onTab('materials')}>Open materials</Button>}>
+        <CoverageLedger courseId={course.id} data={data} topics={topics} onOpenMaterials={() => onTab('materials')} />
+      </Panel>
+
       <Panel className="col-span-12 lg:col-span-4" title="Due today">
         {today.length ? <div className="space-y-2">{today.map((item) => <AssignmentMini key={item.id} item={item} />)}</div> : <EmptyState icon={CheckCircle2} title="Clear for today" detail="No unfinished class work is dated today." />}
         {today.length > 0 && graded.length > 1 && <p className="mt-3 text-xs font-bold text-muted-foreground">At your recorded completion pace, today’s queue is within one focused block.</p>}
@@ -338,6 +343,103 @@ function Overview({
       <Panel className="col-span-12" title="Mastery across the semester">
         <MasteryChart events={data.reviewEvents.filter((event) => topics.some((topic) => topic.id === event.topicId))} />
       </Panel>
+    </div>
+  )
+}
+
+function CoverageLedger({
+  courseId,
+  data,
+  topics,
+  onOpenMaterials,
+}: {
+  courseId: string
+  data: ClassCenterData
+  topics: Topic[]
+  onOpenMaterials: () => void
+}) {
+  const update = useStore((state) => state.update)
+  const [selections, setSelections] = useState<Record<string, string>>({})
+  const coverage = useMemo(() => calculateCourseCoverage(courseId, data), [courseId, data])
+
+  function confirmAssignment(chunkId: string) {
+    const topicId = selections[chunkId]
+    if (!topicId) return
+    update((draft) => {
+      const chunk = draft.academics.classCenter.sourceChunks.find((item) => item.id === chunkId)
+      if (!chunk || chunk.courseId !== courseId) return
+      chunk.topicId = topicId
+      chunk.assignmentMethod = 'manual'
+      chunk.assignmentConfirmed = true
+      chunk.updatedAt = Date.now()
+    })
+  }
+
+  if (!coverage.totalChunks) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-5">
+        <p className="font-extrabold">{coverage.unprocessedFiles.length ? 'Materials are waiting to be processed' : 'No source material yet'}</p>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          {coverage.unprocessedFiles.length
+            ? `${coverage.unprocessedFiles.length} file${coverage.unprocessedFiles.length === 1 ? '' : 's'} remain visible here; none have been silently dropped.`
+            : 'Add a syllabus, lecture deck, or note to begin the coverage ledger.'}
+        </p>
+        <Button size="sm" className="mt-3" onClick={onOpenMaterials}>Open materials</Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_repeat(3,minmax(8rem,.42fr))]">
+        <div className="rounded-2xl border border-border bg-card/66 p-4 shadow-sm backdrop-blur">
+          <div className="flex items-center justify-between gap-3 text-sm font-extrabold"><span>Mapped</span><span className="tabular-nums">{coverage.mappedPercent}%</span></div>
+          <Progress className="mt-3" value={coverage.mappedPercent} />
+          <p className="mt-2 text-xs font-semibold text-muted-foreground">{coverage.mappedChunks} of {coverage.totalChunks} chunks have a confirmed or proposed topic label.</p>
+        </div>
+        <CoverageMetric label="Unassigned" value={coverage.unassigned.length} tone={coverage.unassigned.length ? 'warning' : 'neutral'} />
+        <CoverageMetric label="Uncovered" value={coverage.uncovered.length} tone={coverage.uncovered.length ? 'warning' : 'neutral'} />
+        <CoverageMetric label="Never reviewed" value={coverage.neverReviewed.length} tone={coverage.neverReviewed.length ? 'warning' : 'neutral'} />
+      </div>
+
+      {coverage.unassigned.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">Needs a confirmed topic</p>
+          {coverage.unassigned.map(({ chunk, file }) => (
+            <div key={chunk.id} className="grid gap-2 rounded-xl border border-amber-500/25 bg-amber-500/7 p-3 md:grid-cols-[minmax(0,1fr)_14rem_auto] md:items-center">
+              <div className="min-w-0">
+                <p className="truncate font-bold">{file?.title || 'Source file unavailable'}</p>
+                <p className="truncate text-xs font-semibold text-muted-foreground">{chunk.content}</p>
+              </div>
+              <Select value={selections[chunk.id]} onValueChange={(value) => setSelections((current) => ({ ...current, [chunk.id]: value }))}>
+                <SelectTrigger aria-label={`Topic for ${file?.title || 'source chunk'}`}><SelectValue placeholder="Choose topic…" /></SelectTrigger>
+                <SelectContent>{topics.map((topic) => <SelectItem key={topic.id} value={topic.id}>{topic.title}</SelectItem>)}</SelectContent>
+              </Select>
+              <Button size="sm" disabled={!selections[chunk.id]} onClick={() => confirmAssignment(chunk.id)}>Confirm</Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {coverage.uncovered.length > 0 && (
+        <p className="rounded-xl border border-dashed border-amber-500/35 bg-amber-500/7 p-3 text-sm font-semibold">
+          {coverage.uncovered.length} chunk{coverage.uncovered.length === 1 ? '' : 's'} {coverage.uncovered.length === 1 ? 'is' : 'are'} not claimed by any key point. The source records stay visible until extraction is reviewed.
+        </p>
+      )}
+      {coverage.neverReviewed.length > 0 && (
+        <p className="text-sm font-semibold text-muted-foreground">
+          Next review priority: <strong className="text-foreground">{coverage.neverReviewed.slice(0, 3).map((point) => point.text).join(' · ')}</strong>
+        </p>
+      )}
+    </div>
+  )
+}
+
+function CoverageMetric({ label, value, tone }: { label: string; value: number; tone: 'warning' | 'neutral' }) {
+  return (
+    <div className={cn('rounded-2xl border p-4 shadow-sm backdrop-blur', tone === 'warning' ? 'border-amber-500/25 bg-amber-500/7' : 'border-border bg-card/66')}>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-3xl font-extrabold tabular-nums">{value}</p>
     </div>
   )
 }

@@ -10,10 +10,14 @@ import { uid } from '@/lib/id'
 import { homeBanner } from '@/lib/themeAssets'
 import { reviewTopic } from '@/lib/academics/fsrs'
 import {
-  REVIEW_RATINGS, aiGapCheckAvailable, buildRecallQueue, buildScopeItems,
+  REVIEW_RATINGS, buildRecallQueue, buildScopeItems,
   calibrationFor, confidenceForEvent, sourceForScope,
   type GapDisposition, type RecallConfidence, type RecallScopeItem,
 } from '@/lib/academics/activeRecall'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import {
+  studyTools, type GapCheckItem, type GapCheckResult,
+} from '@/lib/intelligence/studyTools'
 import { cn } from '@/lib/utils'
 import { AnimatedFileUpload } from '@/components/motion'
 import { FocusModeLayout } from '@/components/common/FocusModeLayout'
@@ -82,6 +86,9 @@ export function AcademicRecallSession() {
   const [recordingError, setRecordingError] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const [sourceItem, setSourceItem] = useState<RecallScopeItem | null>(null)
+  const [gapResult, setGapResult] = useState<GapCheckResult | null>(null)
+  const [gapError, setGapError] = useState('')
+  const [checkingGaps, setCheckingGaps] = useState(false)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -92,7 +99,7 @@ export function AcademicRecallSession() {
     [current, data.files, data.keyPoints, data.sourceChunks],
   )
   const source = sourceItem ? sourceForScope(sourceItem, data) : null
-  const apiGapAvailable = aiGapCheckAvailable()
+  const apiGapAvailable = isSupabaseConfigured
   const reading = phase === 'active' || phase === 'report'
   const exitTo = courseId ? `/academics/classes/${courseId}` : '/academics'
 
@@ -159,6 +166,47 @@ export function AcademicRecallSession() {
       return null
     })
     setRecordingError('')
+    setGapResult(null)
+    setGapError('')
+    setCheckingGaps(false)
+  }
+
+  async function runGapCheck() {
+    if (!current || checkingGaps) return
+    setCheckingGaps(true)
+    setGapError('')
+    const result = await studyTools.gapCheck({
+      action: 'gap-check',
+      courseId,
+      topicId: current.id,
+      response,
+      sources: data.sourceChunks
+        .filter((chunk) => chunk.courseId === courseId && chunk.topicId === current.id)
+        .slice(0, 24)
+        .map((chunk) => ({
+          chunkId: chunk.id,
+          fileId: chunk.fileId,
+          content: chunk.content,
+          start: 0,
+          end: chunk.content.length,
+        })),
+    })
+    setCheckingGaps(false)
+    if (!result.ok) {
+      setGapResult(null)
+      setGapError(result.message)
+      return
+    }
+    setGapResult(result.data)
+  }
+
+  function openGapCitation(item: GapCheckItem) {
+    if (item.citation.kind !== 'material') return
+    setSourceItem({
+      id: `ai-${item.citation.chunkId}-${item.citation.start}`,
+      label: item.text,
+      provenance: item.citation,
+    })
   }
 
   function advance(result?: SessionResult) {
@@ -359,8 +407,10 @@ export function AcademicRecallSession() {
             <div className="mt-5 rounded-2xl border border-amber-400/25 bg-amber-400/8 p-4">
               <p className="font-extrabold">{apiGapAvailable ? 'AI gap-check available' : 'Deterministic self-check — no API key required'}</p>
               <p className="mt-1 text-sm text-white/64">{apiGapAvailable ? 'Run the structured gap check against only the scope below.' : 'Classify each stated scope item yourself. FSRS scheduling, calibration, grading, and the summary remain fully available.'}</p>
-              <Button size="sm" variant="outline" className="mt-3 border-white/18 bg-white/7 text-white" disabled={!apiGapAvailable}><Sparkles className="size-4" /> Run AI gap-check</Button>
+              <Button size="sm" variant="outline" className="mt-3 border-white/18 bg-white/7 text-white" disabled={!apiGapAvailable || checkingGaps} onClick={runGapCheck}><Sparkles className="size-4" /> {checkingGaps ? 'Checking…' : 'Run AI gap-check'}</Button>
             </div>
+            {gapError && <p role="status" className="mt-3 rounded-xl border border-amber-300/25 bg-amber-300/8 px-4 py-3 text-sm font-bold text-amber-100">{gapError} Nothing was saved.</p>}
+            {gapResult && <StructuredGapReport result={gapResult} onOpenCitation={openGapCitation} />}
             <div className="mt-5 space-y-3">
               {scope.map((item) => (
                 <div key={item.id} className="grid gap-3 rounded-2xl border border-white/12 bg-white/5 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
@@ -383,7 +433,7 @@ export function AcademicRecallSession() {
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {GRADE_OPTIONS.map((option) => <Button key={option.grade} variant="outline" disabled={!scope.every((item) => dispositions[item.id])} className="h-16 flex-col border-white/18 bg-white/5 text-white" onClick={() => gradeTopic(option.grade)}><span className="font-display text-lg font-extrabold">{titleCase(option.grade)}</span><span className="text-xs text-white/54">{option.interval} · {option.key}</span></Button>)}
             </div>
-            <div className="mt-3 flex items-center justify-between text-xs font-bold text-white/45"><span>1–4 grades · N skips</span><button disabled={!apiGapAvailable} className="underline decoration-dotted disabled:no-underline disabled:opacity-50">Second opinion</button></div>
+            <div className="mt-3 flex items-center justify-between text-xs font-bold text-white/45"><span>1–4 grades · N skips</span><button disabled={!apiGapAvailable || checkingGaps} onClick={runGapCheck} className="underline decoration-dotted disabled:no-underline disabled:opacity-50">Second opinion</button></div>
           </div>
         </section>
       )}
@@ -436,9 +486,11 @@ function SourceDialog({
 }) {
   if (!item || item.provenance.kind !== 'material') return null
   const content = source?.chunk?.content ?? ''
-  const before = content.slice(0, item.provenance.start)
-  const highlighted = content.slice(item.provenance.start, item.provenance.end)
-  const after = content.slice(item.provenance.end)
+  const localStart = Math.max(0, item.provenance.start)
+  const localEnd = Math.min(content.length, Math.max(localStart + 1, item.provenance.end))
+  const before = content.slice(0, localStart)
+  const highlighted = content.slice(localStart, localEnd)
+  const after = content.slice(localEnd)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -449,6 +501,47 @@ function SourceDialog({
         {source?.file?.url && <Button asChild variant="outline"><a href={source.file.url} target="_blank" rel="noreferrer">Open file ↗</a></Button>}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function StructuredGapReport({
+  result,
+  onOpenCitation,
+}: {
+  result: GapCheckResult
+  onOpenCitation: (item: GapCheckItem) => void
+}) {
+  const groups = [
+    { key: 'covered', label: 'Covered', items: result.covered, tone: 'text-emerald-300' },
+    { key: 'missed', label: 'Missed', items: result.missed, tone: 'text-amber-200' },
+    { key: 'wrong', label: 'Wrong', items: result.wrong, tone: 'text-rose-300' },
+  ]
+  return (
+    <section className="mt-4 rounded-2xl border border-primary/25 bg-primary/8 p-4" aria-label="AI gap-check result">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-display text-lg font-extrabold">Structured second opinion</p>
+        <Badge className="border-primary/30 bg-primary/15 text-sky-100">Suggested grade: {titleCase(result.suggestedGrade)}</Badge>
+      </div>
+      <p className="mt-1 text-xs font-bold text-white/52">Advisory only — your manual classification and grade remain in control.</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        {groups.map((group) => (
+          <div key={group.key} className="rounded-xl border border-white/12 bg-white/5 p-3">
+            <p className={cn('font-extrabold', group.tone)}>{group.label}</p>
+            <div className="mt-2 space-y-2">
+              {group.items.map((item, index) => (
+                <div key={`${group.key}-${index}`}>
+                  <p className="text-sm font-semibold text-white/82">{item.text}</p>
+                  {item.citation.kind === 'material'
+                    ? <button type="button" onClick={() => onOpenCitation(item)} className="mt-1 text-xs font-bold text-sky-200 underline decoration-dotted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">from your materials ↗</button>
+                    : <span className="mt-1 block text-xs font-bold text-amber-100">general knowledge — not in your notes</span>}
+                </div>
+              ))}
+              {!group.items.length && <p className="text-sm text-white/38">None.</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

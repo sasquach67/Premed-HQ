@@ -89,14 +89,19 @@ export function buildScopeItems(
     if (!chunk) {
       return { id: point.id, label: point.text, keyPointId: point.id, provenance: { kind: 'general' as const } }
     }
-    const found = chunk.content.toLocaleLowerCase().indexOf(point.text.toLocaleLowerCase())
-    const start = found >= 0 ? found : 0
-    const end = found >= 0 ? found + point.text.length : Math.min(chunk.content.length, Math.max(1, point.text.length))
     return {
       id: point.id,
       label: point.text,
       keyPointId: point.id,
-      provenance: { kind: 'material' as const, fileId: chunk.fileId, chunkId: chunk.id, start, end },
+      // Existing records do not carry a narrower extracted span. Cite the
+      // exact whole chunk instead of fabricating an offset with fuzzy text.
+      provenance: {
+        kind: 'material' as const,
+        fileId: chunk.fileId,
+        chunkId: chunk.id,
+        start: 0,
+        end: chunk.content.length,
+      },
     }
   })
 }
@@ -125,10 +130,6 @@ export function confidenceForEvent(confidence: RecallConfidence): 1 | 2 | 3 {
 
 export function noKeyLoopAvailable(): true {
   return true
-}
-
-export function aiGapCheckAvailable(apiKey?: string): boolean {
-  return Boolean(apiKey?.trim())
 }
 
 export function sourceForScope(

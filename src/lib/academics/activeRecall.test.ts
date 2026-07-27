@@ -3,8 +3,7 @@ import { Rating } from 'ts-fsrs'
 import { createTopicFsrsState } from '@/lib/academics/fsrs'
 import { reviewTopic } from '@/lib/academics/fsrs'
 import {
-  REVIEW_RATINGS, aiGapCheckAvailable, buildRecallQueue, calibrationFor,
-  noKeyLoopAvailable,
+  REVIEW_RATINGS, buildRecallQueue, calibrationFor, noKeyLoopAvailable,
 } from '@/lib/academics/activeRecall'
 import type { Topic } from '@/lib/types'
 
@@ -19,7 +18,6 @@ function topic(id: string, due: number, status: Topic['status'], reps = 0): Topi
 describe('active recall deterministic loop', () => {
   it('works without any API key', () => {
     expect(noKeyLoopAvailable()).toBe(true)
-    expect(aiGapCheckAvailable()).toBe(false)
     expect(REVIEW_RATINGS).toEqual({
       again: Rating.Again,
       hard: Rating.Hard,
