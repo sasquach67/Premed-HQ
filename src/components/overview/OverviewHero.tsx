@@ -52,25 +52,35 @@ export function OverviewHero() {
   return (
     <section
       aria-labelledby="overview-heading"
-      className="relative min-h-[16rem] overflow-hidden rounded-3xl border border-border bg-card shadow-lg md:min-h-[17rem]"
+      className="relative min-h-[22rem] overflow-hidden rounded-3xl border border-border bg-card shadow-lg md:min-h-[24rem]"
     >
       <ThemedHomeImage key={visualTheme} visualTheme={visualTheme} />
       <div className="absolute inset-0 bg-slate-950/52 dark:bg-slate-950/64" />
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/88 via-slate-950/52 to-slate-950/26" />
-      <div className="relative grid min-h-[16rem] gap-5 p-5 text-white md:min-h-[17rem] md:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,.9fr)] lg:items-center">
-        <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">
-            {dateLine} · <span className="tabular-nums">{formatClock(now, '12h')}</span>
-          </p>
-          <h1
-            id="overview-heading"
-            className="mt-1 text-balance font-display text-[clamp(2rem,3.2vw,2.75rem)] font-extrabold leading-none"
-          >
-            Good to see you again, {firstName(name)}!
-          </h1>
-          <HeroLiveStatus schedule={schedule} now={now} />
+      <div className="relative flex min-h-[22rem] flex-col p-5 text-white md:min-h-[24rem] md:p-7">
+        <div className="grid flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(23rem,.9fr)] lg:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/72">
+              {dateLine} · <span className="tabular-nums">{formatClock(now, '12h')}</span>
+            </p>
+            <h1
+              id="overview-heading"
+              className="mt-1 text-balance font-display text-[clamp(2rem,3.2vw,2.75rem)] font-extrabold leading-none"
+            >
+              Good to see you again, {firstName(name)}!
+            </h1>
+            <HeroLiveStatus schedule={schedule} now={now} />
+          </div>
+          <TodaySchedulePanel schedule={schedule} now={now} />
         </div>
-        <TodaySchedulePanel schedule={schedule} now={now} />
+        <MascotNote
+          variant="banner"
+          priority={-10}
+          source="r/premed"
+          className="mt-5 w-full max-w-[42rem]"
+        >
+          Reflection matters as much as the activity. Log <strong className="font-extrabold">why</strong> it mattered while it’s fresh.
+        </MascotNote>
       </div>
     </section>
   )
@@ -122,6 +132,7 @@ function HeroLiveStatus({ schedule, now }: { schedule: ReturnType<typeof useHero
       <NumberFlow
         value={remaining}
         format={hms}
+        animationKey={Math.floor(remaining / 3600)}
         className="mt-3 font-display text-[clamp(2.5rem,5vw,3.75rem)] font-extrabold leading-none text-white"
       />
       <span className="sr-only">Countdown updates continuously.</span>
