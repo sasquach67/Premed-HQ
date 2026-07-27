@@ -10,15 +10,16 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type {
   AcademicCourseOption, AcademicTagColor, AcademicTypeOption,
-  AppData, CollectionKey, ActivityEvent, RequirementItem, RecoveryEntry,
+  AppData, ClassCenterData, CollectionKey, ActivityEvent, RequirementItem, RecoveryEntry,
 } from '@/lib/types'
 import { createSeedData } from '@/data/seed'
 import { uid } from '@/lib/id'
 import { isMutableSeverity } from '@/lib/intelligence/recommendations'
 import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
+import { migrateAcademicsV4, syncCurrentTermWorkspaces } from '@/store/migrations/academicsV4'
 
 export const STORAGE_KEY = 'premed_hq_v1'
-const SEED_VERSION = 3
+const SEED_VERSION = 4
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -146,47 +147,11 @@ export function migrateMascotNotes(data: AppData): AppData {
 }
 
 export function migrateAcademicTags(data: AppData): AppData {
-  data.academics ??= { courseOptions: [], assignmentTypeOptions: [], classCenter: classCenterDefaults() }
+  data.academics ??= { courseOptions: [], assignmentTypeOptions: [], classCenter: classCenterDefaults(), migrationJournal: [] }
   data.academics.courseOptions ??= []
   data.academics.assignmentTypeOptions ??= []
+  data.academics.migrationJournal ??= []
   data.academics.classCenter ??= classCenterDefaults()
-  data.academics.classCenter.classes ??= []
-  data.academics.classCenter.topics ??= []
-  data.academics.classCenter.notes ??= []
-  data.academics.classCenter.assignments ??= []
-  data.academics.classCenter.files ??= []
-  data.academics.classCenter.contacts ??= []
-  data.academics.classCenter.weakAreas ??= []
-  data.academics.classCenter.practiceExams ??= []
-  data.academics.classCenter.practiceQuestions ??= []
-
-  const now = Date.now()
-  for (const topic of data.academics.classCenter.topics) {
-    const oldConfidence = Number(topic.confidence)
-    topic.confidence = (oldConfidence >= 4 ? 3 : oldConfidence <= 1 ? 1 : 2) as never
-    if (topic.status === 'mastered') topic.status = 'ready'
-    topic.sourceNoteIds ??= []
-    topic.linkedNoteIds ??= [...new Set([...(topic.linkedNoteIds ?? []), ...(topic.sourceNoteIds ?? [])])]
-    topic.linkedAssignmentIds ??= []
-    topic.linkedFileIds ??= []
-    topic.createdAt ??= now
-    topic.updatedAt ??= now
-  }
-  for (const note of data.academics.classCenter.notes) {
-    note.topicIds ??= []
-    note.linkedFileIds ??= []
-    note.syncStatus ??= 'local-only'
-  }
-  for (const assignment of data.academics.classCenter.assignments) {
-    assignment.linkedTopicIds ??= []
-    assignment.coveredTopicIds ??= assignment.type === 'exam' ? assignment.linkedTopicIds : []
-    assignment.linkedFileIds ??= []
-  }
-  for (const file of data.academics.classCenter.files) file.linkedTopicIds ??= []
-  for (const weakArea of data.academics.classCenter.weakAreas) {
-    const oldSeverity = Number(weakArea.severity)
-    weakArea.severity = (oldSeverity >= 4 ? 3 : oldSeverity <= 1 ? 1 : 2) as never
-  }
 
   const courseOptions = data.academics.courseOptions as AcademicCourseOption[]
   const typeOptions = data.academics.assignmentTypeOptions as AcademicTypeOption[]
@@ -235,6 +200,31 @@ export function migrateAcademicTags(data: AppData): AppData {
   for (const task of data.tasks ?? []) {
     if (task.course && !task.courseId) task.courseId = ensureCourse(task.course).id
     if (task.type && !task.typeId) task.typeId = ensureType(task.type).id
+  }
+
+  // Keep the older additive safeguards available to direct migration callers.
+  // The v4 reconciliation immediately follows this function during hydration.
+  for (const topic of data.academics.classCenter.topics ?? []) {
+    topic.confidence = Math.max(1, Math.min(3, Number(topic.confidence) || 1)) as typeof topic.confidence
+    if ((topic.status as string) === 'mastered') topic.status = 'ready'
+    if ((topic.status as string) === 'cards-made') topic.status = 'notes-made'
+    topic.linkedNoteIds ??= []
+    topic.linkedAssignmentIds ??= []
+    topic.linkedFileIds ??= []
+  }
+  for (const area of data.academics.classCenter.weakAreas ?? []) {
+    area.severity = Math.max(1, Math.min(3, Number(area.severity) || 1)) as typeof area.severity
+  }
+
+  // A non-enumerable compatibility view lets old callers detect that the
+  // container exists without serializing duplicate course/workspace data.
+  const center = data.academics.classCenter as ClassCenterData & { classes?: unknown[] }
+  if (!Object.prototype.hasOwnProperty.call(center, 'classes')) {
+    Object.defineProperty(center, 'classes', {
+      configurable: true,
+      enumerable: false,
+      get: () => center.workspaces ?? [],
+    })
   }
 
   return data
@@ -388,7 +378,7 @@ export function migrateRequirementMetadata(data: AppData): AppData {
 }
 
 function migrateAll(data: AppData): AppData {
-  return migrateMascotNotes(
+  return migrateAcademicsV4(migrateMascotNotes(
     migrateOverviewSchema(
       migrateIntelligence(
         migrateSafetyNets(
@@ -400,7 +390,7 @@ function migrateAll(data: AppData): AppData {
         ),
       ),
     ),
-  )
+  ))
 }
 
 function nextOrder(arr: AnyRow[]): number {
@@ -436,7 +426,10 @@ export const useStore = create<Store>()(
     immer((set) => ({
       ...createSeedData(),
 
-      update: (mutator) => set((s) => { mutator(s as unknown as AppData) }),
+      update: (mutator) => set((s) => {
+        mutator(s as unknown as AppData)
+        syncCurrentTermWorkspaces(s as unknown as AppData)
+      }),
 
       addItem: (key, item) =>
         set((s) => {
@@ -444,6 +437,7 @@ export const useStore = create<Store>()(
           const row = item as unknown as AnyRow
           if (row.order == null) row.order = nextOrder(arr)
           arr.push(row)
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           pushRecovery(s as unknown as AppData, key, 'Created record', [], [row])
         }),
 
@@ -452,6 +446,7 @@ export const useStore = create<Store>()(
           const arr = s[key] as unknown as AnyRow[]
           const row = arr.find((r) => r.id === id)
           if (row) Object.assign(row, patch)
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
         }),
 
       removeItem: (key, id) =>
@@ -462,6 +457,7 @@ export const useStore = create<Store>()(
           const before = plain(arr[i])
           const deletedAt = Date.now()
           const [record] = arr.splice(i, 1)
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           record.deletedAt = deletedAt
           s.trash.unshift({ id: uid(), collection: key, deletedAt, record: { ...plain(record), deletedAt } })
           pushRecovery(s as unknown as AppData, key, 'Moved record to trash', [before], [record])
@@ -480,6 +476,7 @@ export const useStore = create<Store>()(
           for (const record of after) {
             s.trash.unshift({ id: uid(), collection: key, deletedAt, record: { ...plain(record), deletedAt } })
           }
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           recoveryId = pushRecovery(s as unknown as AppData, key, label, before, after)
         })
         return recoveryId
@@ -497,6 +494,7 @@ export const useStore = create<Store>()(
             arr.push(record)
           }
           s.trash = s.trash.filter((entry) => !wanted.has(entry.id))
+          if (restoring.some((entry) => entry.collection === 'courses')) syncCurrentTermWorkspaces(s as unknown as AppData)
         }),
 
       permanentlyDeleteTrashItems: (trashIds) =>
@@ -514,6 +512,7 @@ export const useStore = create<Store>()(
           if (!rows.length) return
           const before = rows.map(plain)
           for (const row of rows) Object.assign(row, patch)
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           recoveryId = pushRecovery(s as unknown as AppData, key, label, before, rows.map(plain))
         })
         return recoveryId
@@ -528,6 +527,7 @@ export const useStore = create<Store>()(
           if (!rows.length) return
           const before = rows.map(plain)
           for (const row of rows) updater(row)
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           recoveryId = pushRecovery(s as unknown as AppData, key, label, before, rows.map(plain))
         })
         return recoveryId
@@ -550,6 +550,7 @@ export const useStore = create<Store>()(
             target.push(restored)
           }
           target.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          if (entry.collection === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
           s.meta.recoveryStack = s.meta.recoveryStack.filter((candidate) => candidate.id !== id)
         }),
 
@@ -569,6 +570,7 @@ export const useStore = create<Store>()(
       setCollection: (key, items) =>
         set((s) => {
           ;(s as unknown as Record<string, unknown>)[key] = items
+          if (key === 'courses') syncCurrentTermWorkspaces(s as unknown as AppData)
         }),
 
       setNote: (id, value) =>
@@ -645,6 +647,7 @@ export const useStore = create<Store>()(
             courseOptions: p.academics?.courseOptions ?? current.academics.courseOptions,
             assignmentTypeOptions: p.academics?.assignmentTypeOptions ?? current.academics.assignmentTypeOptions,
             classCenter: p.academics?.classCenter ?? current.academics.classCenter,
+            migrationJournal: p.academics?.migrationJournal ?? current.academics.migrationJournal,
           },
           settings: {
             ...current.settings,

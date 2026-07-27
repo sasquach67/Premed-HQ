@@ -34,6 +34,7 @@ import { ModeSwitch } from '@/components/common/ModeSwitch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/common/useToast'
 import { instantCrossfade, sharedAxis } from '@/lib/motion'
+import { AcademicMigrationReview } from '@/components/academics/AcademicMigrationReview'
 
 const GRADES: LetterGrade[] = ['', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'P', 'IP']
 const COURSE_COLUMNS: ColumnDef[] = [
@@ -48,7 +49,7 @@ const COURSE_COLUMNS: ColumnDef[] = [
 export function Academics() {
   const reduceMotion = useReducedMotion()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { classId } = useParams()
+  const { courseId } = useParams()
   const courses = useStore((s) => s.courses)
   const addItem = useStore((s) => s.addItem)
   const undoRecovery = useStore((s) => s.undoRecovery)
@@ -97,7 +98,7 @@ export function Academics() {
     update((draft) => { draft.settings.academicsMode = mode })
   }, [mode, storedMode, update])
 
-  if (classId) {
+  if (courseId) {
     return <ClassCenter />
   }
 
@@ -108,6 +109,7 @@ export function Academics() {
   return (
     <div>
       <PageHeader title={route.label} />
+      <AcademicMigrationReview />
       <div className="mb-4">
         <ModeSwitch
           value={mode}

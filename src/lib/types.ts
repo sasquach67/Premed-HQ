@@ -156,7 +156,8 @@ export interface AcademicTypeOption {
 }
 
 export type ClassStatus = 'active' | 'archived'
-export type TopicStatus = 'not-started' | 'seen' | 'notes-made' | 'cards-made' | 'reviewing' | 'mastered' | 'weak' | 'ready'
+export type TopicStatus = 'not-started' | 'seen' | 'notes-made' | 'reviewing' | 'weak' | 'ready'
+export type LegacyTopicStatus = TopicStatus | 'cards-made' | 'mastered'
 export type TopicConfidence = 1 | 2 | 3
 export type ClassNoteType = 'lecture' | 'reading' | 'lab' | 'study-guide' | 'exam-review' | 'question-log' | 'other'
 export type ClassNoteSyncStatus = 'local-only' | 'sync-ready' | 'synced' | 'error'
@@ -171,12 +172,12 @@ export type PracticeExamDifficulty = 'easy' | 'medium' | 'hard' | 'mixed'
 export type PracticeQuestionType = 'multiple-choice' | 'short-answer' | 'free-response'
 export type PracticeExamStatus = 'draft' | 'in-progress' | 'submitted' | 'reviewed'
 
-export interface ClassCenterClass {
+/** Operational extension for one canonical Course. It exists only for the
+ * profile's current term and never repeats course code/title/term. */
+export interface ClassWorkspace {
   id: ID
-  courseCode: string
-  courseTitle: string
+  courseId: ID
   nickname?: string
-  semester: string
   instructor?: string
   meetingDays?: string
   meetingTime?: string
@@ -197,15 +198,31 @@ export interface ClassCenterClass {
   order: number
 }
 
-export interface ClassTopic {
+/** JSON-safe subset of a ts-fsrs Card. Dates are epoch milliseconds so the
+ * localStorage representation is stable across hydration and backup restore. */
+export interface TopicFsrsState {
+  due: number
+  stability: number
+  difficulty: number
+  elapsedDays: number
+  scheduledDays: number
+  learningSteps: number
+  reps: number
+  lapses: number
+  state: number
+  lastReview?: number
+}
+
+export interface Topic {
   id: ID
-  classId: ID
+  courseId: ID
   title: string
   unit?: string
   status: TopicStatus
+  fsrs: TopicFsrsState
+  /** Legacy confidence is retained losslessly until the review-session chunk
+   * replaces it with confidence-before-reveal calibration. */
   confidence: TopicConfidence
-  lastReviewedAt?: number
-  nextReviewAt?: number
   sourceNoteIds: ID[]
   linkedNoteIds?: ID[]
   linkedAssignmentIds?: ID[]
@@ -217,7 +234,7 @@ export interface ClassTopic {
 
 export interface ClassNote {
   id: ID
-  classId: ID
+  courseId: ID
   title: string
   type: ClassNoteType
   date?: string
@@ -235,11 +252,16 @@ export interface ClassNote {
 
 export interface ClassAssignment {
   id: ID
-  classId: ID
+  courseId: ID
   title: string
   type: ClassAssignmentType
   dueDate?: string
   status: ClassAssignmentStatus
+  category?: string
+  pointsEarned?: number
+  pointsPossible?: number
+  /** Percentage of the final course grade represented by this assignment. */
+  weight?: number
   linkedTopicIds: ID[]
   linkedFileIds: ID[]
   notes?: string
@@ -251,12 +273,17 @@ export interface ClassAssignment {
   order: number
 }
 
-export interface ClassFileResource {
+export type AcademicFileSourceType = 'upload' | 'link' | 'embed'
+
+export interface AcademicFile {
   id: ID
-  classId: ID
+  courseId: ID
+  topicId?: ID
+  sourceType: AcademicFileSourceType
   title: string
   type: ClassFileType
   url?: string
+  blobRef?: string
   fileName?: string
   mimeType?: string
   notes?: string
@@ -268,7 +295,7 @@ export interface ClassFileResource {
 
 export interface ClassContact {
   id: ID
-  classId: ID
+  courseId: ID
   name: string
   role: ClassContactRole
   email?: string
@@ -286,7 +313,7 @@ export interface ClassContact {
 
 export interface ClassWeakArea {
   id: ID
-  classId: ID
+  courseId: ID
   topicId?: ID
   label: string
   source: WeakAreaSource
@@ -304,7 +331,7 @@ export interface ClassWeakArea {
 
 export interface PracticeExam {
   id: ID
-  classId: ID
+  courseId: ID
   title: string
   topicIds: ID[]
   sourceNoteIds: ID[]
@@ -324,7 +351,7 @@ export interface PracticeExam {
 export interface PracticeQuestion {
   id: ID
   examId: ID
-  classId: ID
+  courseId: ID
   topicIds: ID[]
   type: PracticeQuestionType
   prompt: string
@@ -341,12 +368,66 @@ export interface PracticeQuestion {
   updatedAt: number
 }
 
+export interface KeyPoint {
+  id: ID
+  topicId: ID
+  text: string
+  sourceChunkIds: ID[]
+  timesSurfaced: number
+  lastSurfaced?: number
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export interface SourceChunk {
+  id: ID
+  fileId: ID
+  courseId: ID
+  topicId?: ID
+  content: string
+  embedding?: number[]
+  coveredByKeyPoint: boolean
+  createdAt: number
+  updatedAt: number
+  order: number
+}
+
+export type AcademicMigrationReviewKind =
+  | 'workspace-unmatched'
+  | 'workspace-conflict'
+  | 'current-term-confirmation'
+
+export type AcademicMigrationJournalKind =
+  | AcademicMigrationReviewKind
+  | 'workspace-linked'
+  | 'workspace-course-created'
+  | 'workspace-dropped-noncurrent'
+  | 'workspace-auto-created'
+
+export interface AcademicMigrationJournalEntry {
+  id: ID
+  kind: AcademicMigrationJournalKind
+  status: 'pending' | 'resolved'
+  reason: string
+  legacyWorkspaceId?: ID
+  legacyWorkspace?: Record<string, unknown>
+  relatedLegacyRecords?: Record<string, unknown[]>
+  courseId?: ID
+  candidateCourseIds?: ID[]
+  inferredTerm?: string
+  createdAt: number
+  resolvedAt?: number
+}
+
 export interface ClassCenterData {
-  classes: ClassCenterClass[]
-  topics: ClassTopic[]
+  workspaces: ClassWorkspace[]
+  topics: Topic[]
   notes: ClassNote[]
   assignments: ClassAssignment[]
-  files: ClassFileResource[]
+  files: AcademicFile[]
+  keyPoints: KeyPoint[]
+  sourceChunks: SourceChunk[]
   contacts: ClassContact[]
   weakAreas: ClassWeakArea[]
   practiceExams: PracticeExam[]
@@ -357,6 +438,7 @@ export interface AcademicTagSettings {
   courseOptions: AcademicCourseOption[]
   assignmentTypeOptions: AcademicTypeOption[]
   classCenter: ClassCenterData
+  migrationJournal: AcademicMigrationJournalEntry[]
 }
 
 export type TaskType = string

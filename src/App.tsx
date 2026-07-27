@@ -41,7 +41,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="northstar" element={<Navigate to="/?guide=open" replace />} />
             <Route path="academics" element={<Academics />} />
-            <Route path="academics/classes/:classId" element={<Academics />} />
+            <Route path="academics/classes/:courseId" element={<Academics />} />
             <Route path="mcat" element={<Mcat />} />
             <Route path="letters" element={<Letters />} />
             <Route path="clinical" element={<ExperiencePillar key="clinical" category="clinical" />} />

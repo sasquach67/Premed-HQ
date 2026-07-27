@@ -30,9 +30,9 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
     const parts = location.pathname.split('/').filter(Boolean)
     if (parts.length < 2 || parts[0] === 'atlas') return ''
     if (parts[0] === 'ecs' && parts[1] === 'org') return data.orgs.find((org) => org.id === parts[2])?.name ?? 'Organization'
-    if (parts[0] === 'academics' && parts[1] === 'classes') return data.academics.classCenter.classes.find((row) => row.id === parts[2])?.courseCode ?? 'Class'
+    if (parts[0] === 'academics' && parts[1] === 'classes') return data.courses.find((course) => course.id === parts[2])?.code ?? 'Class'
     return parts.at(-1)?.replace(/-/g, ' ') ?? ''
-  }, [location.pathname, data.orgs, data.academics.classCenter.classes])
+  }, [location.pathname, data.orgs, data.courses])
   const status = useMemo(() => attentionStatus(buildAttention(data), backup.enabled), [data, backup.enabled])
 
   useEffect(() => {

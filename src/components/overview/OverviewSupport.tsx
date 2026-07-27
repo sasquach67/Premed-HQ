@@ -33,7 +33,7 @@ export function QuickAccess() {
   const classCenter = useStore((state) => state.academics.classCenter)
   const experiences = useStore((state) => state.experiences)
   const [now] = useState(Date.now)
-  const dueTopics = classCenter.topics.filter((topic) => topic.nextReviewAt != null && topic.nextReviewAt <= now).length
+  const dueTopics = classCenter.topics.filter((topic) => topic.fsrs.due <= now).length
   const nextMcat = mcat.schedule.find((item) => !item.done)
   const lastHours = latestExperienceLabel(experiences)
 

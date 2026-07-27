@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { migrateAcademicTags, migrateMascotNotes, migrateOrgReflections, migrateOverviewSchema, migrateRequirementMetadata, migrateSafetyNets } from '@/store/store'
 import { createSeedData } from '@/data/seed'
-import type { AppData, ClassTopic, ClassWeakArea, Org, RequirementItem, TaskItem } from '@/lib/types'
+import type { AppData, ClassWeakArea, Org, RequirementItem, TaskItem, Topic } from '@/lib/types'
 
 function freshData(): AppData {
   return createSeedData()
@@ -18,7 +18,7 @@ describe('migrateAcademicTags', () => {
     data.tasks = []
     const out = migrateAcademicTags(data)
     expect(out.academics.courseOptions).toEqual([])
-    expect(out.academics.classCenter.classes).toBeDefined()
+    expect(out.academics.classCenter.workspaces).toBeDefined()
     expect(out.academics.classCenter.practiceExams).toEqual([])
   })
 
@@ -28,7 +28,7 @@ describe('migrateAcademicTags', () => {
       { id: 'a', confidence: 5, status: 'mastered' },
       { id: 'b', confidence: 1, status: 'seen' },
       { id: 'c', confidence: 2, status: 'weak' },
-    ] as unknown as ClassTopic[]
+    ] as unknown as Topic[]
     const out = migrateAcademicTags(data)
     const [a, b, c] = out.academics.classCenter.topics
     expect(a.confidence).toBe(3)

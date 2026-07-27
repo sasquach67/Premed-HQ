@@ -11,9 +11,9 @@ import { useStore } from '@/store/store'
 import { uid } from '@/lib/id'
 import { cn } from '@/lib/utils'
 import type {
-  AcademicTagColor, ClassAssignment,
-  ClassCenterClass, ClassCenterData, ClassContact, ClassContactRole,
-  ClassFileResource, ClassFileType, ClassNote, ClassNoteType, ClassTopic,
+  AcademicTagColor, ClassAssignment, ClassWorkspace,
+  ClassCenterData, ClassContact, ClassContactRole, Course,
+  AcademicFile, ClassFileType, ClassNote, ClassNoteType, Topic,
   ClassWeakArea, PracticeExam, PracticeExamDifficulty, PracticeQuestion,
   PracticeQuestionType, TopicConfidence, TopicStatus, WeakAreaSource,
 } from '@/lib/types'
@@ -33,6 +33,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateField } from '@/components/common/DateField'
 import { AnimatedFileUpload } from '@/components/motion'
+import { createTopicFsrsState } from '@/lib/academics/fsrs'
 
 const COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'yellow', 'red', 'pink', 'gray', 'brown']
 const CLASS_ICONS: { id: string; label: string; Icon: LucideIcon }[] = [
@@ -91,7 +92,17 @@ const PILL_STYLES: Record<AcademicTagColor, string> = {
   red: 'bg-red-500/12 text-red-700 dark:text-red-200',
 }
 
-type ClassFormState = Omit<ClassCenterClass, 'id' | 'createdAt' | 'updatedAt' | 'order'>
+type ClassWorkspaceView = Omit<ClassWorkspace, 'id'> & {
+  id: string
+  workspaceId: string
+  courseCode: string
+  courseTitle: string
+  semester: string
+}
+
+type ClassCenterViewData = ClassCenterData & { classes: ClassWorkspaceView[] }
+
+type ClassFormState = Omit<ClassWorkspaceView, 'id' | 'workspaceId' | 'courseId' | 'createdAt' | 'updatedAt' | 'order'>
 
 function emptyClassForm(semester = 'Fall 2026'): ClassFormState {
   return {
@@ -117,7 +128,7 @@ function emptyClassForm(semester = 'Fall 2026'): ClassFormState {
   }
 }
 
-function classToForm(row: ClassCenterClass): ClassFormState {
+function classToForm(row: ClassWorkspaceView): ClassFormState {
   return {
     courseCode: row.courseCode,
     courseTitle: row.courseTitle,
@@ -141,6 +152,32 @@ function classToForm(row: ClassCenterClass): ClassFormState {
   }
 }
 
+function joinWorkspaces(workspaces: ClassWorkspace[], courses: Course[]): ClassWorkspaceView[] {
+  const coursesById = new Map(courses.map((course) => [course.id, course]))
+  return workspaces.flatMap((workspace) => {
+    const course = coursesById.get(workspace.courseId)
+    if (!course) return []
+    return [{
+      ...workspace,
+      id: course.id,
+      workspaceId: workspace.id,
+      courseCode: course.code,
+      courseTitle: course.title,
+      semester: course.term,
+    }]
+  })
+}
+
+function workspaceFields(form: ClassFormState): Omit<ClassWorkspace, 'id' | 'courseId' | 'createdAt' | 'updatedAt' | 'order'> {
+  const {
+    courseCode: _courseCode,
+    courseTitle: _courseTitle,
+    semester: _semester,
+    ...workspace
+  } = form
+  return workspace
+}
+
 function normalizeClassIcon(icon?: string) {
   const id = ICON_ALIASES[icon ?? ''] ?? icon ?? 'book'
   return CLASS_ICONS.some((item) => item.id === id) ? id : 'book'
@@ -158,13 +195,13 @@ function ClassIcon({ icon, className }: { icon?: string; className?: string }) {
 
 function reorderClasses(draft: ClassCenterData, orderedVisibleIds: string[]) {
   const visible = new Set(orderedVisibleIds)
-  const byId = new Map(draft.classes.map((row) => [row.id, row]))
-  const orderedVisible = orderedVisibleIds.map((id) => byId.get(id)).filter(Boolean) as ClassCenterClass[]
-  const current = [...draft.classes].sort((a, b) => a.order - b.order)
-  const firstVisibleIndex = current.findIndex((row) => visible.has(row.id))
+  const byId = new Map(draft.workspaces.map((row) => [row.courseId, row]))
+  const orderedVisible = orderedVisibleIds.map((id) => byId.get(id)).filter(Boolean) as ClassWorkspace[]
+  const current = [...draft.workspaces].sort((a, b) => a.order - b.order)
+  const firstVisibleIndex = current.findIndex((row) => visible.has(row.courseId))
   if (firstVisibleIndex < 0) return
-  const before = current.slice(0, firstVisibleIndex).filter((row) => !visible.has(row.id))
-  const after = current.slice(firstVisibleIndex).filter((row) => !visible.has(row.id))
+  const before = current.slice(0, firstVisibleIndex).filter((row) => !visible.has(row.courseId))
+  const after = current.slice(firstVisibleIndex).filter((row) => !visible.has(row.courseId))
   ;[...before, ...orderedVisible, ...after].forEach((row, index) => {
     row.order = index
     row.updatedAt = Date.now()
@@ -175,15 +212,18 @@ export function ClassCenter({ archiveOnly = false }: { archiveOnly?: boolean }) 
   const params = useParams()
   const navigate = useNavigate()
   const data = useStore((s) => s.academics.classCenter)
+  const courses = useStore((s) => s.courses)
   const update = useStore((s) => s.update)
-  const classId = params.classId
-  const activeClass = data.classes.find((row) => row.id === classId)
+  const courseId = params.courseId
+  const classes = useMemo(() => joinWorkspaces(data.workspaces, courses), [data.workspaces, courses])
+  const viewData = useMemo<ClassCenterViewData>(() => ({ ...data, classes }), [data, classes])
+  const activeClass = classes.find((row) => row.courseId === courseId)
 
   function mutate(fn: (draft: ClassCenterData) => void) {
     update((draft) => fn(draft.academics.classCenter))
   }
 
-  if (classId) {
+  if (courseId) {
     if (!activeClass) {
       return (
         <Card>
@@ -198,22 +238,23 @@ export function ClassCenter({ archiveOnly = false }: { archiveOnly?: boolean }) 
         </Card>
       )
     }
-    return <ClassWorkspace row={activeClass} data={data} mutate={mutate} onBack={() => navigate('/academics')} />
+    return <ClassWorkspace row={activeClass} data={viewData} mutate={mutate} onBack={() => navigate('/academics')} />
   }
 
-  return <ClassCenterDashboard data={data} mutate={mutate} archiveOnly={archiveOnly} />
+  return <ClassCenterDashboard data={viewData} mutate={mutate} updateAll={update} archiveOnly={archiveOnly} />
 }
 
 function ClassCenterDashboard({
-  data, mutate, archiveOnly,
+  data, mutate, updateAll, archiveOnly,
 }: {
-  data: ClassCenterData
+  data: ClassCenterViewData
   mutate: (fn: (draft: ClassCenterData) => void) => void
+  updateAll: (fn: (draft: import('@/lib/types').AppData) => void) => void
   archiveOnly: boolean
 }) {
   const [semester, setSemester] = useState(archiveOnly ? 'Archived' : 'Fall 2026')
   const [query, setQuery] = useState('')
-  const [editor, setEditor] = useState<{ open: boolean; classId?: string; form: ClassFormState }>({
+  const [editor, setEditor] = useState<{ open: boolean; courseId?: string; form: ClassFormState }>({
     open: false,
     form: emptyClassForm(),
   })
@@ -237,19 +278,38 @@ function ClassCenterDashboard({
     const now = Date.now()
     const form = editor.form
     if (!form.courseCode.trim() && !form.courseTitle.trim()) return
-    mutate((draft) => {
-      if (editor.classId) {
-        const row = draft.classes.find((item) => item.id === editor.classId)
-        if (row) Object.assign(row, form, { updatedAt: now })
+    updateAll((draft) => {
+      if (editor.courseId) {
+        const course = draft.courses.find((item) => item.id === editor.courseId)
+        const workspace = draft.academics.classCenter.workspaces.find((item) => item.courseId === editor.courseId)
+        if (course) Object.assign(course, {
+          code: form.courseCode.trim(),
+          title: form.courseTitle.trim(),
+          term: form.semester,
+        })
+        if (workspace) Object.assign(workspace, workspaceFields(form), { updatedAt: now })
       } else {
-        draft.classes.push({
-          ...form,
+        const courseId = uid()
+        draft.courses.push({
+          id: courseId,
+          code: form.courseCode.trim() || 'NEW 101',
+          title: form.courseTitle.trim() || 'Untitled class',
+          term: form.semester,
+          credits: 3,
+          grade: '',
+          bcpm: false,
+          status: 'in-progress',
+          inResidence: true,
+          satisfies: [],
+          order: draft.courses.length,
+        })
+        draft.academics.classCenter.workspaces.push({
+          ...workspaceFields(form),
           id: uid(),
-          courseCode: form.courseCode.trim() || 'NEW 101',
-          courseTitle: form.courseTitle.trim() || 'Untitled class',
+          courseId,
           createdAt: now,
           updatedAt: now,
-          order: draft.classes.length,
+          order: draft.academics.classCenter.workspaces.length,
         })
       }
     })
@@ -332,21 +392,23 @@ function ClassCenterDashboard({
               setDraggedClassId(null)
               setDragOverClassId(null)
             }}
-            onEdit={() => setEditor({ open: true, classId: row.id, form: classToForm(row) })}
+            onEdit={() => setEditor({ open: true, courseId: row.id, form: classToForm(row) })}
             onDelete={() => {
               if (!window.confirm(`Delete ${row.courseCode || row.courseTitle}?`)) return
-              mutate((draft) => {
-                draft.classes = draft.classes.filter((item) => item.id !== row.id)
-                draft.topics = draft.topics.filter((item) => item.classId !== row.id)
-                draft.notes = draft.notes.filter((item) => item.classId !== row.id)
-                draft.assignments = draft.assignments.filter((item) => item.classId !== row.id)
-                draft.files = draft.files.filter((item) => item.classId !== row.id)
-                draft.contacts = draft.contacts.filter((item) => item.classId !== row.id)
-                draft.weakAreas = draft.weakAreas.filter((item) => item.classId !== row.id)
+              updateAll((draft) => {
+                draft.courses = draft.courses.filter((item) => item.id !== row.id)
+                const center = draft.academics.classCenter
+                center.workspaces = center.workspaces.filter((item) => item.courseId !== row.id)
+                center.topics = center.topics.filter((item) => item.courseId !== row.id)
+                center.notes = center.notes.filter((item) => item.courseId !== row.id)
+                center.assignments = center.assignments.filter((item) => item.courseId !== row.id)
+                center.files = center.files.filter((item) => item.courseId !== row.id)
+                center.contacts = center.contacts.filter((item) => item.courseId !== row.id)
+                center.weakAreas = center.weakAreas.filter((item) => item.courseId !== row.id)
               })
             }}
             onArchive={() => mutate((draft) => {
-              const item = draft.classes.find((c) => c.id === row.id)
+              const item = draft.workspaces.find((c) => c.courseId === row.id)
               if (item) {
                 item.status = item.status === 'archived' ? 'active' : 'archived'
                 item.updatedAt = Date.now()
@@ -382,7 +444,7 @@ function ClassCenterDashboard({
 
       <ClassEditorDialog
         open={editor.open}
-        title={editor.classId ? 'Edit class' : 'Create class'}
+        title={editor.courseId ? 'Edit class' : 'Create class'}
         form={editor.form}
         onOpenChange={(open) => setEditor((prev) => ({ ...prev, open }))}
         onChange={(patch) => setEditor((prev) => ({ ...prev, form: { ...prev.form, ...patch } }))}
@@ -395,8 +457,8 @@ function ClassCenterDashboard({
 function ClassCard({
   row, data, dragging, dragOver, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, onEdit, onArchive, onDelete,
 }: {
-  row: ClassCenterClass
-  data: ClassCenterData
+  row: ClassWorkspaceView
+  data: ClassCenterViewData
   dragging: boolean
   dragOver: boolean
   onDragStart: (event: DragEvent<HTMLElement>) => void
@@ -488,19 +550,19 @@ function ClassMetaChip({ icon: Icon, label, className }: { icon: LucideIcon; lab
   )
 }
 
-function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes: ClassCenterClass[] }) {
+function AcrossClassesStrip({ data, classes }: { data: ClassCenterViewData; classes: ClassWorkspaceView[] }) {
   const activeIds = new Set(classes.map((row) => row.id))
   const upcoming = data.assignments
-    .filter((item) => activeIds.has(item.classId) && item.status !== 'submitted' && item.status !== 'graded' && item.dueDate)
+    .filter((item) => activeIds.has(item.courseId) && item.status !== 'submitted' && item.status !== 'graded' && item.dueDate)
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
     .slice(0, 5)
   const revision = data.topics
-    .filter((topic) => activeIds.has(topic.classId) && ['weak', 'reviewing', 'seen'].includes(topic.status))
+    .filter((topic) => activeIds.has(topic.courseId) && ['weak', 'reviewing', 'seen'].includes(topic.status))
     .slice(0, 5)
-  const weak = data.weakAreas.filter((item) => activeIds.has(item.classId) && item.status !== 'resolved').sort((a, b) => b.severity - a.severity).slice(0, 5)
+  const weak = data.weakAreas.filter((item) => activeIds.has(item.courseId) && item.status !== 'resolved').sort((a, b) => b.severity - a.severity).slice(0, 5)
   const reviewItems = [
-    ...weak.map((item) => ({ id: item.id, label: item.label, classId: item.classId, status: item.status })),
-    ...revision.map((item) => ({ id: item.id, label: item.title, classId: item.classId, status: item.status })),
+    ...weak.map((item) => ({ id: item.id, label: item.label, courseId: item.courseId, status: item.status })),
+    ...revision.map((item) => ({ id: item.id, label: item.title, courseId: item.courseId, status: item.status })),
   ].slice(0, 4)
   return (
     <Card className="overflow-hidden">
@@ -528,7 +590,7 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
                 <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-card px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-extrabold">{item.title}</p>
-                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
+                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.courseId, data)}</p>
                   </div>
                   <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-extrabold text-destructive">
                     {item.dueDate ? daysUntil(item.dueDate) : 'TBD'}
@@ -551,10 +613,10 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
                 <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-card px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-extrabold">{item.label}</p>
-                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.classId, data)}</p>
+                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.courseId, data)}</p>
                   </div>
                   <Badge variant={String(item.status).includes('weak') || item.status === 'active' ? 'danger' : 'warning'}>{String(item.status).replace(/-/g, ' ')}</Badge>
-                  <Link to={`/academics/classes/${item.classId}`} className="text-xs font-extrabold text-primary">Review →</Link>
+                  <Link to={`/academics/classes/${item.courseId}`} className="text-xs font-extrabold text-primary">Review →</Link>
                 </div>
               ))}
               {reviewItems.length === 0 && <p className="rounded-xl bg-card px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
@@ -569,8 +631,8 @@ function AcrossClassesStrip({ data, classes }: { data: ClassCenterData; classes:
 function ClassWorkspace({
   row, data, mutate, onBack,
 }: {
-  row: ClassCenterClass
-  data: ClassCenterData
+  row: ClassWorkspaceView
+  data: ClassCenterViewData
   mutate: (fn: (draft: ClassCenterData) => void) => void
   onBack: () => void
 }) {
@@ -580,13 +642,15 @@ function ClassWorkspace({
   const [form, setForm] = useState<ClassFormState>(classToForm(row))
   const stats = classStats(row.id, data)
   const topic = data.topics.find((item) => item.id === row.currentTopicId)
-  const noteCount = data.notes.filter((note) => note.classId === row.id).length
-  const assignmentCount = data.assignments.filter((assignment) => assignment.classId === row.id && assignment.status !== 'graded' && assignment.status !== 'submitted').length
+  const noteCount = data.notes.filter((note) => note.courseId === row.id).length
+  const assignmentCount = data.assignments.filter((assignment) => assignment.courseId === row.id && assignment.status !== 'graded' && assignment.status !== 'submitted').length
 
   function saveClass() {
-    mutate((draft) => {
-      const item = draft.classes.find((classRow) => classRow.id === row.id)
-      if (item) Object.assign(item, form, { updatedAt: Date.now() })
+    useStore.getState().update((draft) => {
+      const course = draft.courses.find((item) => item.id === row.id)
+      const workspace = draft.academics.classCenter.workspaces.find((item) => item.courseId === row.id)
+      if (course) Object.assign(course, { code: form.courseCode, title: form.courseTitle, term: form.semester })
+      if (workspace) Object.assign(workspace, workspaceFields(form), { updatedAt: Date.now() })
     })
     setClassEditorOpen(false)
   }
@@ -633,7 +697,7 @@ function ClassWorkspace({
                   <DropdownMenuItem onClick={() => setClassEditorOpen(true)}><Edit3 className="size-4" /> Edit details</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     mutate((draft) => {
-                      const item = draft.classes.find((classRow) => classRow.id === row.id)
+                      const item = draft.workspaces.find((classRow) => classRow.courseId === row.id)
                       if (item) item.status = item.status === 'archived' ? 'active' : 'archived'
                     })
                   }}><Archive className="size-4" /> {row.status === 'archived' ? 'Restore' : 'Archive'}</DropdownMenuItem>
@@ -737,12 +801,12 @@ function OverviewTab({
   row, data, mutate, openAssignments, openNotes,
 }: ClassTabProps & { openAssignments: () => void; openNotes: () => void }) {
   const stats = classStats(row.id, data)
-  const topics = data.topics.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
+  const topics = data.topics.filter((item) => item.courseId === row.id).sort((a, b) => a.order - b.order)
   const upcoming = data.assignments
-    .filter((item) => item.classId === row.id && item.dueDate && item.status !== 'submitted' && item.status !== 'graded')
+    .filter((item) => item.courseId === row.id && item.dueDate && item.status !== 'submitted' && item.status !== 'graded')
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
     .slice(0, 4)
-  const latestNote = data.notes.filter((note) => note.classId === row.id).sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  const latestNote = data.notes.filter((note) => note.courseId === row.id).sort((a, b) => b.updatedAt - a.updatedAt)[0]
   const weakTopic = topics.find((topic) => topic.status === 'weak') ?? topics.find((topic) => topic.status === 'reviewing')
   const actionRows = [
     weakTopic ? { label: `Review weak topic: ${weakTopic.title}`, meta: '15 min', onClick: undefined } : undefined,
@@ -834,7 +898,7 @@ function OverviewTab({
                 <button type="button" className="rounded-full bg-muted px-3 py-1.5 text-sm font-extrabold text-muted-foreground">Add in Course kit</button>
               )}
             </div>
-            <p className="text-sm font-bold text-muted-foreground">{row.instructor || 'Professor'} — {data.contacts.find((c) => c.classId === row.id)?.officeHours || 'office hours TBD'} {data.contacts.find((c) => c.classId === row.id)?.email && <a className="ml-2 text-primary" href={`mailto:${data.contacts.find((c) => c.classId === row.id)?.email}`}>email ↗</a>}</p>
+            <p className="text-sm font-bold text-muted-foreground">{row.instructor || 'Professor'} — {data.contacts.find((c) => c.courseId === row.id)?.officeHours || 'office hours TBD'} {data.contacts.find((c) => c.courseId === row.id)?.email && <a className="ml-2 text-primary" href={`mailto:${data.contacts.find((c) => c.courseId === row.id)?.email}`}>email ↗</a>}</p>
           </CardContent>
         </Card>
       </div>
@@ -846,9 +910,9 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
   const [query, setQuery] = useState('')
   const [type, setType] = useState('all')
   const [topicFilter, setTopicFilter] = useState('all')
-  const topics = data.topics.filter((topic) => topic.classId === row.id).sort((a, b) => a.order - b.order)
+  const topics = data.topics.filter((topic) => topic.courseId === row.id).sort((a, b) => a.order - b.order)
   const notes = data.notes
-    .filter((note) => note.classId === row.id)
+    .filter((note) => note.courseId === row.id)
     .filter((note) => type === 'all' || note.type === type)
     .filter((note) => topicFilter === 'all' || note.topicIds.includes(topicFilter))
     .filter((note) => `${note.title} ${note.content} ${note.unit ?? ''}`.toLowerCase().includes(query.toLowerCase()))
@@ -929,8 +993,8 @@ function NotesTab({ row, data, mutate }: ClassTabProps) {
 }
 
 function CourseKitTab({ row, data, mutate }: ClassTabProps) {
-  const files = data.files.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
-  const contacts = data.contacts.filter((item) => item.classId === row.id).sort((a, b) => a.order - b.order)
+  const files = data.files.filter((item) => item.courseId === row.id).sort((a, b) => a.order - b.order)
+  const contacts = data.contacts.filter((item) => item.courseId === row.id).sort((a, b) => a.order - b.order)
   const links = [
     ['Syllabus', row.syllabusUrl],
     ['Canvas', row.canvasUrl],
@@ -1007,15 +1071,15 @@ function CourseKitTab({ row, data, mutate }: ClassTabProps) {
 function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
   const [generatorOpen, setGeneratorOpen] = useState(false)
   const [activeExamId, setActiveExamId] = useState('')
-  const topics = data.topics.filter((topic) => topic.classId === row.id).sort((a, b) => a.order - b.order)
-  const exams = data.practiceExams.filter((exam) => exam.classId === row.id).sort((a, b) => b.updatedAt - a.updatedAt)
+  const topics = data.topics.filter((topic) => topic.courseId === row.id).sort((a, b) => a.order - b.order)
+  const exams = data.practiceExams.filter((exam) => exam.courseId === row.id).sort((a, b) => b.updatedAt - a.updatedAt)
   const activeExam = data.practiceExams.find((exam) => exam.id === activeExamId)
   const revisionQueue = topics
     .map((topic) => ({ topic, readiness: topicReadiness(topic, data), practice: topicPracticeStats(topic.id, data) }))
     .sort((a, b) => a.readiness - b.readiness)
     .slice(0, 5)
   const nextExam = data.assignments
-    .filter((item) => item.classId === row.id && item.type === 'exam' && item.dueDate && item.status !== 'graded')
+    .filter((item) => item.courseId === row.id && item.type === 'exam' && item.dueDate && item.status !== 'graded')
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))[0]
   const coveredTopics = nextExam ? topics.filter((topic) => (nextExam.coveredTopicIds?.length ? nextExam.coveredTopicIds : nextExam.linkedTopicIds).includes(topic.id)) : topics
   const readyCount = coveredTopics.filter((topic) => topicReadiness(topic, data) >= 75).length
@@ -1115,7 +1179,7 @@ function StudyCenterTab({ row, data, mutate }: ClassTabProps) {
   )
 }
 
-function TopicMatrixRow({ topic, data, mutate }: { topic: ClassTopic; data: ClassCenterData; mutate: ClassTabProps['mutate'] }) {
+function TopicMatrixRow({ topic, data, mutate }: { topic: Topic; data: ClassCenterViewData; mutate: ClassTabProps['mutate'] }) {
   const practice = topicPracticeStats(topic.id, data)
   const readiness = topicReadiness(topic, data)
   const weakAreas = activeWeakAreasForTopic(topic.id, data)
@@ -1136,7 +1200,7 @@ function TopicMatrixRow({ topic, data, mutate }: { topic: ClassTopic; data: Clas
       <InlineGauge value={practice.percent ?? 0} meta={practice.total ? `${practice.correct}/${practice.total}` : 'Not tested'} muted={!practice.total} />
       <InlineGauge value={readiness} meta={`${readiness}%`} />
       <div className="flex justify-start lg:justify-end">
-        <Button size="sm" variant={weakAreas.length ? 'default' : 'ghost'} onClick={() => addWeakArea(topic.classId, mutate, { topicId: topic.id, label: topic.title })}>
+        <Button size="sm" variant={weakAreas.length ? 'default' : 'ghost'} onClick={() => addWeakArea(topic.courseId, mutate, { topicId: topic.id, label: topic.title })}>
           {weakAreas.length ? 'Review' : 'Log weak'}
         </Button>
       </div>
@@ -1148,14 +1212,14 @@ function PracticeExamGenerator({
   open, row, data, onOpenChange, onGenerated,
 }: {
   open: boolean
-  row: ClassCenterClass
-  data: ClassCenterData
+  row: ClassWorkspaceView
+  data: ClassCenterViewData
   onOpenChange: (open: boolean) => void
   onGenerated: (exam: PracticeExam, questions: PracticeQuestion[]) => void
 }) {
-  const topics = data.topics.filter((topic) => topic.classId === row.id).sort((a, b) => a.order - b.order)
-  const notes = data.notes.filter((note) => note.classId === row.id)
-  const files = data.files.filter((file) => file.classId === row.id)
+  const topics = data.topics.filter((topic) => topic.courseId === row.id).sort((a, b) => a.order - b.order)
+  const notes = data.notes.filter((note) => note.courseId === row.id)
+  const files = data.files.filter((file) => file.courseId === row.id)
   const [topicIds, setTopicIds] = useState<string[]>(topics.slice(0, 3).map((topic) => topic.id))
   const [sourceNoteIds, setSourceNoteIds] = useState<string[]>([])
   const [sourceFileIds, setSourceFileIds] = useState<string[]>([])
@@ -1167,7 +1231,7 @@ function PracticeExamGenerator({
   async function generate() {
     setGenerating(true)
     const request: GeneratePracticeExamRequest = {
-      classId: row.id,
+      courseId: row.id,
       topicIds,
       sourceNoteIds,
       sourceFileIds,
@@ -1192,13 +1256,13 @@ function PracticeExamGenerator({
           <TopicPicker label="Topics to test" topics={topics} value={topicIds} onChange={setTopicIds} />
           <TopicPicker
             label="Source notes"
-            topics={notes.map((note) => ({ id: note.id, title: note.title, classId: row.id, status: 'seen', confidence: 2, sourceNoteIds: [], order: note.order }))}
+            topics={notes.map((note) => ({ id: note.id, title: note.title, courseId: row.id, status: 'seen', confidence: 2, sourceNoteIds: [], order: note.order }))}
             value={sourceNoteIds}
             onChange={setSourceNoteIds}
           />
           <TopicPicker
             label="Source files"
-            topics={files.map((file) => ({ id: file.id, title: file.title, classId: row.id, status: 'seen', confidence: 2, sourceNoteIds: [], order: file.order }))}
+            topics={files.map((file) => ({ id: file.id, title: file.title, courseId: row.id, status: 'seen', confidence: 2, sourceNoteIds: [], order: file.order }))}
             value={sourceFileIds}
             onChange={setSourceFileIds}
           />
@@ -1232,7 +1296,7 @@ function PracticeExamRunner({
   exam, data, mutate, onClose,
 }: {
   exam: PracticeExam
-  data: ClassCenterData
+  data: ClassCenterViewData
   mutate: ClassTabProps['mutate']
   onClose: () => void
 }) {
@@ -1414,7 +1478,7 @@ function ClassEditorDialog({
               </Field>
               <BannerField value={form.background ?? ''} onChange={(background) => onChange({ background })} />
               <Field label="Status">
-                <TinySelect value={form.status} options={['active', 'archived']} onChange={(status) => onChange({ status: status as ClassCenterClass['status'] })} />
+                <TinySelect value={form.status} options={['active', 'archived']} onChange={(status) => onChange({ status: status as ClassWorkspaceView['status'] })} />
               </Field>
             </div>
           </section>
@@ -1440,18 +1504,18 @@ function ClassEditorDialog({
 }
 
 type ClassTabProps = {
-  row: ClassCenterClass
-  data: ClassCenterData
+  row: ClassWorkspaceView
+  data: ClassCenterViewData
   mutate: (fn: (draft: ClassCenterData) => void) => void
 }
 
-function addTopic(classId: string, mutate: ClassTabProps['mutate']) {
+function addTopic(courseId: string, mutate: ClassTabProps['mutate']) {
   const now = Date.now()
   mutate((draft) => {
-    const order = draft.topics.filter((topic) => topic.classId === classId).length
+    const order = draft.topics.filter((topic) => topic.courseId === courseId).length
     draft.topics.push({
       id: uid(),
-      classId,
+      courseId,
       title: 'New topic',
       unit: '',
       status: 'not-started',
@@ -1460,23 +1524,22 @@ function addTopic(classId: string, mutate: ClassTabProps['mutate']) {
       linkedNoteIds: [],
       linkedAssignmentIds: [],
       linkedFileIds: [],
+      fsrs: createTopicFsrsState(now),
       createdAt: now,
       updatedAt: now,
-      lastReviewedAt: undefined,
-      nextReviewAt: undefined,
       order,
     })
-    const row = draft.classes.find((item) => item.id === classId)
+    const row = draft.workspaces.find((item) => item.courseId === courseId)
     if (row) row.updatedAt = now
   })
 }
 
-function addWeakArea(classId: string, mutate: ClassTabProps['mutate'], preset: Partial<ClassWeakArea> = {}) {
+function addWeakArea(courseId: string, mutate: ClassTabProps['mutate'], preset: Partial<ClassWeakArea> = {}) {
   const now = Date.now()
   mutate((draft) => {
     draft.weakAreas.unshift({
       id: uid(),
-      classId,
+      courseId,
       topicId: preset.topicId,
       label: preset.label || 'New weak area',
       source: (preset.source as WeakAreaSource) || 'manual',
@@ -1493,12 +1556,12 @@ function addWeakArea(classId: string, mutate: ClassTabProps['mutate'], preset: P
   })
 }
 
-function addNote(classId: string, mutate: ClassTabProps['mutate']) {
+function addNote(courseId: string, mutate: ClassTabProps['mutate']) {
   const now = Date.now()
   mutate((draft) => {
     draft.notes.unshift({
       id: uid(),
-      classId,
+      courseId,
       title: 'Untitled note',
       type: 'lecture',
       date: new Date().toISOString().slice(0, 10),
@@ -1516,14 +1579,15 @@ function addNote(classId: string, mutate: ClassTabProps['mutate']) {
   })
 }
 
-function addFile(classId: string, mutate: ClassTabProps['mutate']) {
+function addFile(courseId: string, mutate: ClassTabProps['mutate']) {
   const now = Date.now()
   mutate((draft) => {
     draft.files.unshift({
       id: uid(),
-      classId,
+      courseId,
       title: 'New resource',
       type: 'link',
+      sourceType: 'link',
       url: '',
       fileName: '',
       mimeType: '',
@@ -1536,15 +1600,16 @@ function addFile(classId: string, mutate: ClassTabProps['mutate']) {
   })
 }
 
-function addUploadedFiles(classId: string, selectedFiles: File[], mutate: ClassTabProps['mutate']) {
+function addUploadedFiles(courseId: string, selectedFiles: File[], mutate: ClassTabProps['mutate']) {
   const now = Date.now()
   mutate((draft) => {
     for (const file of selectedFiles) {
       draft.files.unshift({
         id: uid(),
-        classId,
+        courseId,
         title: file.name.replace(/\.[^.]+$/, '') || file.name,
         type: 'other',
+        sourceType: 'upload',
         url: '',
         fileName: file.name,
         mimeType: file.type,
@@ -1558,12 +1623,12 @@ function addUploadedFiles(classId: string, selectedFiles: File[], mutate: ClassT
   })
 }
 
-function addContact(classId: string, mutate: ClassTabProps['mutate']) {
+function addContact(courseId: string, mutate: ClassTabProps['mutate']) {
   const now = Date.now()
   mutate((draft) => {
     draft.contacts.unshift({
       id: uid(),
-      classId,
+      courseId,
       name: 'New contact',
       role: 'professor',
       email: '',
@@ -1585,7 +1650,7 @@ function patchNote(id: string, patch: Partial<ClassNote>, mutate: ClassTabProps[
   })
 }
 
-function patchFile(id: string, patch: Partial<ClassFileResource>, mutate: ClassTabProps['mutate']) {
+function patchFile(id: string, patch: Partial<AcademicFile>, mutate: ClassTabProps['mutate']) {
   mutate((draft) => {
     const item = draft.files.find((file) => file.id === id)
     if (item) Object.assign(item, patch, { updatedAt: Date.now() })
@@ -1605,7 +1670,7 @@ function removeById(key: 'files' | 'contacts', id: string, mutate: ClassTabProps
   })
 }
 
-function TopicRow({ topic, current, data, mutate }: { topic: ClassTopic; current: boolean; data: ClassCenterData; mutate: ClassTabProps['mutate'] }) {
+function TopicRow({ topic, current, data, mutate }: { topic: Topic; current: boolean; data: ClassCenterViewData; mutate: ClassTabProps['mutate'] }) {
   const readiness = topicReadiness(topic, data)
   const weakCount = activeWeakAreasForTopic(topic.id, data).length
   const StatusIcon = normalizedTopicStatus(topic.status) === 'ready' ? CheckCircle2 : Circle
@@ -1639,37 +1704,37 @@ function TopicRow({ topic, current, data, mutate }: { topic: ClassTopic; current
         if (item) Object.assign(item, { status: value as TopicStatus, updatedAt: Date.now() })
       })} />
       <InlineGauge value={readiness} meta={`${readiness}% ready`} />
-      <Button size="sm" variant={weakCount ? 'default' : 'outline'} onClick={() => addWeakArea(topic.classId, mutate, { topicId: topic.id, label: topic.title })}>{weakCount ? 'Review' : 'Log weak'}</Button>
+      <Button size="sm" variant={weakCount ? 'default' : 'outline'} onClick={() => addWeakArea(topic.courseId, mutate, { topicId: topic.id, label: topic.title })}>{weakCount ? 'Review' : 'Log weak'}</Button>
     </div>
   )
 }
 
-function classStats(classId: string, data: ClassCenterData) {
-  const topics = data.topics.filter((item) => item.classId === classId)
+function classStats(courseId: string, data: ClassCenterViewData) {
+  const topics = data.topics.filter((item) => item.courseId === courseId)
   const masteredWeight = topics.reduce((sum, topic) => {
     const value = topicStatusWeight(topic.status)
     return sum + value
   }, 0)
   const upcoming = data.assignments
-    .filter((item) => item.classId === classId && item.status !== 'submitted' && item.status !== 'graded' && item.dueDate)
+    .filter((item) => item.courseId === courseId && item.status !== 'submitted' && item.status !== 'graded' && item.dueDate)
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
   return {
     revision: topics.length ? Math.round((masteredWeight / topics.length) * 100) : 0,
-    weakCount: data.weakAreas.filter((item) => item.classId === classId && item.status !== 'resolved').length,
-    notesCount: data.notes.filter((item) => item.classId === classId).length,
-    filesCount: data.files.filter((item) => item.classId === classId).length,
+    weakCount: data.weakAreas.filter((item) => item.courseId === courseId && item.status !== 'resolved').length,
+    notesCount: data.notes.filter((item) => item.courseId === courseId).length,
+    filesCount: data.files.filter((item) => item.courseId === courseId).length,
     nextDeadline: upcoming[0],
   }
 }
 
 function normalizedTopicStatus(status: TopicStatus) {
-  return status === 'mastered' ? 'ready' : status
+  return status
 }
 
 function topicStatusWeight(status: TopicStatus) {
   const normalized = normalizedTopicStatus(status)
   if (normalized === 'ready') return 1
-  if (normalized === 'reviewing' || status === 'cards-made') return 0.72
+  if (normalized === 'reviewing') return 0.72
   if (normalized === 'notes-made') return 0.58
   if (normalized === 'seen') return 0.34
   if (normalized === 'weak') return 0.18
@@ -1682,11 +1747,11 @@ function confidenceLabel(value: TopicConfidence) {
   return 'Weak'
 }
 
-function activeWeakAreasForTopic(topicId: string, data: ClassCenterData) {
+function activeWeakAreasForTopic(topicId: string, data: ClassCenterViewData) {
   return data.weakAreas.filter((area) => area.topicId === topicId && area.status !== 'resolved')
 }
 
-function topicPracticeStats(topicId: string, data: ClassCenterData) {
+function topicPracticeStats(topicId: string, data: ClassCenterViewData) {
   const questions = data.practiceQuestions.filter((question) => question.topicIds.includes(topicId) && typeof question.isCorrect === 'boolean')
   const correct = questions.filter((question) => question.isCorrect).length
   return {
@@ -1696,7 +1761,7 @@ function topicPracticeStats(topicId: string, data: ClassCenterData) {
   }
 }
 
-function topicReadiness(topic: ClassTopic, data: ClassCenterData) {
+function topicReadiness(topic: Topic, data: ClassCenterViewData) {
   const practice = topicPracticeStats(topic.id, data)
   const weakAreas = activeWeakAreasForTopic(topic.id, data)
   const confidenceScore = Math.round((topic.confidence / 3) * 100)
@@ -1706,26 +1771,26 @@ function topicReadiness(topic: ClassTopic, data: ClassCenterData) {
   return Math.max(0, Math.min(100, Math.round(confidenceScore * 0.4 + practiceScore * 0.4 + (100 - weakPenalty) * 0.2)))
 }
 
-function topicLinkedNotes(topicId: string, data: ClassCenterData) {
+function topicLinkedNotes(topicId: string, data: ClassCenterViewData) {
   return data.notes.filter((note) => note.topicIds.includes(topicId))
 }
 
-function topicLinkedAssignments(topicId: string, data: ClassCenterData) {
+function topicLinkedAssignments(topicId: string, data: ClassCenterViewData) {
   return data.assignments.filter((assignment) => assignment.linkedTopicIds.includes(topicId) || (assignment.coveredTopicIds ?? []).includes(topicId))
 }
 
-function topicLinkedFiles(topicId: string, data: ClassCenterData) {
+function topicLinkedFiles(topicId: string, data: ClassCenterViewData) {
   return data.files.filter((file) => file.linkedTopicIds.includes(topicId))
 }
 
-function weakCoveredTopics(assignment: ClassAssignment, data: ClassCenterData) {
+function weakCoveredTopics(assignment: ClassAssignment, data: ClassCenterViewData) {
   const ids = assignment.coveredTopicIds?.length ? assignment.coveredTopicIds : assignment.linkedTopicIds
   return data.topics.filter((topic) => ids.includes(topic.id) && activeWeakAreasForTopic(topic.id, data).length)
 }
 
-function addWeakAreaFromQuestion(question: PracticeQuestion, data: ClassCenterData, mutate: ClassTabProps['mutate']) {
+function addWeakAreaFromQuestion(question: PracticeQuestion, data: ClassCenterViewData, mutate: ClassTabProps['mutate']) {
   const topic = data.topics.find((item) => question.topicIds.includes(item.id))
-  addWeakArea(question.classId, mutate, {
+  addWeakArea(question.courseId, mutate, {
     topicId: topic?.id,
     label: topic?.title ?? 'Practice miss',
     source: 'practice-exam',
@@ -1736,12 +1801,12 @@ function addWeakAreaFromQuestion(question: PracticeQuestion, data: ClassCenterDa
   })
 }
 
-function classLabel(classId: string, data: ClassCenterData) {
-  const row = data.classes.find((item) => item.id === classId)
+function classLabel(courseId: string, data: ClassCenterViewData) {
+  const row = data.classes.find((item) => item.id === courseId)
   return row?.courseCode || row?.courseTitle || 'Class'
 }
 
-function compactMeeting(row: ClassCenterClass) {
+function compactMeeting(row: ClassWorkspaceView) {
   return [row.meetingDays, row.meetingTime, row.location].filter(Boolean).join(' · ')
 }
 
@@ -1783,7 +1848,7 @@ function TopicPicker({
   label, topics, value, onChange, compact = false,
 }: {
   label: string
-  topics: Pick<ClassTopic, 'id' | 'title' | 'unit'>[]
+  topics: Pick<Topic, 'id' | 'title' | 'unit'>[]
   value: string[]
   onChange: (value: string[]) => void
   compact?: boolean
@@ -1803,8 +1868,8 @@ function TopicPicker({
   )
 }
 
-function TopicChipList({ ids, data }: { ids: string[]; data: ClassCenterData }) {
-  const topics = ids.map((id) => data.topics.find((topic) => topic.id === id)).filter(Boolean) as ClassTopic[]
+function TopicChipList({ ids, data }: { ids: string[]; data: ClassCenterViewData }) {
+  const topics = ids.map((id) => data.topics.find((topic) => topic.id === id)).filter(Boolean) as Topic[]
   if (!topics.length) return null
   return (
     <div className="mt-2 flex flex-wrap gap-1">

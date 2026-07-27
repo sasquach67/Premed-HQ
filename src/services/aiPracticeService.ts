@@ -1,8 +1,8 @@
 import { uid } from '@/lib/id'
 import type {
-  ClassFileResource,
+  AcademicFile,
   ClassNote,
-  ClassTopic,
+  Topic,
   PracticeExam,
   PracticeExamDifficulty,
   PracticeQuestion,
@@ -10,7 +10,7 @@ import type {
 } from '@/lib/types'
 
 export interface GeneratePracticeExamRequest {
-  classId: string
+  courseId: string
   topicIds: string[]
   sourceNoteIds: string[]
   sourceFileIds: string[]
@@ -25,9 +25,9 @@ export interface GeneratePracticeExamResponse {
 }
 
 type LocalPracticeGenerationContext = {
-  topics?: ClassTopic[]
+  topics?: Topic[]
   notes?: ClassNote[]
-  files?: ClassFileResource[]
+  files?: AcademicFile[]
 }
 
 const DEFAULT_TYPES: PracticeQuestionType[] = ['multiple-choice']
@@ -78,7 +78,7 @@ export const aiPracticeService = {
       return {
         id: uid(),
         examId,
-        classId: request.classId,
+        courseId: request.courseId,
         topicIds: topicId ? [topicId] : [],
         type,
         prompt: type === 'multiple-choice'
@@ -98,7 +98,7 @@ export const aiPracticeService = {
     return {
       exam: {
         id: examId,
-        classId: request.classId,
+        courseId: request.courseId,
         title: `${request.difficulty === 'mixed' ? 'Mixed' : request.difficulty} practice set`,
         topicIds: pickedTopics,
         sourceNoteIds: request.sourceNoteIds,

@@ -106,8 +106,8 @@ export function QuickAddDialog() {
     } else if (activeKind === 'note') {
       addItem('notePages', { id, title: title.trim(), body: detail, pillar: location.pathname.split('/').filter(Boolean)[0] || 'home', updatedAt: Date.now(), order: order('notePages') })
     } else if (activeKind === 'assignment') {
-      const classId = data.academics.classCenter.classes[0]?.id
-      const row = { id, classId: classId ?? '', title: title.trim(), type: 'homework' as const, dueDate: date || undefined, status: 'not-started' as const, linkedTopicIds: [], linkedFileIds: [], notes: detail, createdAt: Date.now(), updatedAt: Date.now(), order: data.academics.classCenter.assignments.length }
+      const courseId = data.academics.classCenter.workspaces[0]?.courseId
+      const row = { id, courseId: courseId ?? '', title: title.trim(), type: 'homework' as const, dueDate: date || undefined, status: 'not-started' as const, linkedTopicIds: [], linkedFileIds: [], notes: detail, createdAt: Date.now(), updatedAt: Date.now(), order: data.academics.classCenter.assignments.length }
       update((draft) => { draft.academics.classCenter.assignments.push(row) })
       created('Assignment', undefined, () => update((draft) => { draft.academics.classCenter.assignments = draft.academics.classCenter.assignments.filter((item) => item.id !== id) }))
     } else if (activeKind === 'mistake') {

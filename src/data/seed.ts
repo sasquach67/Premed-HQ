@@ -9,9 +9,10 @@ import type {
   AppData, Course, RequirementItem, TaskItem, StoryEntry, ResourceLink,
   TipEntry, AdvisingQuestion, McatScheduleItem, InterviewQA, FocusTarget,
   QuarterlyGoal, SchoolEntry, AcademicTagColor, AcademicTagSettings,
-  ClassAssignment, ClassCenterClass, ClassContact, ClassFileResource, ClassNote,
-  ClassTopic, ClassWeakArea, RequirementSourceType, RequirementVerificationStatus,
+  AcademicFile, ClassAssignment, ClassWorkspace, ClassContact, ClassNote,
+  Topic, ClassWeakArea, RequirementSourceType, RequirementVerificationStatus,
 } from '@/lib/types'
+import { createTopicFsrsState } from '@/lib/academics/fsrs'
 
 /** attach incrementing `order` + a fresh `id` to seed rows */
 function seq<T extends object>(rows: T[]): (T & { id: string; order: number })[] {
@@ -105,91 +106,72 @@ const academics: AcademicTagSettings = {
     archived: false,
   })),
   classCenter: createClassCenterSeed(),
+  migrationJournal: [],
 }
 
 function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
   const now = Date.parse('2026-06-27T12:00:00.000Z')
-  const classRows: ClassCenterClass[] = [
-    {
-      id: 'class-biol-103',
-      courseCode: 'BIOL 103',
-      courseTitle: 'How Cells Function',
+  const byCourse = (code: string, term: string) => {
+    const course = courses.find((item) => item.code === code && item.term === term)
+    if (!course) throw new Error(`Missing seed course ${code} (${term})`)
+    return course.id
+  }
+  const workspaceDetails: Record<string, Partial<ClassWorkspace>> = {
+    'BIOL 103': {
       nickname: 'Cells',
-      semester: 'Fall 2026',
       instructor: 'Prof. Ott',
       meetingDays: 'MWF',
       meetingTime: '10:10 AM-11:00 AM',
       location: 'Genome Sciences 100',
       color: 'green',
-      icon: '🧬',
+      icon: 'dna',
       background: 'cell-biology',
-      status: 'active',
       currentTopicId: 'topic-biol-103-cell-signaling',
-      syllabusUrl: '',
-      canvasUrl: '',
-      driveFolderUrl: '',
-      goodNotesUrl: '',
       ankiDeckName: 'BIOL 103',
-      notesDocUrl: '',
-      createdAt: now,
-      updatedAt: now,
-      order: 0,
     },
-    {
-      id: 'class-psyc-101',
-      courseCode: 'PSYC 101',
-      courseTitle: 'General Psychology',
+    'PSYC 101': {
       nickname: 'Psych',
-      semester: 'Fall 2026',
-      instructor: '',
       meetingDays: 'Tue/Thu',
       meetingTime: '11:00 AM-12:15 PM',
-      location: '',
       color: 'purple',
-      icon: '🧠',
+      icon: 'brain',
       background: 'psychology',
-      status: 'active',
       currentTopicId: 'topic-psyc-101-learning',
       ankiDeckName: 'PSYC 101',
-      createdAt: now,
-      updatedAt: now,
-      order: 1,
     },
-    {
-      id: 'class-chem-241',
-      courseCode: 'CHEM 241',
-      courseTitle: 'Modern Analytical Methods',
-      nickname: 'Analytical',
-      semester: 'Spring 2027',
-      instructor: '',
-      meetingDays: 'MWF',
-      meetingTime: '',
-      location: '',
+  }
+  const workspaces: ClassWorkspace[] = courses
+    .filter((course) => course.term === 'Fall 2026')
+    .map((course, order) => ({
+      id: `workspace-${course.id}`,
+      courseId: course.id,
       color: 'blue',
-      icon: '⚗️',
-      background: 'lab',
+      icon: 'book',
       status: 'active',
-      currentTopicId: 'topic-chem-241-equilibrium',
-      ankiDeckName: 'CHEM 241',
       createdAt: now,
       updatedAt: now,
-      order: 2,
-    },
-  ]
-  const topics: ClassTopic[] = [
-    topic('topic-biol-103-intro', 'class-biol-103', 'Intro to course', 'Unit 1', 'ready', 3, 0),
-    topic('topic-biol-103-cell-structure', 'class-biol-103', 'Cell structure', 'Unit 1', 'notes-made', 3, 1),
-    topic('topic-biol-103-membrane', 'class-biol-103', 'Membrane transport', 'Unit 1', 'reviewing', 3, 2),
-    topic('topic-biol-103-cell-signaling', 'class-biol-103', 'Cell signaling', 'Unit 2', 'weak', 2, 3),
-    topic('topic-psyc-101-learning', 'class-psyc-101', 'Learning and conditioning', 'Foundations', 'reviewing', 3, 0),
-    topic('topic-psyc-101-memory', 'class-psyc-101', 'Memory systems', 'Foundations', 'not-started', 2, 1),
-    topic('topic-chem-241-equilibrium', 'class-chem-241', 'Chemical equilibrium', 'Methods', 'seen', 3, 0),
-    topic('topic-chem-241-spectroscopy', 'class-chem-241', 'Spectroscopy basics', 'Methods', 'not-started', 2, 1),
+      order,
+      ...workspaceDetails[course.code],
+    }))
+  /*
+   * Legacy workspace examples were intentionally converted here rather than
+   * retained as duplicate Course records. The v4 migration tests exercise the
+   * old shape directly.
+   */
+  const topics: Topic[] = [
+    topic('topic-biol-103-intro', byCourse('BIOL 103', 'Fall 2026'), 'Intro to course', 'Unit 1', 'ready', 3, 0),
+    topic('topic-biol-103-cell-structure', byCourse('BIOL 103', 'Fall 2026'), 'Cell structure', 'Unit 1', 'notes-made', 3, 1),
+    topic('topic-biol-103-membrane', byCourse('BIOL 103', 'Fall 2026'), 'Membrane transport', 'Unit 1', 'reviewing', 3, 2),
+    topic('topic-biol-103-cell-signaling', byCourse('BIOL 103', 'Fall 2026'), 'Cell signaling', 'Unit 2', 'weak', 2, 3),
+    topic('topic-psyc-101-learning', byCourse('PSYC 101', 'Fall 2026'), 'Learning and conditioning', 'Foundations', 'reviewing', 3, 0),
+    topic('topic-psyc-101-memory', byCourse('PSYC 101', 'Fall 2026'), 'Memory systems', 'Foundations', 'not-started', 2, 1),
+    topic('topic-chem-241-equilibrium', byCourse('CHEM 241', 'Spring 2027'), 'Chemical equilibrium', 'Methods', 'seen', 3, 0),
+    topic('topic-chem-241-spectroscopy', byCourse('CHEM 241', 'Spring 2027'), 'Spectroscopy basics', 'Methods', 'not-started', 2, 1),
   ]
   const notes: ClassNote[] = [
     {
       id: 'note-biol-103-lecture-1',
-      classId: 'class-biol-103',
+      courseId: byCourse('BIOL 103', 'Fall 2026'),
       title: 'Lecture 1 — What cells do',
       type: 'lecture',
       date: '2026-08-24',
@@ -207,7 +189,7 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
   const assignments: ClassAssignment[] = [
     {
       id: 'assignment-biol-103-exam-1',
-      classId: 'class-biol-103',
+      courseId: byCourse('BIOL 103', 'Fall 2026'),
       title: 'Exam 1',
       type: 'exam',
       dueDate: '2026-09-18',
@@ -224,7 +206,7 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
     },
     {
       id: 'assignment-psyc-101-reading-1',
-      classId: 'class-psyc-101',
+      courseId: byCourse('PSYC 101', 'Fall 2026'),
       title: 'Learning chapter reading',
       type: 'reading',
       dueDate: '2026-09-04',
@@ -237,10 +219,11 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
       order: 1,
     },
   ]
-  const files: ClassFileResource[] = [
+  const files: AcademicFile[] = [
     {
       id: 'file-biol-103-syllabus',
-      classId: 'class-biol-103',
+      courseId: byCourse('BIOL 103', 'Fall 2026'),
+      sourceType: 'link',
       title: 'Syllabus',
       type: 'syllabus',
       url: '',
@@ -256,7 +239,7 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
   const contacts: ClassContact[] = [
     {
       id: 'contact-biol-103-prof',
-      classId: 'class-biol-103',
+      courseId: byCourse('BIOL 103', 'Fall 2026'),
       name: 'Prof. Ott',
       role: 'professor',
       email: '',
@@ -272,7 +255,7 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
   const weakAreas: ClassWeakArea[] = [
     {
       id: 'weak-biol-103-cell-signaling',
-      classId: 'class-biol-103',
+      courseId: byCourse('BIOL 103', 'Fall 2026'),
       topicId: 'topic-biol-103-cell-signaling',
       label: 'Cell signaling',
       source: 'manual',
@@ -284,20 +267,47 @@ function createClassCenterSeed(): AcademicTagSettings['classCenter'] {
       order: 0,
     },
   ]
-  return { classes: classRows, topics, notes, assignments, files, contacts, weakAreas, practiceExams: [], practiceQuestions: [] }
+  return {
+    workspaces,
+    topics,
+    notes,
+    assignments,
+    files,
+    keyPoints: [],
+    sourceChunks: [],
+    contacts,
+    weakAreas,
+    practiceExams: [],
+    practiceQuestions: [],
+  }
 }
 
 function topic(
   id: string,
-  classId: string,
+  courseId: string,
   title: string,
   unit: string,
-  status: ClassTopic['status'],
-  confidence: ClassTopic['confidence'],
+  status: Topic['status'],
+  confidence: Topic['confidence'],
   order: number,
-): ClassTopic {
+): Topic {
   const now = Date.now()
-  return { id, classId, title, unit, status, confidence, sourceNoteIds: [], linkedNoteIds: [], linkedAssignmentIds: [], linkedFileIds: [], createdAt: now, updatedAt: now, order }
+  return {
+    id,
+    courseId,
+    title,
+    unit,
+    status,
+    fsrs: createTopicFsrsState(now),
+    confidence,
+    sourceNoteIds: [],
+    linkedNoteIds: [],
+    linkedAssignmentIds: [],
+    linkedFileIds: [],
+    createdAt: now,
+    updatedAt: now,
+    order,
+  }
 }
 
 // ---- Tar Heel Tracker (from the official 2026–27 UNC catalog) ----
@@ -717,7 +727,7 @@ export function createSeedData(): AppData {
       recentRoutes: [],
       activity: [],
       lastOpenedAt: now,
-      seedVersion: 1,
+      seedVersion: 4,
       recoveryStack: [],
     },
     trash: [],
