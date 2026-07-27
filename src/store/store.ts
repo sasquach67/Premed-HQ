@@ -17,9 +17,11 @@ import { uid } from '@/lib/id'
 import { isMutableSeverity } from '@/lib/intelligence/recommendations'
 import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
 import { migrateAcademicsV4, syncCurrentTermWorkspaces } from '@/store/migrations/academicsV4'
+import { migrateAcademicsV5 } from '@/store/migrations/academicsV5'
+import { migrateAcademicsV6 } from '@/store/migrations/academicsV6'
 
 export const STORAGE_KEY = 'premed_hq_v1'
-const SEED_VERSION = 4
+const SEED_VERSION = 5
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -378,7 +380,7 @@ export function migrateRequirementMetadata(data: AppData): AppData {
 }
 
 function migrateAll(data: AppData): AppData {
-  return migrateAcademicsV4(migrateMascotNotes(
+  return migrateAcademicsV6(migrateAcademicsV5(migrateAcademicsV4(migrateMascotNotes(
     migrateOverviewSchema(
       migrateIntelligence(
         migrateSafetyNets(
@@ -390,7 +392,7 @@ function migrateAll(data: AppData): AppData {
         ),
       ),
     ),
-  ))
+  ))))
 }
 
 function nextOrder(arr: AnyRow[]): number {
@@ -628,7 +630,7 @@ export const useStore = create<Store>()(
         ...migrateAll({ ...createSeedData(), ...data } as AppData),
       })),
 
-      resetToSeed: () => set(() => ({ ...createSeedData() })),
+      resetToSeed: () => set(() => ({ ...migrateAll(structuredClone(createSeedData())) })),
     })),
     {
       name: STORAGE_KEY,

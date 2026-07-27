@@ -3,8 +3,8 @@ import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
-  AlertTriangle, Calculator, CalendarDays, CheckCircle2, ChevronDown,
-  Clock, FlaskConical, GraduationCap, Library, ListChecks, MoreHorizontal, Plus,
+  AlertTriangle, ArrowDownRight, ArrowUpRight, Calculator, CalendarDays, CheckCircle2, ChevronDown,
+  Clock, Flame, FlaskConical, GraduationCap, Library, ListChecks, MoreHorizontal, Plus,
   Search, ShieldCheck, Sparkles, Trash2, X,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
@@ -17,7 +17,7 @@ import { Ring } from '@/components/common/Ring'
 import { TrackerTable, type ColumnDef } from '@/components/common/TrackerTable'
 import { Collapsible } from '@/components/common/Collapsible'
 import { ResourceGrid } from '@/components/common/ResourceGrid'
-import { AssignmentsPanel } from '@/components/common/AssignmentsPanel'
+import { AssignmentCreateDialog, AssignmentsPanel } from '@/components/common/AssignmentsPanel'
 import { NotesDB } from '@/components/common/NotesDB'
 import { ClassCenter } from '@/components/academics/ClassCenter'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,12 +51,16 @@ export function Academics() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { courseId } = useParams()
   const courses = useStore((s) => s.courses)
+  const classCenter = useStore((s) => s.academics.classCenter)
+  const currentTerm = useStore((s) => s.profile.startTerm)
   const addItem = useStore((s) => s.addItem)
   const undoRecovery = useStore((s) => s.undoRecovery)
   const storedMode = useStore((s) => s.settings.academicsMode)
   const update = useStore((s) => s.update)
   const route = ROUTE_MAP.academics
   const toast = useToast()
+  const [studyGuideOpen, setStudyGuideOpen] = useState(false)
+  const [assignmentCreateOpen, setAssignmentCreateOpen] = useState(false)
 
   const gpa = useMemo(() => gpaStats(courses), [courses])
 
@@ -92,6 +96,22 @@ export function Academics() {
   const requestedTab = searchParams.get('tab')
   const activeTab = tabsByMode[mode].includes(requestedTab as never) ? requestedTab! : tabsByMode[mode][0]
   const firstEditableTerm = terms.find((term) => !/transfer|ap credit/i.test(term))
+  const currentTermCourses = courses.filter((course) => course.term === currentTerm)
+  const currentTermGpa = gpaStats(currentTermCourses)
+  const currentTermIndex = terms.indexOf(currentTerm)
+  const priorTerm = currentTermIndex > 0 ? terms[currentTermIndex - 1] : ''
+  const priorTermGpa = priorTerm ? gpaStats(courses.filter((course) => course.term === priorTerm)) : null
+  const priorCumulative = priorTerm
+    ? gpaStats(courses.filter((course) => course.term !== currentTerm))
+    : null
+  const today = new Date().toISOString().slice(0, 10)
+  const dueToday = classCenter.assignments.filter((assignment) =>
+    assignment.dueDate?.slice(0, 10) === today
+    && assignment.status !== 'graded'
+    && assignment.status !== 'submitted'
+    && assignment.status !== 'dropped'
+  ).length
+  const reviewStreak = consecutiveDayStreak(classCenter.reviewEvents.map((event) => event.timestamp))
 
   useEffect(() => {
     if (storedMode === mode) return
@@ -108,50 +128,87 @@ export function Academics() {
 
   return (
     <div>
-      <PageHeader title={route.label} />
-      <AcademicMigrationReview />
-      <div className="mb-4">
-        <ModeSwitch
-          value={mode}
-          options={[{ id: 'daily', label: 'Daily' }, { id: 'planning', label: 'Planning' }]}
-          onChange={changeMode}
-          label="Academics mode"
-        />
-      </div>
-
-      <AnimatePresence mode="wait" initial={false} custom={mode === 'planning' ? 1 : -1}>
-        <m.div
-          key={mode}
-          custom={mode === 'planning' ? 1 : -1}
-          variants={reduceMotion ? instantCrossfade : sharedAxis}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-        >
-          <Tabs
-            value={activeTab}
-            onValueChange={(tab) => setSearchParams({ mode, tab })}
-          >
-            <TabsList>
+      <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ mode, tab })}>
+        <PageHeader
+          title={route.label}
+          actions={(
+            <div className="flex items-center gap-2">
+              {activeTab === 'assignments' && (
+                <Button onClick={() => setAssignmentCreateOpen(true)}>
+                  <Plus className="size-4" />
+                  Add assignment
+                  <kbd className="ml-1 rounded border border-primary-foreground/25 bg-primary-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">⌘N</kbd>
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                className="text-[#f4ede0] hover:bg-white/10 hover:text-white"
+                onClick={() => setStudyGuideOpen(true)}
+              >
+                <Library className="size-4" /> How to study
+              </Button>
+            </div>
+          )}
+          footer={(
+            <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-0 bg-transparent p-0">
               {mode === 'daily' ? (
                 <>
-                  <TabsTrigger value="class-center"><GraduationCap className="size-4" /> Class Center</TabsTrigger>
-                  <TabsTrigger value="assignments"><CalendarDays className="size-4" /> Assignments</TabsTrigger>
+                  <AcademicsTab value="class-center" icon={GraduationCap}>Class Center</AcademicsTab>
+                  <AcademicsTab value="assignments" icon={CalendarDays}>Assignments</AcademicsTab>
                 </>
               ) : (
                 <>
-                  <TabsTrigger value="planner"><Calculator className="size-4" /> Planner & GPA</TabsTrigger>
-                  <TabsTrigger value="tracker"><ListChecks className="size-4" /> Tar Heel Tracker</TabsTrigger>
-                  <TabsTrigger value="archive"><Archive className="size-4" /> Archive</TabsTrigger>
+                  <AcademicsTab value="planner" icon={Calculator}>Planner</AcademicsTab>
+                  <AcademicsTab value="tracker" icon={ListChecks}>Tar Heel Tracker</AcademicsTab>
+                  <AcademicsTab value="archive" icon={Archive}>Grades &amp; Archive</AcademicsTab>
                 </>
               )}
             </TabsList>
-
-        {/* ---- Class Center (daily academic workflow) ---- */}
-        <TabsContent value="class-center"><ClassCenter /></TabsContent>
+          )}
+          contentGlass={false}
+        >
+          <div className="flex flex-col gap-3 p-2 sm:flex-row sm:items-center sm:justify-between">
+            <ModeSwitch
+              value={mode}
+              options={[{ id: 'daily', label: 'Daily' }, { id: 'planning', label: 'Planning' }]}
+              onChange={changeMode}
+              label="Academics mode"
+              className="border-white/15 bg-black/30"
+            />
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/25 p-1 text-[#f4ede0] sm:grid-cols-4">
+              <BannerStat
+                label="Term GPA"
+                value={fmtGpa(currentTermGpa.cum)}
+                change={priorTermGpa?.cum ? currentTermGpa.cum - priorTermGpa.cum : undefined}
+              />
+              <BannerStat
+                label="Cumulative"
+                value={fmtGpa(gpa.cum)}
+                change={priorCumulative?.cum ? gpa.cum - priorCumulative.cum : undefined}
+              />
+              <BannerStat label="Due today" value={String(dueToday)} />
+              <BannerStat label="Day streak" value={String(reviewStreak)} icon={<Flame className="size-3.5 text-orange-300" />} />
+            </div>
+          </div>
+        </PageHeader>
+        <AcademicMigrationReview />
+        <AnimatePresence mode="wait" initial={false} custom={mode === 'planning' ? 1 : -1}>
+          <m.div
+            key={mode}
+            custom={mode === 'planning' ? 1 : -1}
+            variants={reduceMotion ? instantCrossfade : sharedAxis}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {/* ---- Class Center (daily academic workflow) ---- */}
+            <TabsContent value="class-center"><ClassCenter /></TabsContent>
 
         {/* ---- Assignments + Calendar (main dashboard) ---- */}
-        <TabsContent value="assignments"><AssignmentsPanel /></TabsContent>
+        <TabsContent value="assignments">
+          <AssignmentsPanel onRequestAdd={() => setAssignmentCreateOpen(true)} />
+          <AssignmentCreateDialog open={assignmentCreateOpen} onOpenChange={setAssignmentCreateOpen} />
+        </TabsContent>
 
         {/* ---- Planner & GPA ---- */}
         <TabsContent value="planner" className="space-y-6">
@@ -211,11 +268,79 @@ export function Academics() {
           <ResourceGrid pillar="academics" />
           <NotesDB pillar="academics" title="Notes (study techniques, syllabi, brain dumps)" />
         </TabsContent>
-          </Tabs>
-        </m.div>
-      </AnimatePresence>
+          </m.div>
+        </AnimatePresence>
+      </Tabs>
+
+      <Dialog open={studyGuideOpen} onOpenChange={setStudyGuideOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>How to study</DialogTitle>
+            <DialogDescription>A simple loop for turning class material into retrievable knowledge.</DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-3 text-sm">
+            <li><strong>1. Capture the scope.</strong> Import the syllabus and connect topics to the next exam.</li>
+            <li><strong>2. Review by retrieval.</strong> Answer before revealing; do not count rereading as mastery.</li>
+            <li><strong>3. Follow the weak signal.</strong> Spend the next block on the lowest-retrievability exam topic.</li>
+          </ol>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+function AcademicsTab({
+  value,
+  icon: Icon,
+  children,
+}: {
+  value: string
+  icon: typeof GraduationCap
+  children: React.ReactNode
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 font-bold text-foreground/65 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+    >
+      <Icon className="size-4" /> {children}
+    </TabsTrigger>
+  )
+}
+
+function BannerStat({
+  label,
+  value,
+  change,
+  icon,
+}: {
+  label: string
+  value: string
+  change?: number
+  icon?: React.ReactNode
+}) {
+  const Direction = change == null ? null : change >= 0 ? ArrowUpRight : ArrowDownRight
+  return (
+    <div className="min-w-24 rounded-lg px-3 py-2">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[#e7dccb]/65">{label}</p>
+      <p className="mt-0.5 flex items-center gap-1 font-display text-lg font-bold tabular-nums">
+        {icon}{value}
+        {Direction && <Direction className={cn('size-3.5', change! >= 0 ? 'text-emerald-300' : 'text-rose-300')} aria-hidden="true" />}
+      </p>
+    </div>
+  )
+}
+
+function consecutiveDayStreak(timestamps: number[]) {
+  if (!timestamps.length) return 0
+  const days = new Set(timestamps.map((timestamp) => new Date(timestamp).toISOString().slice(0, 10)))
+  const cursor = new Date()
+  let streak = 0
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return streak
 }
 
 /** What-if simulator: project GPA after hypothetical grades. */

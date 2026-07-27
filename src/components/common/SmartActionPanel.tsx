@@ -1,7 +1,7 @@
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
-import { ArrowRight, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, CalendarClock, Scale, Sparkles, TrendingDown, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { smartNextActions } from '@/lib/intelligence'
+import { smartNextActions, type Recommendation } from '@/lib/intelligence'
 import { MOTION_TRANSITION } from '@/lib/motion'
 import { useStore } from '@/store/store'
 import { Badge } from '@/components/ui/badge'
@@ -12,15 +12,17 @@ import { cn } from '@/lib/utils'
 export function SmartActionPanel({
   title = 'Smart next actions',
   className,
+  recommendations: suppliedRecommendations,
 }: {
   title?: string
   className?: string
+  recommendations?: Recommendation[]
 }) {
   const state = useStore()
   const accept = useStore((store) => store.acceptRecommendation)
   const dismiss = useStore((store) => store.dismissRecommendation)
   const reduceMotion = useReducedMotion()
-  const recommendations = smartNextActions(state)
+  const recommendations = suppliedRecommendations ?? smartNextActions(state)
 
   return (
     <AnimatePresence initial={false}>
@@ -65,15 +67,9 @@ export function SmartActionPanel({
                   className="flex min-h-40 flex-col rounded-2xl border border-border bg-muted/35 p-4 shadow-inner"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        recommendation.severity === 'blocking' && 'border-destructive/45 text-destructive',
-                        recommendation.severity === 'important' && 'border-warning/45 text-warning',
-                      )}
-                    >
-                      {recommendation.severity}
-                    </Badge>
+                    <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <RecommendationIcon ruleId={recommendation.ruleId} />
+                    </span>
                     <Button
                       type="button"
                       size="icon"
@@ -86,9 +82,7 @@ export function SmartActionPanel({
                     </Button>
                   </div>
                   <h3 className="mt-3 font-display text-base font-bold leading-tight">{recommendation.title}</h3>
-                  <p className="mt-2 flex-1 text-xs font-semibold leading-relaxed text-muted-foreground">
-                    {recommendation.why}
-                  </p>
+                  <RecommendationWhy recommendation={recommendation} />
                   <Button asChild size="sm" className="mt-4 self-start">
                     <Link to={recommendation.route} onClick={() => accept(recommendation.id)}>
                       {recommendation.actionLabel}
@@ -104,5 +98,24 @@ export function SmartActionPanel({
         </m.section>
       )}
     </AnimatePresence>
+  )
+}
+
+function RecommendationIcon({ ruleId }: { ruleId: string }) {
+  if (ruleId.includes('gpa')) return <TrendingDown className="size-4" aria-hidden="true" />
+  if (ruleId.includes('prereq') || ruleId.includes('bcpm-heavy')) return <CalendarClock className="size-4" aria-hidden="true" />
+  if (ruleId.includes('syllabus') || ruleId.includes('reviewed')) return <BookOpenCheck className="size-4" aria-hidden="true" />
+  return <Scale className="size-4" aria-hidden="true" />
+}
+
+function RecommendationWhy({ recommendation }: { recommendation: Recommendation }) {
+  if (!recommendation.cause || !recommendation.why.includes(recommendation.cause)) {
+    return <p className="mt-2 flex-1 text-xs font-semibold leading-relaxed text-muted-foreground">{recommendation.why}</p>
+  }
+  const [before, after] = recommendation.why.split(recommendation.cause)
+  return (
+    <p className="mt-2 flex-1 text-xs font-semibold leading-relaxed text-muted-foreground">
+      {before}<strong className="text-foreground">{recommendation.cause}</strong>{after}
+    </p>
   )
 }

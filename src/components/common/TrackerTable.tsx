@@ -94,7 +94,7 @@ function columnWidthPx(width?: string) {
 }
 
 interface TrackerTableProps {
-  collection: CollectionKey
+  collection?: CollectionKey
   rows: Row[]
   columns: ColumnDef[]
   /** boolean field that drives the check-off control (left of each row) */
@@ -103,6 +103,9 @@ interface TrackerTableProps {
   /** custom right-aligned actions per row */
   rowActions?: (row: Row) => ReactNode
   onDelete?: (id: string) => void
+  /** Adapter seams for canonical nested collections such as class assignments. */
+  onPatch?: (id: string, key: string, value: unknown) => void
+  onReorder?: (fromId: string, toId: string) => void
   empty?: ReactNode
   state?: CollectionLoadState
   errorMessage?: string
@@ -117,7 +120,7 @@ interface TrackerTableProps {
  *  Inline edit · check-off · drag-reorder · delete (Notion-like). */
 export function TrackerTable({
   collection, rows, columns, checkKey, reorder = true, rowActions, onDelete, empty,
-  state = 'ready', errorMessage, onRetry, onOpen, selectedIds, onToggleSelected, listId,
+  onPatch, onReorder, state = 'ready', errorMessage, onRetry, onOpen, selectedIds, onToggleSelected, listId,
 }: TrackerTableProps) {
   const patchItem = useStore((s) => s.patchItem)
   const reorderItems = useStore((s) => s.reorderItems)
@@ -129,7 +132,7 @@ export function TrackerTable({
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-  const views = useSavedViews(listId ?? collection, { visibleColumns: columns.map((column) => column.key) })
+  const views = useSavedViews(listId ?? collection ?? 'tracker', { visibleColumns: columns.map((column) => column.key) })
   const effectiveSelectedIds = selectedIds ?? internalSelectedIds
   const visibleColumns = views.state.visibleColumns.length
     ? columns.filter((column) => views.state.visibleColumns.includes(column.key))
@@ -196,11 +199,15 @@ export function TrackerTable({
   function patch(id: string, key: string, value: unknown) {
     const previous = field(rows.find((row) => row.id === id) ?? { id }, key)
     setSaveStatus('saving')
-    patchItem(collection, id, { [key]: value })
+    if (onPatch) onPatch(id, key, value)
+    else if (collection) patchItem(collection, id, { [key]: value })
     if (key === checkKey && previous !== value) {
       toast({
         title: value ? 'Marked complete' : 'Reopened',
-        onUndo: () => patchItem(collection, id, { [key]: previous }),
+        onUndo: () => {
+          if (onPatch) onPatch(id, key, previous)
+          else if (collection) patchItem(collection, id, { [key]: previous })
+        },
       })
     }
     window.setTimeout(() => setSaveStatus('saved'), 350)
@@ -209,9 +216,14 @@ export function TrackerTable({
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (over && active.id !== over.id) {
-      reorderItems(collection, String(active.id), String(over.id))
-      const recoveryId = useStore.getState().meta.recoveryStack[0]?.id
-      toast({ title: 'Record moved', onUndo: recoveryId ? () => undoRecovery(recoveryId) : undefined })
+      if (onReorder) {
+        onReorder(String(active.id), String(over.id))
+        toast({ title: 'Record moved' })
+      } else if (collection) {
+        reorderItems(collection, String(active.id), String(over.id))
+        const recoveryId = useStore.getState().meta.recoveryStack[0]?.id
+        toast({ title: 'Record moved', onUndo: recoveryId ? () => undoRecovery(recoveryId) : undefined })
+      }
     }
   }
 
@@ -342,7 +354,7 @@ export function TrackerTable({
             <Button variant="ghost" size="icon" className="size-8" onClick={() => dataTable.nextPage()} disabled={!dataTable.getCanNextPage()} aria-label="Next page"><ChevronRight className="size-4" /></Button>
           </div>
         </div>
-        <BulkActionBar collection={collection} rows={activeRows as Row[]} selectedIds={effectiveSelectedIds} onClear={clearSelection} />
+        {collection && <BulkActionBar collection={collection} rows={activeRows as Row[]} selectedIds={effectiveSelectedIds} onClear={clearSelection} />}
       </div>
     </DndContext>
   )

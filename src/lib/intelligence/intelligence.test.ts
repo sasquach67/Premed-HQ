@@ -9,7 +9,7 @@ import type { AppData, CollectionRecord, Course, ExperienceEntry, LetterEntry } 
 import { daysSinceUpdate, paceProjection, pillarSignals, nextDeadline } from './derived'
 import { dataHealthWarnings, experienceCompleteness, courseCompleteness } from './dataHealth'
 import { dedupCandidates } from './dedup'
-import { generateRecommendations, isMutableSeverity, ruleDismissalCount, smartNextActions, mutedRecommendationRules } from './recommendations'
+import { academicsNextActions, generateRecommendations, isMutableSeverity, ruleDismissalCount, smartNextActions, mutedRecommendationRules } from './recommendations'
 import { INTELLIGENCE_THRESHOLDS } from './types'
 
 const NOW = new Date('2026-07-25T12:00:00')
@@ -358,5 +358,18 @@ describe('deterministic vs probabilistic separation', () => {
     smartNextActions(data, { now: NOW })
     expect(fetchSpy).not.toHaveBeenCalled()
     globalThis.fetch = realFetch
+  })
+})
+
+describe('Academics D2 recommendations', () => {
+  it('names a specific cause, caps at three, and honors persisted dismissal', () => {
+    const data = structuredClone(createSeedData())
+    const initial = academicsNextActions(data)
+    expect(initial).toHaveLength(3)
+    expect(initial.every((recommendation) => recommendation.ruleId === 'academics-no-syllabus')).toBe(true)
+    expect(initial.every((recommendation) => recommendation.cause && recommendation.why.includes(recommendation.cause))).toBe(true)
+
+    data.settings.recommendationState[initial[0].id] = { status: 'dismissed', at: NOW.getTime() }
+    expect(academicsNextActions(data).some((recommendation) => recommendation.id === initial[0].id)).toBe(false)
   })
 })

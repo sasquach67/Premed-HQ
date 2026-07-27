@@ -159,6 +159,7 @@ export type ClassStatus = 'active' | 'archived'
 export type TopicStatus = 'not-started' | 'seen' | 'notes-made' | 'reviewing' | 'weak' | 'ready'
 export type LegacyTopicStatus = TopicStatus | 'cards-made' | 'mastered'
 export type TopicConfidence = 1 | 2 | 3
+export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy'
 export type ClassNoteType = 'lecture' | 'reading' | 'lab' | 'study-guide' | 'exam-review' | 'question-log' | 'other'
 export type ClassNoteSyncStatus = 'local-only' | 'sync-ready' | 'synced' | 'error'
 export type ClassAssignmentType = 'homework' | 'quiz' | 'exam' | 'project' | 'reading' | 'lab' | 'discussion' | 'other'
@@ -232,6 +233,17 @@ export interface Topic {
   order: number
 }
 
+/** Append-only review history. D5 records these events; D2 defines the
+ * durable shape now so early review activity is never lost. */
+export interface ReviewEvent {
+  id: ID
+  topicId: ID
+  timestamp: number
+  grade: ReviewGrade
+  confidence: TopicConfidence
+  order: number
+}
+
 export interface ClassNote {
   id: ID
   courseId: ID
@@ -255,6 +267,8 @@ export interface ClassAssignment {
   courseId: ID
   title: string
   type: ClassAssignmentType
+  /** The app's single prioritization flag. Absence is equivalent to false. */
+  important?: boolean
   dueDate?: string
   status: ClassAssignmentStatus
   category?: string
@@ -397,6 +411,7 @@ export type AcademicMigrationReviewKind =
   | 'workspace-unmatched'
   | 'workspace-conflict'
   | 'current-term-confirmation'
+  | 'contact-conflict'
 
 export type AcademicMigrationJournalKind =
   | AcademicMigrationReviewKind
@@ -412,9 +427,12 @@ export interface AcademicMigrationJournalEntry {
   reason: string
   legacyWorkspaceId?: ID
   legacyWorkspace?: Record<string, unknown>
+  legacyContactId?: ID
+  legacyContact?: Record<string, unknown>
   relatedLegacyRecords?: Record<string, unknown[]>
   courseId?: ID
   candidateCourseIds?: ID[]
+  candidatePersonIds?: ID[]
   inferredTerm?: string
   createdAt: number
   resolvedAt?: number
@@ -428,6 +446,7 @@ export interface ClassCenterData {
   files: AcademicFile[]
   keyPoints: KeyPoint[]
   sourceChunks: SourceChunk[]
+  reviewEvents: ReviewEvent[]
   contacts: ClassContact[]
   weakAreas: ClassWeakArea[]
   practiceExams: PracticeExam[]

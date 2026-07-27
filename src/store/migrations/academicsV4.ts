@@ -165,7 +165,7 @@ function migrateRelatedRows(
   workspaceToCourse: Map<string, string>,
   unresolvedWorkspaceIds: Set<string>,
   now: number,
-): Omit<ClassCenterData, 'workspaces' | 'keyPoints' | 'sourceChunks'> {
+): Omit<ClassCenterData, 'workspaces' | 'keyPoints' | 'sourceChunks' | 'reviewEvents'> {
   const mapRows = (key: typeof RELATED_KEYS[number]) => {
     const rows = Array.isArray(legacy[key]) ? legacy[key] as UnknownRecord[] : []
     return rows
@@ -238,6 +238,7 @@ export function syncCurrentTermWorkspaces(data: AppData, now = Date.now()): AppD
   classCenter.workspaces ??= []
   classCenter.keyPoints ??= []
   classCenter.sourceChunks ??= []
+  classCenter.reviewEvents ??= []
   const currentTerm = currentTermFor(data, academics.migrationJournal, now)
 
   const coursesById = new Map(data.courses.map((course) => [course.id, course]))
@@ -406,6 +407,7 @@ export function migrateAcademicsV4(data: AppData, now = Date.now()): AppData {
     ...related,
     keyPoints: [],
     sourceChunks: [],
+    reviewEvents: [],
   }
   return syncCurrentTermWorkspaces(data, now)
 }

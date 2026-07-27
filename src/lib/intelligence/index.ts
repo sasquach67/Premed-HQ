@@ -53,6 +53,7 @@ export {
   recommendationRuleLabel,
   ruleDismissalCount,
   smartNextActions,
+  academicsNextActions,
   type MutedRule,
   type Recommendation,
   type RecommendationStatus,

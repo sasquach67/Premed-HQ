@@ -18,6 +18,7 @@ import { normalizeEntityName } from '@/lib/entityMatching'
 import { daysSinceUpdate, parseIsoDate, pillarSignals } from './derived'
 import { dedupCandidates } from './dedup'
 import { INTELLIGENCE_THRESHOLDS, type ConfidenceLevel, type Explained, type Severity } from './types'
+import { GRADE_POINTS } from '@/lib/selectors'
 
 /** Lifecycle states a recommendation moves through (architecture/02
  *  "Recommendation Lifecycles"). `generated` is implicit — anything returned by
@@ -37,6 +38,8 @@ export interface Recommendation extends Explained {
   actionLabel: string
   entityId?: string
   entityLabel?: string
+  /** Exact factual phrase emphasized in the UI's explanation line. */
+  cause?: string
   /** Suggested task title the user may accept. NEVER auto-created. */
   taskDraft?: string
 }
@@ -290,6 +293,174 @@ export function smartNextActions(
     .slice(0, Math.max(0, limit))
 }
 
+function scienceGpaSlippingRule(data: AppData): Recommendation[] {
+  const graded = data.courses.filter((course) =>
+    course.bcpm && course.credits > 0 && GRADE_POINTS[course.grade] != null
+  )
+  const points = (rows: typeof graded) => {
+    const credits = rows.reduce((sum, course) => sum + course.credits, 0)
+    if (!credits) return null
+    return rows.reduce((sum, course) => sum + GRADE_POINTS[course.grade] * course.credits, 0) / credits
+  }
+  const current = points(graded)
+  if (current == null) return []
+  return graded.flatMap((course) => {
+    const without = points(graded.filter((item) => item.id !== course.id))
+    const drag = without == null ? 0 : without - current
+    if (drag < 0.02) return []
+    const cause = `${course.code || course.title} at ${course.grade} pulls BCPM down ${drag.toFixed(2).replace(/^0/, '')}`
+    return [{
+      id: `academics-science-gpa:${course.id}:${course.grade}`,
+      ruleId: 'academics-science-gpa',
+      title: 'Science GPA slipping',
+      severity: 'important' as const,
+      rank: rank(3, 3),
+      why: `${cause}. Try a what-if before changing the rest of your plan.`,
+      cause,
+      route: '/academics?mode=planning&tab=planner',
+      actionLabel: 'What-if',
+      entityId: course.id,
+      entityLabel: course.code,
+    }]
+  })
+}
+
+function termBeforeMcat(targetDate: string) {
+  const date = parseIsoDate(targetDate)
+  if (!date) return ''
+  return date.getMonth() < 5 ? `Fall ${date.getFullYear() - 1}` : `Spring ${date.getFullYear()}`
+}
+
+function unscheduledPrereqRule(data: AppData): Recommendation[] {
+  if (!data.mcat.targetDate) return []
+  const missing = data.requirements.filter((requirement) => {
+    if (requirement.done || !/pre.?med/i.test(requirement.group)) return false
+    const codes = requirement.satisfiedBy ?? []
+    if (!codes.length) return false
+    return !data.courses.some((course) =>
+      course.status !== 'completed' && course.status !== 'planned'
+        ? false
+        : codes.some((code) => course.code.replace(/\s+/g, '').toLowerCase() === code.replace(/\s+/g, '').toLowerCase())
+    )
+  })
+  if (missing.length !== 1) return []
+  const requirement = missing[0]
+  const deadlineTerm = termBeforeMcat(data.mcat.targetDate)
+  if (!deadlineTerm) return []
+  const cause = `Last MCAT prereq — take by ${deadlineTerm}`
+  return [{
+    id: `academics-unscheduled-prereq:${requirement.id}:${deadlineTerm}`,
+    ruleId: 'academics-unscheduled-prereq',
+    title: 'Unscheduled med prereq',
+    severity: 'important',
+    rank: rank(3, 3),
+    why: `${cause}. ${requirement.label} is not in a completed or planned term.`,
+    cause,
+    route: '/academics?mode=planning&tab=planner',
+    actionLabel: 'Plan it',
+    entityId: requirement.id,
+    entityLabel: requirement.label,
+  }]
+}
+
+function bcpmHeavyTermRule(data: AppData): Recommendation[] {
+  const byTerm = new Map<string, typeof data.courses>()
+  for (const course of data.courses) {
+    if (!course.bcpm || course.status !== 'planned' || !course.term) continue
+    byTerm.set(course.term, [...(byTerm.get(course.term) ?? []), course])
+  }
+  return [...byTerm.entries()].flatMap(([term, courses]) => {
+    if (courses.length < 3) return []
+    const cause = `${term} has ${courses.length} science courses planned`
+    return [{
+      id: `academics-bcpm-heavy:${term}:${courses.map((course) => course.id).sort().join('-')}`,
+      ruleId: 'academics-bcpm-heavy',
+      title: 'BCPM-heavy term',
+      severity: 'suggested' as const,
+      rank: rank(2, 2),
+      why: `${cause}. Check that the workload leaves room for consistent review.`,
+      cause,
+      route: '/academics?mode=planning&tab=planner',
+      actionLabel: 'Rebalance',
+      entityLabel: term,
+    }]
+  })
+}
+
+function coveredNeverReviewedRule(data: AppData): Recommendation[] {
+  const covered = new Set(data.academics.classCenter.assignments.flatMap((assignment) => assignment.coveredTopicIds ?? []))
+  return data.academics.classCenter.topics.flatMap((topic) => {
+    if (!covered.has(topic.id)) return []
+    const keyPoints = data.academics.classCenter.keyPoints.filter((point) => point.topicId === topic.id)
+    if (!keyPoints.length || keyPoints.some((point) => point.timesSurfaced > 0)) return []
+    const course = data.courses.find((item) => item.id === topic.courseId)
+    const cause = `${topic.unit || topic.title} was covered and never reviewed`
+    return [{
+      id: `academics-covered-never-reviewed:${topic.id}`,
+      ruleId: 'academics-covered-never-reviewed',
+      title: 'Covered but never reviewed',
+      severity: 'important' as const,
+      rank: rank(3, 2),
+      why: `${cause}. Surface it once while the lecture context is still fresh.`,
+      cause,
+      route: `/academics/classes/${topic.courseId}`,
+      actionLabel: 'Review it',
+      entityId: topic.id,
+      entityLabel: `${course?.code ?? 'Class'} · ${topic.title}`,
+    }]
+  })
+}
+
+function noSyllabusRule(data: AppData): Recommendation[] {
+  const center = data.academics.classCenter
+  return center.workspaces.flatMap((workspace) => {
+    if (workspace.status !== 'active') return []
+    const syllabusIds = center.files
+      .filter((file) => file.courseId === workspace.courseId && file.type === 'syllabus')
+      .map((file) => file.id)
+    const parsed = center.sourceChunks.some((chunk) => syllabusIds.includes(chunk.fileId))
+    if (parsed) return []
+    const course = data.courses.find((item) => item.id === workspace.courseId)
+    if (!course) return []
+    const cause = `${course.code || course.title} has no syllabus`
+    return [{
+      id: `academics-no-syllabus:${course.id}`,
+      ruleId: 'academics-no-syllabus',
+      title: 'No syllabus imported',
+      severity: 'important' as const,
+      rank: rank(3, 2),
+      why: `${cause} — weeks and grade weights are unknown.`,
+      cause,
+      route: `/academics/classes/${course.id}`,
+      actionLabel: 'Import syllabus',
+      entityId: course.id,
+      entityLabel: course.code,
+    }]
+  })
+}
+
+/** D2's Academics-only deterministic rules. Uses the same lifecycle and
+ * dismissal store as Smart next actions without leaking these onto Overview. */
+export function academicsNextActions(
+  data: AppData,
+  options: { now?: Date; limit?: number } = {},
+): Recommendation[] {
+  const limit = options.limit ?? 3
+  const state = data.settings.recommendationState ?? {}
+  const muted = data.settings.mutedRecommendationRules ?? {}
+  return [
+    ...scienceGpaSlippingRule(data),
+    ...unscheduledPrereqRule(data),
+    ...bcpmHeavyTermRule(data),
+    ...coveredNeverReviewedRule(data),
+    ...noSyllabusRule(data),
+  ]
+    .sort((a, b) => b.rank - a.rank)
+    .filter((rec) => !state[rec.id])
+    .filter((rec) => rec.severity === 'blocking' || !muted[rec.ruleId])
+    .slice(0, Math.max(0, limit))
+}
+
 export interface MutedRule {
   ruleId: string
   at: number
@@ -306,6 +477,11 @@ const RULE_LABELS: Record<string, string> = {
   'reflection-to-story': 'Send reflections to the Story Bank',
   'archive-completed': 'Archive finished roles',
   'resolve-duplicates': 'Review possible duplicates',
+  'academics-science-gpa': 'Science GPA slipping',
+  'academics-unscheduled-prereq': 'Unscheduled med prereq',
+  'academics-bcpm-heavy': 'BCPM-heavy term',
+  'academics-covered-never-reviewed': 'Covered but never reviewed',
+  'academics-no-syllabus': 'No syllabus imported',
 }
 
 export function recommendationRuleLabel(ruleId: string): string {

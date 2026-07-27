@@ -1,10 +1,10 @@
-import { useMemo, useState, type DragEvent } from 'react'
+import { useMemo, useState, type DragEvent, type MouseEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  Archive, ArrowLeft, Atom, BarChart3, BookOpen, Brain, Calculator, CalendarDays,
-  CheckCircle2, Circle, Clock3, Dna, Edit3, FlaskConical, FolderOpen, Leaf, Link2, Mail, MapPin, Microscope,
-  MoreHorizontal, NotebookText, PenLine, Plus, Search, Stethoscope, Target,
-  ListChecks, UserRound,
+  Archive, ArrowLeft, Atom, BarChart3, BookOpen, Brain, Calculator, CalendarClock, CalendarDays,
+  CheckCircle2, Circle, Dna, Edit3, FlaskConical, FolderOpen, Leaf, Mail, Microscope,
+  MoreHorizontal, NotebookText, PenLine, Play, Plus, Search, Stethoscope, Target,
+  Grid2X2, List, ListChecks, Timer, TrendingUp,
   Trash2, Upload, Users, type LucideIcon,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
@@ -15,7 +15,7 @@ import type {
   ClassCenterData, ClassContact, ClassContactRole, Course,
   AcademicFile, ClassFileType, ClassNote, ClassNoteType, Topic,
   ClassWeakArea, PracticeExam, PracticeExamDifficulty, PracticeQuestion,
-  PracticeQuestionType, TopicConfidence, TopicStatus, WeakAreaSource,
+  PracticeQuestionType, TopicConfidence, TopicStatus, WeakAreaSource, Person,
 } from '@/lib/types'
 import { aiPracticeService, type GeneratePracticeExamRequest } from '@/services/aiPracticeService'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +34,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DateField } from '@/components/common/DateField'
 import { AnimatedFileUpload } from '@/components/motion'
 import { createTopicFsrsState } from '@/lib/academics/fsrs'
+import { topicRetrievability } from '@/lib/academics/fsrs'
+import { SmartActionPanel } from '@/components/common/SmartActionPanel'
+import { academicsNextActions, type Recommendation } from '@/lib/intelligence'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import { CenterPeek, type RecordOpenMode } from '@/components/common/CenterPeek'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import { GRADE_POINTS, fmtGpa, gpaStats } from '@/lib/selectors'
+import { ClassHub, ClassHubPeek } from '@/components/academics/ClassHub'
 
 const COLORS: AcademicTagColor[] = ['blue', 'green', 'purple', 'orange', 'yellow', 'red', 'pink', 'gray', 'brown']
 const CLASS_ICONS: { id: string; label: string; Icon: LucideIcon }[] = [
@@ -92,17 +105,32 @@ const PILL_STYLES: Record<AcademicTagColor, string> = {
   red: 'bg-red-500/12 text-red-700 dark:text-red-200',
 }
 
+const CARD_ACCENTS: Record<AcademicTagColor, { dot: string; border: string; bar: string; glow: string }> = {
+  gray: { dot: 'bg-slate-400', border: 'hover:border-slate-400/70', bar: 'bg-slate-400', glow: 'hover:shadow-slate-500/15' },
+  brown: { dot: 'bg-stone-500', border: 'hover:border-stone-500/70', bar: 'bg-stone-500', glow: 'hover:shadow-stone-500/15' },
+  orange: { dot: 'bg-orange-500', border: 'hover:border-orange-500/70', bar: 'bg-orange-500', glow: 'hover:shadow-orange-500/15' },
+  yellow: { dot: 'bg-yellow-500', border: 'hover:border-yellow-500/70', bar: 'bg-yellow-500', glow: 'hover:shadow-yellow-500/15' },
+  green: { dot: 'bg-emerald-500', border: 'hover:border-emerald-500/70', bar: 'bg-emerald-500', glow: 'hover:shadow-emerald-500/15' },
+  blue: { dot: 'bg-sky-500', border: 'hover:border-sky-500/70', bar: 'bg-sky-500', glow: 'hover:shadow-sky-500/15' },
+  purple: { dot: 'bg-violet-500', border: 'hover:border-violet-500/70', bar: 'bg-violet-500', glow: 'hover:shadow-violet-500/15' },
+  pink: { dot: 'bg-pink-500', border: 'hover:border-pink-500/70', bar: 'bg-pink-500', glow: 'hover:shadow-pink-500/15' },
+  red: { dot: 'bg-rose-500', border: 'hover:border-rose-500/70', bar: 'bg-rose-500', glow: 'hover:shadow-rose-500/15' },
+}
+
 type ClassWorkspaceView = Omit<ClassWorkspace, 'id'> & {
   id: string
   workspaceId: string
   courseCode: string
   courseTitle: string
   semester: string
+  grade: Course['grade']
+  bcpm: boolean
+  credits: number
 }
 
 type ClassCenterViewData = ClassCenterData & { classes: ClassWorkspaceView[] }
 
-type ClassFormState = Omit<ClassWorkspaceView, 'id' | 'workspaceId' | 'courseId' | 'createdAt' | 'updatedAt' | 'order'>
+type ClassFormState = Omit<ClassWorkspaceView, 'id' | 'workspaceId' | 'courseId' | 'createdAt' | 'updatedAt' | 'order' | 'grade' | 'bcpm' | 'credits'>
 
 function emptyClassForm(semester = 'Fall 2026'): ClassFormState {
   return {
@@ -164,6 +192,9 @@ function joinWorkspaces(workspaces: ClassWorkspace[], courses: Course[]): ClassW
       courseCode: course.code,
       courseTitle: course.title,
       semester: course.term,
+      grade: course.grade,
+      bcpm: course.bcpm,
+      credits: course.credits,
     }]
   })
 }
@@ -210,10 +241,12 @@ function reorderClasses(draft: ClassCenterData, orderedVisibleIds: string[]) {
 
 export function ClassCenter({ archiveOnly = false }: { archiveOnly?: boolean }) {
   const params = useParams()
-  const navigate = useNavigate()
   const data = useStore((s) => s.academics.classCenter)
   const courses = useStore((s) => s.courses)
   const update = useStore((s) => s.update)
+  const persons = useStore((s) => s.persons)
+  const currentTerm = useStore((s) => s.profile.startTerm)
+  const store = useStore()
   const courseId = params.courseId
   const classes = useMemo(() => joinWorkspaces(data.workspaces, courses), [data.workspaces, courses])
   const viewData = useMemo<ClassCenterViewData>(() => ({ ...data, classes }), [data, classes])
@@ -238,22 +271,45 @@ export function ClassCenter({ archiveOnly = false }: { archiveOnly?: boolean }) 
         </Card>
       )
     }
-    return <ClassWorkspace row={activeClass} data={viewData} mutate={mutate} onBack={() => navigate('/academics')} />
+    const activeCourse = courses.find((course) => course.id === activeClass.courseId)
+    if (!activeCourse) return null
+    return <ClassHub course={activeCourse} workspace={activeClass} data={data} persons={persons} />
   }
 
-  return <ClassCenterDashboard data={viewData} mutate={mutate} updateAll={update} archiveOnly={archiveOnly} />
+  return (
+    <ClassCenterDashboard
+      data={viewData}
+      persons={persons}
+      recommendations={academicsNextActions(store, { limit: 3 })}
+      currentTerm={currentTerm}
+      terms={[...new Set(courses.map((course) => course.term).filter(Boolean))]}
+      courses={courses}
+      mutate={mutate}
+      updateAll={update}
+      archiveOnly={archiveOnly}
+    />
+  )
 }
 
 function ClassCenterDashboard({
-  data, mutate, updateAll, archiveOnly,
+  data, persons, recommendations, currentTerm, terms, courses, mutate, updateAll, archiveOnly,
 }: {
   data: ClassCenterViewData
+  persons: Person[]
+  recommendations: Recommendation[]
+  currentTerm: string
+  terms: string[]
+  courses: Course[]
   mutate: (fn: (draft: ClassCenterData) => void) => void
   updateAll: (fn: (draft: import('@/lib/types').AppData) => void) => void
   archiveOnly: boolean
 }) {
-  const [semester, setSemester] = useState(archiveOnly ? 'Archived' : 'Fall 2026')
+  const navigate = useNavigate()
+  const [semester, setSemester] = useState(archiveOnly ? 'Archived' : currentTerm)
   const [query, setQuery] = useState('')
+  const [view, setView] = useState<'cards' | 'list'>('cards')
+  const [peekCourseId, setPeekCourseId] = useState<string | null>(null)
+  const [peekMode, setPeekMode] = useState<RecordOpenMode>('peek')
   const [editor, setEditor] = useState<{ open: boolean; courseId?: string; form: ClassFormState }>({
     open: false,
     form: emptyClassForm(),
@@ -261,9 +317,9 @@ function ClassCenterDashboard({
   const [draggedClassId, setDraggedClassId] = useState<string | null>(null)
   const [dragOverClassId, setDragOverClassId] = useState<string | null>(null)
   const semesters = useMemo(() => {
-    const list = Array.from(new Set(data.classes.map((row) => row.semester))).filter(Boolean)
-    return ['Fall 2026', 'Spring 2027', ...list.filter((item) => !['Fall 2026', 'Spring 2027'].includes(item)), 'All active', 'Archived']
-  }, [data.classes])
+    const list = Array.from(new Set([currentTerm, ...terms, ...data.classes.map((row) => row.semester)])).filter(Boolean)
+    return archiveOnly ? ['Archived'] : list
+  }, [archiveOnly, currentTerm, data.classes, terms])
   const filtered = data.classes
     .filter((row) => {
       if (archiveOnly || semester === 'Archived') return row.status === 'archived'
@@ -330,117 +386,139 @@ function ClassCenterDashboard({
 
   return (
     <div className="space-y-5">
-      {!archiveOnly && (
-        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-3 shadow-sm lg:flex-row lg:items-center">
-          <div className="flex gap-1 overflow-x-auto rounded-full bg-muted/55 p-1">
-            {semesters.map((item) => (
-              <button
-                key={item}
-                onClick={() => setSemester(item)}
-                className={cn(
-                  'shrink-0 rounded-full px-3 py-2 text-sm font-extrabold transition',
-                  semester === item ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {item === 'All active' ? 'All' : item}
-              </button>
-            ))}
-          </div>
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="rounded-full pl-9" placeholder="Find a class, note, topic..." value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="rounded-full"><Plus className="size-4" /> New class</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditor({ open: true, form: emptyClassForm(semester === 'Archived' || semester === 'All active' ? 'Fall 2026' : semester) })}>Start blank</DropdownMenuItem>
-              <DropdownMenuItem><Upload className="size-4" /> Import / add material</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm lg:flex-row lg:items-center">
+        <Select
+          value={semester}
+          onValueChange={(value) => {
+            setSemester(value)
+            if (!archiveOnly) updateAll((draft) => { draft.profile.startTerm = value })
+          }}
+        >
+          <SelectTrigger className="w-full lg:w-44"><CalendarDays className="size-4" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {semesters.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Find a class, note, topic…" value={query} onChange={(event) => setQuery(event.target.value)} />
         </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((row) => (
-          <ClassCard
-            key={row.id}
-            row={row}
-            data={data}
-            dragging={draggedClassId === row.id}
-            dragOver={dragOverClassId === row.id && draggedClassId !== row.id}
-            onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = 'move'
-              event.dataTransfer.setData('text/plain', row.id)
-              setDraggedClassId(row.id)
-            }}
-            onDragOver={(event) => {
-              if (!draggedClassId || draggedClassId === row.id) return
-              event.preventDefault()
-              event.dataTransfer.dropEffect = 'move'
-              setDragOverClassId(row.id)
-            }}
-            onDragLeave={() => setDragOverClassId((current) => current === row.id ? null : current)}
-            onDrop={(event) => {
-              event.preventDefault()
-              moveClass(row.id)
-              setDraggedClassId(null)
-              setDragOverClassId(null)
-            }}
-            onDragEnd={() => {
-              setDraggedClassId(null)
-              setDragOverClassId(null)
-            }}
-            onEdit={() => setEditor({ open: true, courseId: row.id, form: classToForm(row) })}
-            onDelete={() => {
-              if (!window.confirm(`Delete ${row.courseCode || row.courseTitle}?`)) return
-              updateAll((draft) => {
-                draft.courses = draft.courses.filter((item) => item.id !== row.id)
-                const center = draft.academics.classCenter
-                center.workspaces = center.workspaces.filter((item) => item.courseId !== row.id)
-                center.topics = center.topics.filter((item) => item.courseId !== row.id)
-                center.notes = center.notes.filter((item) => item.courseId !== row.id)
-                center.assignments = center.assignments.filter((item) => item.courseId !== row.id)
-                center.files = center.files.filter((item) => item.courseId !== row.id)
-                center.contacts = center.contacts.filter((item) => item.courseId !== row.id)
-                center.weakAreas = center.weakAreas.filter((item) => item.courseId !== row.id)
-              })
-            }}
-            onArchive={() => mutate((draft) => {
-              const item = draft.workspaces.find((c) => c.courseId === row.id)
-              if (item) {
-                item.status = item.status === 'archived' ? 'active' : 'archived'
-                item.updatedAt = Date.now()
-              }
-            })}
-          />
-        ))}
-        {!archiveOnly && (
-          <button
-            onClick={() => setEditor({ open: true, form: emptyClassForm(semester === 'Archived' || semester === 'All active' ? 'Fall 2026' : semester) })}
-            className="flex min-h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card p-6 text-center transition hover:border-primary/50 hover:bg-primary/5"
-          >
-            <Plus className="mb-2 size-6 text-muted-foreground" />
-            <span className="font-display text-lg font-bold">Add class from your course plan</span>
-            <span className="mt-1 text-sm font-semibold text-muted-foreground">or start blank</span>
-          </button>
-        )}
-        {!filtered.length && (
-          <Card className="md:col-span-2 xl:col-span-3">
-            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <BookOpen className="size-8 text-muted-foreground" />
-              <div>
-                <p className="font-display text-xl font-bold">No classes here yet</p>
-                <p className="text-sm text-muted-foreground">Create a class or switch semesters to see the workspace grid.</p>
-              </div>
-              <Button onClick={() => setEditor({ open: true, form: emptyClassForm() })}><Plus className="size-4" /> New Class</Button>
-            </CardContent>
-          </Card>
-        )}
+        <span className="whitespace-nowrap text-sm font-bold text-muted-foreground">{filtered.length} {filtered.length === 1 ? 'class' : 'classes'}</span>
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(value) => value && setView(value as 'cards' | 'list')}
+          variant="outline"
+          aria-label="Class view"
+        >
+          <ToggleGroupItem value="cards" aria-label="Card view"><Grid2X2 className="size-4" /> Cards</ToggleGroupItem>
+          <ToggleGroupItem value="list" aria-label="List view"><List className="size-4" /> List</ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      {!archiveOnly && <AcrossClassesStrip data={data} classes={activeClasses} />}
+      {!archiveOnly && <SmartActionPanel title="Heads up" recommendations={recommendations} />}
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>{archiveOnly ? 'Archived classes' : 'Your classes'}</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">{semester}</p>
+          </div>
+          {!archiveOnly && <Badge variant="outline">{filtered.length} active</Badge>}
+        </CardHeader>
+        <CardContent>
+          <div className={cn(view === 'cards' ? 'grid gap-4 md:grid-cols-2 xl:grid-cols-3' : 'space-y-2')}>
+            {filtered.map((row) => (
+              <ClassCard
+                key={row.id}
+                row={row}
+                data={data}
+                compact={view === 'list'}
+                dragging={draggedClassId === row.id}
+                dragOver={dragOverClassId === row.id && draggedClassId !== row.id}
+                onOpen={() => setPeekCourseId(row.id)}
+                onReview={() => setPeekCourseId(row.id)}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move'
+                  event.dataTransfer.setData('text/plain', row.id)
+                  setDraggedClassId(row.id)
+                }}
+                onDragOver={(event) => {
+                  if (!draggedClassId || draggedClassId === row.id) return
+                  event.preventDefault()
+                  event.dataTransfer.dropEffect = 'move'
+                  setDragOverClassId(row.id)
+                }}
+                onDragLeave={() => setDragOverClassId((current) => current === row.id ? null : current)}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  moveClass(row.id)
+                  setDraggedClassId(null)
+                  setDragOverClassId(null)
+                }}
+                onDragEnd={() => {
+                  setDraggedClassId(null)
+                  setDragOverClassId(null)
+                }}
+                onEdit={() => setEditor({ open: true, courseId: row.id, form: classToForm(row) })}
+                onDelete={() => {
+                  if (!window.confirm(`Delete ${row.courseCode || row.courseTitle}?`)) return
+                  updateAll((draft) => {
+                    draft.courses = draft.courses.filter((item) => item.id !== row.id)
+                    const center = draft.academics.classCenter
+                    center.workspaces = center.workspaces.filter((item) => item.courseId !== row.id)
+                    center.topics = center.topics.filter((item) => item.courseId !== row.id)
+                    center.notes = center.notes.filter((item) => item.courseId !== row.id)
+                    center.assignments = center.assignments.filter((item) => item.courseId !== row.id)
+                    center.files = center.files.filter((item) => item.courseId !== row.id)
+                    center.contacts = center.contacts.filter((item) => item.courseId !== row.id)
+                    center.weakAreas = center.weakAreas.filter((item) => item.courseId !== row.id)
+                  })
+                }}
+                onArchive={() => mutate((draft) => {
+                  const item = draft.workspaces.find((course) => course.courseId === row.id)
+                  if (item) {
+                    item.status = item.status === 'archived' ? 'active' : 'archived'
+                    item.updatedAt = Date.now()
+                  }
+                })}
+              />
+            ))}
+            {!archiveOnly && (
+              <button
+                onClick={() => setEditor({ open: true, form: emptyClassForm(semester) })}
+                className={cn(
+                  'flex min-h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/55 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none',
+                  view === 'list' && 'min-h-20 flex-row gap-3',
+                )}
+              >
+                <Plus className="size-6 text-muted-foreground" />
+                <span>
+                  <span className="block font-display text-lg font-bold">Add class</span>
+                  <span className="text-sm font-semibold text-muted-foreground">from your course plan or start blank</span>
+                </span>
+              </button>
+            )}
+          </div>
+          {!filtered.length && (
+            <div className="py-10 text-center">
+              <BookOpen className="mx-auto size-8 text-muted-foreground" />
+              <p className="mt-3 font-display text-xl font-bold">No classes here yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Add a class or choose another term.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {!archiveOnly && (
+        <AcademicsBento
+          data={data}
+          classes={activeClasses}
+          persons={persons}
+          courses={courses}
+          onOpenClass={setPeekCourseId}
+        />
+      )}
 
       <ClassEditorDialog
         open={editor.open}
@@ -450,17 +528,54 @@ function ClassCenterDashboard({
         onChange={(patch) => setEditor((prev) => ({ ...prev, form: { ...prev.form, ...patch } }))}
         onSave={saveClass}
       />
+
+      <CenterPeek
+        open={Boolean(peekCourseId)}
+        mode={peekMode}
+        label={data.classes.find((row) => row.id === peekCourseId)?.courseCode ?? 'Class preview'}
+        onOpenChange={(open) => !open && setPeekCourseId(null)}
+        onModeChange={(mode) => {
+          if (mode === 'expanded' && peekCourseId) {
+            setPeekCourseId(null)
+            navigate(`/academics/classes/${peekCourseId}`)
+            return
+          }
+          setPeekMode(mode)
+        }}
+      >
+        {(() => {
+          const row = data.classes.find((item) => item.id === peekCourseId)
+          const course = courses.find((item) => item.id === peekCourseId)
+          if (!row || !course) return null
+          return (
+            <ClassHubPeek
+              course={course}
+              workspace={row}
+              data={data}
+              split={peekMode === 'split'}
+              onOpen={() => {
+                setPeekCourseId(null)
+                navigate(`/academics/classes/${row.id}`)
+              }}
+            />
+          )
+        })()}
+      </CenterPeek>
     </div>
   )
 }
 
 function ClassCard({
-  row, data, dragging, dragOver, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, onEdit, onArchive, onDelete,
+  row, data, compact, dragging, dragOver, onOpen, onReview,
+  onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, onEdit, onArchive, onDelete,
 }: {
   row: ClassWorkspaceView
   data: ClassCenterViewData
+  compact: boolean
   dragging: boolean
   dragOver: boolean
+  onOpen: () => void
+  onReview: () => void
   onDragStart: (event: DragEvent<HTMLElement>) => void
   onDragOver: (event: DragEvent<HTMLElement>) => void
   onDragLeave: () => void
@@ -470,162 +585,601 @@ function ClassCard({
   onArchive: () => void
   onDelete: () => void
 }) {
+  const [actionHovered, setActionHovered] = useState(false)
   const stats = classStats(row.id, data)
-  const topic = data.topics.find((item) => item.id === row.currentTopicId)
   const nextText = stats.nextDeadline?.title
     ? `${stats.nextDeadline.title}${stats.nextDeadline.dueDate ? ` · ${daysUntil(stats.nextDeadline.dueDate)}` : ''}`
-    : topic?.title ?? 'Choose a topic'
-  const meetingText = [row.meetingDays, shortMeetingTime(row.meetingTime)].filter(Boolean).join(' · ')
-  return (
+    : 'No deadline scheduled'
+  const percent = coursePercent(row.id, data)
+  const accent = CARD_ACCENTS[row.color]
+
+  function openFromCard(event: MouseEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest('button,a,[role="menuitem"]')) return
+    onOpen()
+  }
+
+  const card = (
     <Card
       draggable
+      role="button"
+      tabIndex={0}
+      aria-label={`Preview ${row.courseCode || row.nickname || 'Untitled class'} ${row.courseTitle}`}
+      onClick={openFromCard}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpen()
+        }
+      }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={cn(
-        'group relative cursor-grab overflow-hidden transition active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-lg',
+        'group/class relative cursor-pointer overflow-hidden border-border bg-card transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none',
+        !actionHovered && ['hover:-translate-y-1 hover:shadow-lg', accent.border, accent.glow],
+        compact && 'min-h-0',
         dragging && 'scale-[0.98] opacity-55',
-        dragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+        dragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
       )}
     >
-      <span className={cn('absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b', COLOR_STYLES[row.color])} aria-hidden="true" />
-      <CardContent className="space-y-3 p-4 pl-5">
-        <div className="flex items-start justify-between gap-2">
-          <Link to={`/academics/classes/${row.id}`} className="flex min-w-0 items-start gap-2.5">
-            <ClassIcon icon={row.icon} className="size-9 rounded-xl bg-muted text-muted-foreground" />
-            <span className="min-w-0">
-              <span className="block text-base font-extrabold leading-tight text-foreground group-hover:text-primary">{row.courseCode || row.nickname}</span>
-              <span className="line-clamp-1 text-sm font-medium text-muted-foreground">{row.courseTitle || row.nickname}</span>
+      <span className={cn(
+        'absolute inset-y-0 left-0 w-1 origin-left scale-x-0 transition-transform duration-200 motion-reduce:transition-none',
+        accent.bar,
+        !actionHovered && 'group-hover/class:scale-x-100',
+      )} aria-hidden="true" />
+      <CardContent className={cn(
+        'space-y-3 p-4',
+        compact && 'grid items-center gap-4 space-y-0 md:grid-cols-[minmax(0,1.2fr)_auto_minmax(160px,.7fr)_auto]',
+      )}>
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 font-display text-base font-bold leading-tight">
+            <span className={cn('size-2.5 shrink-0 rounded-full', accent.dot)} aria-hidden="true" />
+            <span>{row.courseCode || row.nickname || 'Untitled class'}</span>
+            <span className="ml-auto whitespace-nowrap font-sans text-sm font-bold tabular-nums text-muted-foreground">
+              {row.grade || '—'}{percent == null ? '' : ` · ${percent}%`}
             </span>
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Class actions"><MoreHorizontal className="size-4" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{row.courseCode || 'Class'}</DropdownMenuLabel>
-              <DropdownMenuItem onClick={onEdit}><Edit3 className="size-4" /> Edit details</DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to={`/academics/classes/${row.id}`}><Link2 className="size-4" /> Links & syllabus</Link></DropdownMenuItem>
-              <DropdownMenuItem onClick={onArchive}><Archive className="size-4" /> {row.status === 'archived' ? 'Restore' : 'Archive'}</DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash2 className="size-4" /> Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="grid grid-cols-2 gap-1.5">
-            <ClassMetaChip icon={UserRound} label={row.instructor || 'Instructor TBD'} />
-            <ClassMetaChip icon={MapPin} label={row.location || 'Room TBD'} />
-            <ClassMetaChip icon={Clock3} label={meetingText || 'Time TBD'} className="col-span-2" />
-          </div>
-          <p className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-xs font-extrabold text-foreground">
-            <span className="shrink-0 uppercase text-primary">Up next</span>
-            <span className="min-w-0 truncate text-muted-foreground">{nextText}</span>
           </p>
+          <p className="mt-1 line-clamp-1 text-sm font-semibold text-muted-foreground">{row.courseTitle || row.nickname || 'Add class details'}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 text-xs font-bold">
+          {stats.weakCount > 0 && <Badge variant="danger">{stats.weakCount} weak</Badge>}
+          {row.bcpm && <Badge variant="secondary">BCPM</Badge>}
+          {row.ankiDeckName && <Badge variant="outline">Anki</Badge>}
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-xs font-bold text-muted-foreground">{stats.readyCount} of {stats.topicCount} topics ready</p>
+          <Progress value={stats.readyPercent} aria-label={`${stats.readyPercent}% topics ready`} />
+        </div>
+
+        <div className={cn('border-t border-border pt-3', compact && 'md:border-l md:border-t-0 md:pl-4 md:pt-0')}>
+          <p className="text-xs font-bold text-muted-foreground">
+            <span className="group-hover/class:hidden">{nextText}</span>
+            <span className="hidden text-primary group-hover/class:inline">Open class hub →</span>
+          </p>
+          <div
+            className={cn(
+              'mt-3 flex items-center justify-end gap-2 transition-opacity duration-200',
+              compact ? 'opacity-100' : 'opacity-0 group-focus-within/class:opacity-100 group-hover/class:opacity-100',
+            )}
+            onPointerEnter={() => setActionHovered(true)}
+            onPointerLeave={() => setActionHovered(false)}
+          >
+            <Button
+              size="sm"
+              onClick={(event) => { event.stopPropagation(); onReview() }}
+              onFocus={() => setActionHovered(true)}
+              onBlur={() => setActionHovered(false)}
+            >
+              <Play className="size-4" /> Review
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Class actions" onClick={(event) => event.stopPropagation()}>
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{row.courseCode || 'Class'}</DropdownMenuLabel>
+                <DropdownMenuItem asChild><Link to={`/academics/classes/${row.id}`}><BookOpen className="size-4" /> Open class hub</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={onReview}><Play className="size-4" /> Review</DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to={`/academics/classes/${row.id}`}><Brain className="size-4" /> Quiz me</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to={`/academics/classes/${row.id}`}><CheckCircle2 className="size-4" /> Covered in lecture today</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to={`/academics/classes/${row.id}`}><NotebookText className="size-4" /> Generate study guide</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={onEdit}><Edit3 className="size-4" /> Class settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={onArchive}><Archive className="size-4" /> {row.status === 'archived' ? 'Restore' : 'Archive'}</DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash2 className="size-4" /> Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{card}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={onReview}><Play className="size-4" /> Review</ContextMenuItem>
+        <ContextMenuItem onSelect={onOpen}><BookOpen className="size-4" /> Open class hub</ContextMenuItem>
+        <ContextMenuItem onSelect={onEdit}><Edit3 className="size-4" /> Class settings</ContextMenuItem>
+        <ContextMenuItem onSelect={onArchive}><Archive className="size-4" /> {row.status === 'archived' ? 'Restore' : 'Archive'}</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+function AcademicsBento({
+  data,
+  classes,
+  persons,
+  courses,
+  onOpenClass,
+}: {
+  data: ClassCenterViewData
+  classes: ClassWorkspaceView[]
+  persons: Person[]
+  courses: Course[]
+  onOpenClass: (courseId: string) => void
+}) {
+  const activeIds = new Set(classes.map((row) => row.id))
+  const dueTopics = data.topics
+    .filter((topic) => activeIds.has(topic.courseId) && topic.fsrs.due <= Date.now())
+    .sort((a, b) => a.fsrs.due - b.fsrs.due)
+  const pending = data.assignments
+    .filter((assignment) =>
+      activeIds.has(assignment.courseId)
+      && assignment.dueDate
+      && !['submitted', 'graded', 'dropped'].includes(assignment.status)
+    )
+    .sort((a, b) => assignmentPriority(b, data) - assignmentPriority(a, data))
+
+  return (
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+      <ReviewQueuePanel data={data} topics={dueTopics} onOpenClass={onOpenClass} />
+      <WeakTopicsPanel data={data} classes={classes} onOpenClass={onOpenClass} />
+      <UpNextPanel data={data} assignments={pending} onOpenClass={onOpenClass} />
+      <GpaPanel courses={courses} currentTerm={classes[0]?.semester ?? ''} />
+      <ContactsPanel data={data} classes={classes} persons={persons} />
+      <UpcomingPanel data={data} assignments={pending} />
+      <HistoryPanel title="Mastery trend" kind="mastery" data={data} />
+      <HistoryPanel title="Consistency" kind="consistency" data={data} />
+    </div>
+  )
+}
+
+function BentoPanel({
+  span,
+  title,
+  icon: Icon,
+  actions,
+  children,
+}: {
+  span: 4 | 5 | 7
+  title: string
+  icon: LucideIcon
+  actions?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const spanClass = span === 7 ? 'lg:col-span-7' : span === 5 ? 'lg:col-span-5' : 'lg:col-span-4'
+  return (
+    <Card className={cn(spanClass, 'min-w-0')}>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2"><Icon className="size-5 text-primary" /> {title}</CardTitle>
+        </div>
+        {actions}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  )
+}
+
+function BentoEmpty({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm font-semibold text-muted-foreground">
+      {children}
+    </div>
+  )
+}
+
+function ReviewQueuePanel({
+  data,
+  topics,
+  onOpenClass,
+}: {
+  data: ClassCenterViewData
+  topics: Topic[]
+  onOpenClass: (courseId: string) => void
+}) {
+  const shown = topics.slice(0, 4)
+  const first = shown[0]
+  return (
+    <BentoPanel
+      span={7}
+      title="Today’s review queue"
+      icon={Timer}
+      actions={(
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" disabled={!first}>Plan 90 min</Button>
+          <Button size="sm" disabled={!first} onClick={() => first && onOpenClass(first.courseId)}><Play className="size-4" /> Start</Button>
+        </div>
+      )}
+    >
+      {!shown.length ? <BentoEmpty>Nothing is due in HQ today.</BentoEmpty> : (
+        <div className="space-y-2">
+          {shown.map((topic) => {
+            const retrievability = Math.round(topicRetrievability(topic.fsrs) * 100)
+            const questions = data.practiceQuestions.filter((question) => question.topicIds.includes(topic.id))
+            const missed = questions.filter((question) => question.isCorrect === false || question.selfGrade === 'missed').length
+            const why = questions.length
+              ? `Missed ${missed} of ${questions.length} recent questions · retrievability ~${retrievability}%`
+              : topic.fsrs.reps
+                ? `FSRS scheduled this review · retrievability ~${retrievability}%`
+                : `First retrieval is due · no review history yet`
+            return (
+              <button
+                key={topic.id}
+                className="grid w-full gap-2 rounded-xl border border-border bg-background p-3 text-left transition hover:border-primary/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_8rem_auto]"
+                onClick={() => onOpenClass(topic.courseId)}
+              >
+                <Badge variant="outline">{classLabel(topic.courseId, data)}</Badge>
+                <span className="min-w-0">
+                  <span className="block truncate font-bold">{topic.title}</span>
+                  <span className="block truncate text-xs font-semibold text-muted-foreground">{why}</span>
+                </span>
+                <span className="self-center">
+                  <Progress value={retrievability} />
+                  <span className="mt-1 block text-right text-[11px] font-bold tabular-nums text-muted-foreground">{retrievability}%</span>
+                </span>
+                <Badge variant={topic.status === 'weak' ? 'danger' : 'secondary'}>{statusLabel(topic.status)}</Badge>
+              </button>
+            )
+          })}
+          {topics.length > shown.length && <p className="text-right text-xs font-bold text-muted-foreground">+{topics.length - shown.length} more due</p>}
+        </div>
+      )}
+    </BentoPanel>
+  )
+}
+
+function WeakTopicsPanel({
+  data,
+  classes,
+  onOpenClass,
+}: {
+  data: ClassCenterViewData
+  classes: ClassWorkspaceView[]
+  onOpenClass: (courseId: string) => void
+}) {
+  const [scope, setScope] = useState<'exam' | 'all'>('exam')
+  const activeIds = new Set(classes.map((row) => row.id))
+  const exams = data.assignments
+    .filter((assignment) => activeIds.has(assignment.courseId) && assignment.type === 'exam' && assignment.dueDate)
+    .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+  const nextExam = exams[0]
+  const examTopicIds = nextExam ? [...new Set([...(nextExam.coveredTopicIds ?? []), ...nextExam.linkedTopicIds])] : []
+  const examScopeAvailable = Boolean(nextExam && examTopicIds.length)
+  const effectiveScope = scope === 'exam' && examScopeAvailable ? 'exam' : 'all'
+  const topics = data.topics
+    .filter((topic) => activeIds.has(topic.courseId))
+    .filter((topic) => effectiveScope === 'all' || examTopicIds.includes(topic.id))
+    .filter((topic) => topic.status === 'weak' || topicRetrievability(topic.fsrs) < 0.7)
+    .sort((a, b) => topicRetrievability(a.fsrs) - topicRetrievability(b.fsrs))
+    .slice(0, 5)
+  const readyInScope = data.topics.filter((topic) =>
+    (effectiveScope === 'all' ? activeIds.has(topic.courseId) : examTopicIds.includes(topic.id)) && topic.status === 'ready'
+  ).length
+  const totalInScope = effectiveScope === 'all'
+    ? data.topics.filter((topic) => activeIds.has(topic.courseId)).length
+    : examTopicIds.length
+
+  return (
+    <BentoPanel
+      span={5}
+      title="Where you’re weak"
+      icon={Target}
+      actions={(
+        <ToggleGroup
+          type="single"
+          value={effectiveScope}
+          onValueChange={(value) => value && setScope(value as 'exam' | 'all')}
+          variant="outline"
+          size="sm"
+        >
+          <ToggleGroupItem value="exam" disabled={!examScopeAvailable}>Next exam</ToggleGroupItem>
+          <ToggleGroupItem value="all">All topics</ToggleGroupItem>
+        </ToggleGroup>
+      )}
+    >
+      {effectiveScope === 'exam' && nextExam && (
+        <div className="mb-3 rounded-xl bg-muted/35 p-3">
+          <p className="font-display text-xl font-bold tabular-nums">{nextExam.dueDate ? daysUntil(nextExam.dueDate) : 'Date TBD'}</p>
+          <p className="text-sm font-bold">{classLabel(nextExam.courseId, data)} · {nextExam.title}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{examTopicIds.length} topics in scope</p>
+        </div>
+      )}
+      {!examScopeAvailable && scope === 'exam' && (
+        <p className="mb-3 text-xs font-semibold text-muted-foreground">No exam scope is available, so all weak topics are shown.</p>
+      )}
+      {!topics.length ? <BentoEmpty>No genuinely weak topics in this scope.</BentoEmpty> : (
+        <div className="space-y-2">
+          {topics.map((topic) => {
+            const strength = Math.round(topicRetrievability(topic.fsrs) * 100)
+            return (
+              <button key={topic.id} className="w-full rounded-xl bg-muted/25 p-3 text-left hover:bg-muted/45" onClick={() => onOpenClass(topic.courseId)}>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-bold">{topic.title}</span>
+                  <span className="text-xs font-bold tabular-nums text-muted-foreground">{strength}%</span>
+                </span>
+                <span className="mt-1 block text-xs font-semibold text-muted-foreground">{classLabel(topic.courseId, data)}{topic.unit ? ` · ${topic.unit}` : ''}</span>
+                <Progress className="mt-2" value={strength} />
+              </button>
+            )
+          })}
+          <div className="flex items-center justify-between pt-1 text-xs font-bold text-muted-foreground">
+            <span>{readyInScope} of {totalInScope} exam-ready</span>
+            <Button variant="link" size="sm" className="h-auto p-0" onClick={() => topics[0] && onOpenClass(topics[0].courseId)}>Review these →</Button>
+          </div>
+        </div>
+      )}
+    </BentoPanel>
+  )
+}
+
+function UpNextPanel({
+  data,
+  assignments,
+  onOpenClass,
+}: {
+  data: ClassCenterViewData
+  assignments: ClassAssignment[]
+  onOpenClass: (courseId: string) => void
+}) {
+  const item = assignments[0]
+  if (!item) return (
+    <BentoPanel span={7} title="Up next" icon={CalendarClock}>
+      <BentoEmpty>No major dated work is pending.</BentoEmpty>
+    </BentoPanel>
+  )
+  const topicIds = [...new Set([...(item.coveredTopicIds ?? []), ...item.linkedTopicIds])]
+  const topics = data.topics.filter((topic) => topicIds.includes(topic.id))
+  const ready = topics.filter((topic) => topic.status === 'ready').length
+  const readiness = topics.length ? Math.round((ready / topics.length) * 100) : 0
+  const weak = topics
+    .filter((topic) => topic.status === 'weak' || topicRetrievability(topic.fsrs) < 0.7)
+    .sort((a, b) => topicRetrievability(a.fsrs) - topicRetrievability(b.fsrs))
+    .slice(0, 2)
+  return (
+    <BentoPanel
+      span={7}
+      title="Up next"
+      icon={TrendingUp}
+      actions={<Button size="sm" onClick={() => onOpenClass(item.courseId)}>Build {item.type === 'exam' ? 'exam ' : ''}plan</Button>}
+    >
+      <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <div>
+          <p className="font-display text-4xl font-bold tabular-nums">{item.dueDate ? daysUntil(item.dueDate) : 'TBD'}</p>
+          <Badge className="mt-2" variant="outline">{classLabel(item.courseId, data)}</Badge>
         </div>
         <div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${stats.revision}%` }} />
+          <h3 className="font-display text-xl font-bold">{item.title}</h3>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            {item.weight != null ? `Worth ${item.weight}% of the course grade` : 'Grade weight not available'}
+          </p>
+          <div className="mt-4">
+            <div className="mb-1 flex justify-between text-xs font-bold text-muted-foreground">
+              <span>Exam-ready</span><span className="tabular-nums">{readiness}%</span>
+            </div>
+            <Progress value={readiness} />
+            {!data.reviewEvents.length && <p className="mt-1 text-xs font-semibold text-muted-foreground">Projection unavailable · not enough review history yet</p>}
           </div>
-          <p className="mt-1 text-right text-[11px] font-bold text-muted-foreground">{stats.revision}% revised</p>
+          {!!weak.length && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {weak.map((topic) => <Badge key={topic.id} variant="danger">{topic.title}</Badge>)}
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap gap-1.5 text-xs font-bold text-muted-foreground">
-          {stats.weakCount > 0 && <span className="rounded-full bg-destructive/12 px-2 py-0.5 text-destructive">{stats.weakCount} weak</span>}
-          {stats.notesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.notesCount} notes</span>}
-          {stats.filesCount > 0 && <span className="rounded-full bg-muted px-2 py-0.5">{stats.filesCount} files</span>}
-          {!stats.weakCount && !stats.notesCount && !stats.filesCount && <span className="rounded-full bg-muted px-2 py-0.5">Ready to fill</span>}
+      </div>
+      {!!assignments.slice(1, 4).length && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {assignments.slice(1, 4).map((next) => (
+            <Badge key={next.id} variant="secondary">{next.title} · {next.dueDate ? daysUntil(next.dueDate) : 'TBD'}</Badge>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      )}
+      {data.reviewEvents.length >= 3 && weak.length > 0 && (
+        <PaceLine text={reviewPaceText(data, weak.length)} />
+      )}
+    </BentoPanel>
   )
 }
 
-function ClassMetaChip({ icon: Icon, label, className }: { icon: LucideIcon; label: string; className?: string }) {
+function PaceLine({ text }: { text: string }) {
+  const [open, setOpen] = useState(true)
+  return open ? (
+    <div className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold">
+      <span>{text}</span>
+      <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => setOpen(false)}>Dismiss</Button>
+    </div>
+  ) : (
+    <Button variant="outline" size="sm" className="mt-4" onClick={() => setOpen(true)}>Show projection</Button>
+  )
+}
+
+function reviewPaceText(data: ClassCenterViewData, weakCount: number) {
+  const newest = Math.max(...data.reviewEvents.map((event) => event.timestamp))
+  const oldest = Math.min(...data.reviewEvents.map((event) => event.timestamp))
+  const elapsedDays = Math.max(1, (newest - oldest) / 86400000)
+  const reviewsPerDay = data.reviewEvents.length / elapsedDays
+  const daysNeeded = Math.max(1, Math.ceil(weakCount / reviewsPerDay))
+  const projected = new Date(Date.now() + daysNeeded * 86400000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return `At ${reviewsPerDay.toFixed(1)} reviews/day → these weak topics get one retrieval by ${projected}.`
+}
+
+function GpaPanel({ courses, currentTerm }: { courses: Course[]; currentTerm: string }) {
+  const overall = gpaStats(courses)
+  const term = gpaStats(courses.filter((course) => course.term === currentTerm))
+  const graded = courses.filter((course) => GRADE_POINTS[course.grade] != null && course.credits > 0)
+  const maxCredits = Math.max(1, ...graded.map((course) => course.credits))
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-muted/45 px-2 py-1 text-[11px] font-bold text-muted-foreground', className)} title={label}>
-      <Icon className="size-3 shrink-0 text-primary/75" aria-hidden="true" />
-      <span className="truncate">{label}</span>
-    </span>
+    <BentoPanel
+      span={5}
+      title="GPA"
+      icon={BarChart3}
+      actions={<Button asChild variant="link" size="sm"><Link to="/academics?mode=planning&tab=planner">What-if →</Link></Button>}
+    >
+      <div className="grid grid-cols-3 gap-2">
+        <Metric label="Term" value={fmtGpa(term.cum)} />
+        <Metric label="Cumulative" value={fmtGpa(overall.cum)} />
+        <Metric label="Science" value={fmtGpa(overall.science)} />
+      </div>
+      <BentoEmpty>Not enough grade history yet for an honest trend or projection.</BentoEmpty>
+      {!!graded.length && (
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Contribution · dragging ← → lifting</p>
+          {graded.slice(0, 4).map((course) => (
+            <div key={course.id} className="grid grid-cols-[5rem_minmax(0,1fr)_2rem] items-center gap-2 text-xs font-bold">
+              <span className="truncate">{course.code}</span>
+              <Progress value={(course.credits / maxCredits) * (GRADE_POINTS[course.grade] / 4) * 100} />
+              <span className="text-right tabular-nums text-muted-foreground">{course.grade}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </BentoPanel>
   )
 }
 
-function AcrossClassesStrip({ data, classes }: { data: ClassCenterViewData; classes: ClassWorkspaceView[] }) {
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-muted/30 p-3 text-center">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-2xl font-bold tabular-nums">{value}</p>
+    </div>
+  )
+}
+
+function ContactsPanel({
+  data,
+  classes,
+  persons,
+}: {
+  data: ClassCenterViewData
+  classes: ClassWorkspaceView[]
+  persons: Person[]
+}) {
   const activeIds = new Set(classes.map((row) => row.id))
-  const upcoming = data.assignments
-    .filter((item) => activeIds.has(item.courseId) && item.status !== 'submitted' && item.status !== 'graded' && item.dueDate)
-    .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
-    .slice(0, 5)
-  const revision = data.topics
-    .filter((topic) => activeIds.has(topic.courseId) && ['weak', 'reviewing', 'seen'].includes(topic.status))
-    .slice(0, 5)
-  const weak = data.weakAreas.filter((item) => activeIds.has(item.courseId) && item.status !== 'resolved').sort((a, b) => b.severity - a.severity).slice(0, 5)
-  const reviewItems = [
-    ...weak.map((item) => ({ id: item.id, label: item.label, courseId: item.courseId, status: item.status })),
-    ...revision.map((item) => ({ id: item.id, label: item.title, courseId: item.courseId, status: item.status })),
-  ].slice(0, 4)
+  const personById = new Map(persons.map((person) => [person.id, person]))
+  const rows = data.contacts
+    .filter((contact) => activeIds.has(contact.courseId) && contact.personId)
+    .flatMap((contact) => {
+      const person = personById.get(contact.personId!)
+      return person ? [{ contact, person }] : []
+    })
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="space-y-4 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-lg font-bold">Across your classes</h3>
-            <p className="text-xs font-semibold text-muted-foreground">Deadlines and review targets from active courses.</p>
-          </div>
-          <Button asChild variant="link" className="h-auto px-0 text-primary">
-            <Link to="/academics?tab=assignments">Full assignments view →</Link>
-          </Button>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[0.95fr_1.15fr]">
-          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
-                <CalendarDays className="size-4 text-primary" /> Due next
-              </p>
-              <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-bold text-muted-foreground">{upcoming.length} active</span>
-            </div>
-            <div className="space-y-1.5">
-              {upcoming.slice(0, 3).map((item) => (
-                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-card px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold">{item.title}</p>
-                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.courseId, data)}</p>
-                  </div>
-                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-extrabold text-destructive">
-                    {item.dueDate ? daysUntil(item.dueDate) : 'TBD'}
-                  </span>
+    <BentoPanel span={5} title="Contacts" icon={Users}>
+      {!rows.length ? <BentoEmpty>No canonical contacts are linked for this term.</BentoEmpty> : (
+        <div className="space-y-1">
+          {rows.map(({ contact, person }, index) => (
+            <div key={contact.id}>
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-2">
+                <Avatar>
+                  <AvatarFallback>{initials(person.name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate font-bold">{person.name}</p>
+                  <p className="truncate text-xs font-semibold text-muted-foreground">
+                    {classLabel(contact.courseId, data)} · {statusLabel(contact.role)}{contact.location ? ` · ${contact.location}` : ''}
+                  </p>
+                  {(contact.officeHours || /potential letter|letter requested|meet before/i.test(contact.notes ?? '')) && (
+                    <Badge className="mt-1" variant="outline">
+                      {contact.officeHours || contact.notes?.match(/potential letter|letter requested|meet before[^.]+/i)?.[0]}
+                    </Badge>
+                  )}
                 </div>
-              ))}
-              {upcoming.length === 0 && <p className="rounded-xl bg-card px-3 py-3 text-sm font-semibold text-muted-foreground">No dated assignments yet.</p>}
+                <Button asChild size="icon" variant="ghost" disabled={!person.email} aria-label={`Email ${person.name}`}>
+                  <a href={person.email ? `mailto:${person.email}` : undefined}><Mail className="size-4" /></a>
+                </Button>
+              </div>
+              {index < rows.length - 1 && <Separator />}
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-border/70 bg-muted/25 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
-                <Target className="size-4 text-primary" /> Review queue
-              </p>
-              <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Weakest first</span>
-            </div>
-            <div className="grid gap-1.5">
-              {reviewItems.map((item) => (
-                <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl bg-card px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold">{item.label}</p>
-                    <p className="truncate text-xs font-semibold text-muted-foreground">{classLabel(item.courseId, data)}</p>
-                  </div>
-                  <Badge variant={String(item.status).includes('weak') || item.status === 'active' ? 'danger' : 'warning'}>{String(item.status).replace(/-/g, ' ')}</Badge>
-                  <Link to={`/academics/classes/${item.courseId}`} className="text-xs font-extrabold text-primary">Review →</Link>
-                </div>
-              ))}
-              {reviewItems.length === 0 && <p className="rounded-xl bg-card px-3 py-3 text-sm font-semibold text-muted-foreground">No review targets yet.</p>}
-            </div>
-          </section>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </BentoPanel>
   )
+}
+
+function UpcomingPanel({ data, assignments }: { data: ClassCenterViewData; assignments: ClassAssignment[] }) {
+  const items = [...assignments]
+    .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0) || String(a.dueDate).localeCompare(String(b.dueDate)))
+    .slice(0, 5)
+  return (
+    <BentoPanel span={4} title="Upcoming" icon={CalendarDays}>
+      {!items.length ? <BentoEmpty>No important dated work is pending.</BentoEmpty> : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className={cn('rounded-xl border border-border bg-background p-3', (item.weight ?? 0) >= 20 && 'border-l-4 border-l-primary bg-primary/5')}>
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-bold">{item.title}</span>
+                <span className="whitespace-nowrap text-xs font-bold tabular-nums text-muted-foreground">{item.dueDate ? daysUntil(item.dueDate) : 'TBD'}</span>
+              </div>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">{classLabel(item.courseId, data)}{item.weight != null ? ` · ${item.weight}%` : ''}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </BentoPanel>
+  )
+}
+
+function HistoryPanel({
+  title,
+  kind,
+  data,
+}: {
+  title: string
+  kind: 'mastery' | 'consistency'
+  data: ClassCenterViewData
+}) {
+  const events = data.reviewEvents
+  const enough = events.length >= 3
+  const days = [...new Set(events.map((event) => new Date(event.timestamp).toISOString().slice(0, 10)))].sort().slice(-14)
+  return (
+    <BentoPanel span={4} title={title} icon={kind === 'mastery' ? TrendingUp : CalendarClock}>
+      {!enough ? <BentoEmpty>Not enough history yet. Reviews completed in D5 will build this view.</BentoEmpty> : kind === 'consistency' ? (
+        <div>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Reviews per day — not mastery</p>
+          <div className="grid grid-cols-7 gap-1.5">
+            {days.map((day) => {
+              const count = events.filter((event) => new Date(event.timestamp).toISOString().slice(0, 10) === day).length
+              return <div key={day} className="aspect-square rounded-md bg-primary/20" style={{ opacity: Math.min(1, 0.25 + count * 0.2) }} title={`${day}: ${count} reviews`} />
+            })}
+          </div>
+        </div>
+      ) : (
+        <BentoEmpty>Review events exist, but topic-ready history is not yet sufficient for an honest trend.</BentoEmpty>
+      )}
+    </BentoPanel>
+  )
+}
+
+function assignmentPriority(assignment: ClassAssignment, data: ClassCenterViewData) {
+  if (!assignment.dueDate) return 0
+  const days = Math.max(1, Math.ceil((new Date(`${assignment.dueDate}T00:00:00`).getTime() - Date.now()) / 86400000))
+  const topicIds = [...new Set([...(assignment.coveredTopicIds ?? []), ...assignment.linkedTopicIds])]
+  const topics = data.topics.filter((topic) => topicIds.includes(topic.id))
+  const readiness = topics.length ? topics.filter((topic) => topic.status === 'ready').length / topics.length : 0
+  return ((assignment.weight ?? 1) * (1 + (1 - readiness))) / days
+}
+
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || '?'
 }
 
 function ClassWorkspace({
@@ -1711,6 +2265,7 @@ function TopicRow({ topic, current, data, mutate }: { topic: Topic; current: boo
 
 function classStats(courseId: string, data: ClassCenterViewData) {
   const topics = data.topics.filter((item) => item.courseId === courseId)
+  const readyCount = topics.filter((topic) => topic.status === 'ready').length
   const masteredWeight = topics.reduce((sum, topic) => {
     const value = topicStatusWeight(topic.status)
     return sum + value
@@ -1720,11 +2275,28 @@ function classStats(courseId: string, data: ClassCenterViewData) {
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
   return {
     revision: topics.length ? Math.round((masteredWeight / topics.length) * 100) : 0,
+    topicCount: topics.length,
+    readyCount,
+    readyPercent: topics.length ? Math.round((readyCount / topics.length) * 100) : 0,
     weakCount: data.weakAreas.filter((item) => item.courseId === courseId && item.status !== 'resolved').length,
     notesCount: data.notes.filter((item) => item.courseId === courseId).length,
     filesCount: data.files.filter((item) => item.courseId === courseId).length,
     nextDeadline: upcoming[0],
   }
+}
+
+function coursePercent(courseId: string, data: ClassCenterViewData) {
+  const graded = data.assignments.filter((assignment) =>
+    assignment.courseId === courseId
+    && assignment.status === 'graded'
+    && assignment.pointsEarned != null
+    && assignment.pointsPossible != null
+    && assignment.pointsPossible > 0
+  )
+  if (!graded.length) return null
+  const earned = graded.reduce((sum, assignment) => sum + (assignment.pointsEarned ?? 0), 0)
+  const possible = graded.reduce((sum, assignment) => sum + (assignment.pointsPossible ?? 0), 0)
+  return possible ? Math.round((earned / possible) * 1000) / 10 : null
 }
 
 function normalizedTopicStatus(status: TopicStatus) {
@@ -1808,14 +2380,6 @@ function classLabel(courseId: string, data: ClassCenterViewData) {
 
 function compactMeeting(row: ClassWorkspaceView) {
   return [row.meetingDays, row.meetingTime, row.location].filter(Boolean).join(' · ')
-}
-
-function shortMeetingTime(value?: string) {
-  if (!value) return ''
-  return value
-    .replace(/\s+/g, ' ')
-    .replace(/:00(?=\s*[AP]M)/g, '')
-    .replace(/\s*-\s*/g, '-')
 }
 
 function daysUntil(date: string) {

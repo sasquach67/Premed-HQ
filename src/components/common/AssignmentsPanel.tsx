@@ -1,535 +1,1088 @@
-import { useMemo, useState } from 'react'
 import {
-  Archive, Check, CalendarDays, ChevronDown, ChevronLeft, ChevronRight,
-  MoreHorizontal, Plus, Search, Trash2, X,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type FormEvent,
+} from 'react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { AnimatePresence, m, useReducedMotion } from 'motion/react'
+import { useNavigate } from 'react-router-dom'
+import {
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Copy,
+  Download,
+  FileUp,
+  List,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Star,
+  TableProperties,
+  Trash2,
 } from 'lucide-react'
-import { useStore } from '@/store/store'
-import type {
-  AcademicCourseOption, AcademicTagColor, AcademicTypeOption, TaskItem,
-} from '@/lib/types'
-import { uid } from '@/lib/id'
-import { daysUntil } from '@/lib/date'
-import { TrackerTable, type ColumnDef } from './TrackerTable'
-import { EmptyState } from './EmptyState'
-import { InfoTip } from './InfoTip'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar, CalendarDayButton } from '@/components/ui/calendar'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { DateField } from '@/components/common/DateField'
+import { MascotNote } from '@/components/common/MascotNote'
+import { PaceProjectionLine } from '@/components/common/PaceProjectionLine'
+import { CollectionState, type CollectionLoadState } from '@/components/common/CollectionState'
+import { TrackerTable, type ColumnDef } from '@/components/common/TrackerTable'
+import { useToast } from '@/components/common/useToast'
+import { uid } from '@/lib/id'
+import { MOTION_DISTANCE, MOTION_TRANSITION } from '@/lib/motion'
+import type {
+  ClassAssignment,
+  ClassAssignmentStatus,
+  ClassAssignmentType,
+  Course,
+  ListViewState,
+  Topic,
+} from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { useStore } from '@/store/store'
+import { assignmentBucket, workloadLabel, type AssignmentBucketId } from '@/components/common/assignmentsLogic'
 
-const PROGRESS_DOTS = {
-  'Not started': 'bg-destructive',
-  'Working on': 'bg-warning',
-  Finished: 'bg-success',
+type AssignmentView = 'agenda' | 'weekly' | 'calendar'
+type BucketId = AssignmentBucketId
+
+const LIST_ID = 'academics.assignments'
+const COMPLETED = new Set<ClassAssignmentStatus>(['submitted', 'graded'])
+const ASSIGNMENT_TYPES: ClassAssignmentType[] = ['homework', 'quiz', 'exam', 'project', 'reading', 'lab', 'discussion', 'other']
+const BUCKETS: Array<{ id: BucketId; label: string; capped: boolean }> = [
+  { id: 'overdue', label: 'Overdue', capped: false },
+  { id: 'today', label: 'Today', capped: false },
+  { id: 'this-week', label: 'This week', capped: true },
+  { id: 'next-week', label: 'Next week', capped: true },
+  { id: 'later', label: 'Later', capped: true },
+  { id: 'completed', label: 'Completed', capped: false },
+]
+const COURSE_COLORS = ['#65b7e8', '#70bd83', '#9b7be8', '#e9a85f', '#e27f74', '#67bdb2', '#cf79ae']
+
+function localDate(iso?: string) {
+  if (!iso) return null
+  const value = new Date(`${iso.slice(0, 10)}T12:00:00`)
+  return Number.isNaN(value.getTime()) ? null : value
 }
 
-const TAG_COLORS: AcademicTagColor[] = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red']
-
-const TAG_COLOR_CLASS: Record<AcademicTagColor, string> = {
-  gray: 'border-stone-300/70 bg-stone-100 text-stone-700 dark:border-stone-600/70 dark:bg-stone-800/80 dark:text-stone-200',
-  brown: 'border-amber-700/20 bg-amber-100 text-amber-900 dark:border-amber-500/30 dark:bg-amber-900/35 dark:text-amber-100',
-  orange: 'border-orange-400/35 bg-orange-100 text-orange-800 dark:border-orange-400/35 dark:bg-orange-950/45 dark:text-orange-100',
-  yellow: 'border-yellow-400/40 bg-yellow-100 text-yellow-900 dark:border-yellow-300/30 dark:bg-yellow-950/40 dark:text-yellow-100',
-  green: 'border-emerald-400/35 bg-emerald-100 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-950/45 dark:text-emerald-100',
-  blue: 'border-sky-400/35 bg-sky-100 text-sky-800 dark:border-sky-400/30 dark:bg-sky-950/45 dark:text-sky-100',
-  purple: 'border-violet-400/35 bg-violet-100 text-violet-800 dark:border-violet-400/30 dark:bg-violet-950/45 dark:text-violet-100',
-  pink: 'border-pink-400/35 bg-pink-100 text-pink-800 dark:border-pink-400/30 dark:bg-pink-950/45 dark:text-pink-100',
-  red: 'border-red-400/35 bg-red-100 text-red-800 dark:border-red-400/30 dark:bg-red-950/45 dark:text-red-100',
+function isoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-type TagOption = AcademicCourseOption | AcademicTypeOption
-type TagKind = 'course' | 'type'
-
-function slug(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tag'
+function startOfDay(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
-function nextTagColor(count: number): AcademicTagColor {
-  return TAG_COLORS[count % TAG_COLORS.length]
+function addDays(date: Date, amount: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + amount)
+  return next
 }
 
-function normalize(value?: string) {
-  return (value ?? '').trim().toLowerCase()
+function startOfWeek(date: Date) {
+  return addDays(startOfDay(date), -date.getDay())
 }
 
-function optionLabel(option?: TagOption | null) {
-  return option?.name?.trim() || ''
+function courseColor(courseId: string, courses: Course[]) {
+  const index = Math.max(0, courses.findIndex((course) => course.id === courseId))
+  return COURSE_COLORS[index % COURSE_COLORS.length]
 }
 
-function compactCourseLabel(label: string) {
-  return label.match(/^[A-Z]{2,6}\s*\d{3}[A-Z]?/i)?.[0].toUpperCase() ?? label
+function courseLabel(courseId: string, courses: Course[]) {
+  return courses.find((course) => course.id === courseId)?.code || 'Unknown class'
 }
 
-function titleCaseLabel(label: string) {
-  return label.replace(/\S+/g, (word) => word[0]?.toUpperCase() + word.slice(1).toLowerCase())
+function relativeDue(iso?: string) {
+  const due = localDate(iso)
+  if (!due) return { label: 'No date', variant: 'muted' as const }
+  const days = Math.round((due.getTime() - startOfDay().getTime()) / 86_400_000)
+  if (days < 0) return { label: `${Math.abs(days)}d overdue`, variant: 'danger' as const }
+  if (days === 0) return { label: 'Today', variant: 'warning' as const }
+  if (days === 1) return { label: 'Tomorrow', variant: 'warning' as const }
+  if (days < 7) return { label: due.toLocaleDateString(undefined, { weekday: 'long' }), variant: 'warning' as const }
+  return { label: `in ${days} days`, variant: 'muted' as const }
 }
 
-function typeId(name: string) {
-  return `type-${slug(name)}`
+function exactDue(iso?: string) {
+  return localDate(iso)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) ?? 'Unscheduled'
 }
 
-function courseId(name: string) {
-  return `course-${slug(name)}`
+function nextOrder(assignments: ClassAssignment[]) {
+  return assignments.reduce((max, item) => Math.max(max, item.order), -1) + 1
 }
 
-function daysLeftLabel(iso?: string) {
-  const n = daysUntil(iso)
-  if (n == null) return { label: 'No date', tone: 'muted' as const }
-  if (n === 0) return { label: 'Today', tone: 'urgent' as const }
-  if (n === 1) return { label: 'Tomorrow', tone: 'soon' as const }
-  if (n < 0) return { label: `${Math.abs(n)} days late`, tone: 'late' as const }
-  return { label: `${n} days`, tone: 'normal' as const }
+function preferenceBase(current?: ListViewState): ListViewState {
+  return current ?? { filters: {}, visibleColumns: [], density: 'comfortable', view: 'agenda' }
 }
 
-function assignmentColumns({
-  courseOptions, typeOptions, usedCourseIds, usedTypeIds,
+export function AssignmentCreateDialog({
+  open,
+  onOpenChange,
+  assignment,
 }: {
-  courseOptions: AcademicCourseOption[]
-  typeOptions: AcademicTypeOption[]
-  usedCourseIds: Set<string>
-  usedTypeIds: Set<string>
-}): ColumnDef[] {
-  return [
-  {
-    key: 'courseId',
-    header: 'Course',
-    type: 'custom',
-    width: '115px',
-    render: ({ row }) => {
-      const task = row as TaskItem
-      return <AcademicTagSelect kind="course" task={task} options={courseOptions} usedIds={usedCourseIds} />
-    },
-  },
-  { key: 'title', header: 'Assignment', type: 'text', width: '220px', placeholder: 'What’s due', wrap: true },
-  {
-    key: 'typeId',
-    header: 'Type',
-    type: 'custom',
-    width: '140px',
-    render: ({ row }) => {
-      const task = row as TaskItem
-      return <AcademicTagSelect kind="type" task={task} options={typeOptions} usedIds={usedTypeIds} />
-    },
-  },
-  { key: 'deadline', header: 'Deadline', type: 'date', width: '140px' },
-  {
-    key: 'dueIn',
-    header: 'Days left',
-    type: 'read',
-    width: '110px',
-    read: (row) => {
-      const due = daysLeftLabel((row as TaskItem).deadline)
-      return (
-        <span className={cn(
-          'inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-extrabold',
-          due.tone === 'late' && 'bg-destructive/12 text-destructive',
-          due.tone === 'urgent' && 'bg-warning/20 text-warning-foreground',
-          due.tone === 'soon' && 'bg-primary/12 text-primary',
-          due.tone === 'normal' && 'bg-muted text-foreground/75',
-          due.tone === 'muted' && 'text-muted-foreground'
-        )}>{due.label}</span>
-      )
-    },
-  },
-  { key: 'progress', header: 'Progress', type: 'select', width: '95px', options: ['Not started', 'Working on', 'Finished'], optionDots: PROGRESS_DOTS, selectDisplay: 'dot' },
-  { key: 'notes', header: 'Description', type: 'longtext', width: '260px', placeholder: 'Notes…', wrap: true },
-  { key: 'fileUrl', header: 'File', type: 'link', width: '110px' },
-  ]
-}
-
-export function addTask(course?: string) {
-  useStore.getState().addItem('tasks', {
-    id: uid(), title: '', course, type: 'assignment', typeId: typeId('assignment'), progress: 'Not started',
-    kanban: 'todo', archived: false, milestone: false, order: 0,
-  } as TaskItem)
-}
-
-/** The assignment tracker + a calendar synced to it (Notion model).
- *  Used as Academics' main dashboard and Timeline's Assignments tab. */
-export function AssignmentsPanel() {
-  const tasks = useStore((s) => s.tasks)
-  const academics = useStore((s) => s.academics)
-  const active = tasks.filter((t) => !t.archived && !t.milestone)
-  const usedCourseIds = useMemo(() => new Set(tasks.map((task) => task.courseId).filter(Boolean) as string[]), [tasks])
-  const usedTypeIds = useMemo(() => new Set(tasks.map((task) => task.typeId).filter(Boolean) as string[]), [tasks])
-  const courseOptions = academics.courseOptions.filter((option) => !option.archived || usedCourseIds.has(option.id))
-  const typeOptions = academics.assignmentTypeOptions.filter((option) => !option.archived || usedTypeIds.has(option.id))
-  const columns = useMemo(
-    () => assignmentColumns({ courseOptions, typeOptions, usedCourseIds, usedTypeIds }),
-    [courseOptions, typeOptions, usedCourseIds, usedTypeIds]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  assignment?: ClassAssignment | null
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{assignment ? 'Edit assignment' : 'Add assignment'}</DialogTitle>
+          <DialogDescription>Keep the first entry lightweight. A class and title are required.</DialogDescription>
+        </DialogHeader>
+        {open && <AssignmentForm key={assignment?.id ?? 'new'} assignment={assignment} onDone={() => onOpenChange(false)} />}
+      </DialogContent>
+    </Dialog>
   )
+}
+
+function AssignmentForm({
+  assignment,
+  onDone,
+}: {
+  assignment?: ClassAssignment | null
+  onDone: () => void
+}) {
+  const courses = useStore((state) => state.courses)
+  const assignments = useStore((state) => state.academics.classCenter.assignments)
+  const update = useStore((state) => state.update)
+  const toast = useToast()
+  const [title, setTitle] = useState(assignment?.title ?? '')
+  const [courseId, setCourseId] = useState(assignment?.courseId ?? '')
+  const [type, setType] = useState<ClassAssignmentType>(assignment?.type ?? 'homework')
+  const [dueDate, setDueDate] = useState(assignment?.dueDate?.slice(0, 10) ?? '')
+  const [weight, setWeight] = useState(assignment?.weight == null ? '' : String(assignment.weight))
+  const [pointsPossible, setPointsPossible] = useState(assignment?.pointsPossible == null ? '' : String(assignment.pointsPossible))
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!title.trim() || !courseId) return
+    const now = Date.now()
+    if (assignment) {
+      const previous = structuredClone(assignment)
+      update((draft) => {
+        const target = draft.academics.classCenter.assignments.find((item) => item.id === assignment.id)
+        if (!target) return
+        Object.assign(target, {
+          title: title.trim(),
+          courseId,
+          type,
+          dueDate: dueDate || undefined,
+          weight: weight === '' ? undefined : Number(weight),
+          pointsPossible: pointsPossible === '' ? undefined : Number(pointsPossible),
+          updatedAt: now,
+        })
+      })
+      toast({
+        title: 'Assignment updated',
+        tone: 'success',
+        onUndo: () => update((draft) => {
+          const index = draft.academics.classCenter.assignments.findIndex((item) => item.id === previous.id)
+          if (index >= 0) draft.academics.classCenter.assignments[index] = previous
+        }),
+      })
+    } else {
+      const created: ClassAssignment = {
+        id: uid(),
+        courseId,
+        title: title.trim(),
+        type,
+        dueDate: dueDate || undefined,
+        status: 'not-started',
+        weight: weight === '' ? undefined : Number(weight),
+        pointsPossible: pointsPossible === '' ? undefined : Number(pointsPossible),
+        linkedTopicIds: [],
+        linkedFileIds: [],
+        createdAt: now,
+        updatedAt: now,
+        order: nextOrder(assignments),
+      }
+      update((draft) => { draft.academics.classCenter.assignments.push(created) })
+      toast({
+        title: 'Assignment created',
+        tone: 'success',
+        onUndo: () => update((draft) => {
+          draft.academics.classCenter.assignments = draft.academics.classCenter.assignments.filter((item) => item.id !== created.id)
+        }),
+      })
+    }
+    onDone()
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={submit}>
+          <div className="space-y-1.5">
+            <Label htmlFor="assignment-title">Title</Label>
+            <Input id="assignment-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} required />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Class</Label>
+              <Select value={courseId} onValueChange={setCourseId} required>
+                <SelectTrigger aria-label="Class"><SelectValue placeholder="Choose a class" /></SelectTrigger>
+                <SelectContent>
+                  {courses.map((course) => <SelectItem key={course.id} value={course.id}>{course.code} · {course.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Type</Label>
+              <Select value={type} onValueChange={(value) => setType(value as ClassAssignmentType)}>
+                <SelectTrigger aria-label="Assignment type"><SelectValue /></SelectTrigger>
+                <SelectContent>{ASSIGNMENT_TYPES.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Due date</Label>
+            <DateField value={dueDate} onChange={setDueDate} ariaLabel="Assignment due date" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="assignment-weight">Weight (%)</Label>
+              <Input id="assignment-weight" type="number" min="0" max="100" step="0.1" value={weight} onChange={(event) => setWeight(event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="assignment-points">Points possible</Label>
+              <Input id="assignment-points" type="number" min="0" step="0.1" value={pointsPossible} onChange={(event) => setPointsPossible(event.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onDone}>Cancel</Button>
+            <Button type="submit" disabled={!title.trim() || !courseId}>{assignment ? 'Save changes' : 'Add assignment'}</Button>
+          </DialogFooter>
+    </form>
+  )
+}
+
+export function AssignmentsPanel({
+  onRequestAdd,
+  state = 'ready',
+  errorMessage,
+  onRetry,
+}: {
+  onRequestAdd?: () => void
+  state?: CollectionLoadState
+  errorMessage?: string
+  onRetry?: () => void
+}) {
+  const assignments = useStore((store) => store.academics.classCenter.assignments)
+  const courses = useStore((store) => store.courses)
+  const topics = useStore((store) => store.academics.classCenter.topics)
+  const preference = useStore((store) => store.settings.listPreferences[LIST_ID])
+  const update = useStore((store) => store.update)
+  const toast = useToast()
+  const navigate = useNavigate()
+  const reduceMotion = useReducedMotion()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editing, setEditing] = useState<ClassAssignment | null>(null)
+  const [tableOpen, setTableOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [courseFilter, setCourseFilter] = useState('all')
+  const [expandedBuckets, setExpandedBuckets] = useState<Set<BucketId>>(() => new Set())
+  const [weekCursor, setWeekCursor] = useState(() => startOfWeek(new Date()))
+  const [calendarCursor, setCalendarCursor] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [selectedDay, setSelectedDay] = useState(() => startOfDay())
+
+  const linked = useMemo(
+    () => assignments.filter((assignment) => Boolean(assignment.courseId)),
+    [assignments],
+  )
+  const filtered = useMemo(() => linked.filter((assignment) => {
+    if (courseFilter !== 'all' && assignment.courseId !== courseFilter) return false
+    const needle = query.trim().toLocaleLowerCase()
+    return !needle || assignment.title.toLocaleLowerCase().includes(needle)
+      || courseLabel(assignment.courseId, courses).toLocaleLowerCase().includes(needle)
+  }), [courseFilter, courses, linked, query])
+
+  const view = (preference?.view as AssignmentView | undefined) ?? 'agenda'
+  const collapsed = new Set(
+    Array.isArray(preference?.filters.collapsedBuckets)
+      ? preference.filters.collapsedBuckets as string[]
+      : ['completed'],
+  )
+  const showCompleted = Boolean(preference?.filters.showCompleted)
+  const workloadCollapsed = Boolean(preference?.filters.workloadCollapsed)
+
+  function setPreference(mutator: (next: ListViewState) => void) {
+    update((draft) => {
+      const current = preferenceBase(draft.settings.listPreferences[LIST_ID])
+      const next: ListViewState = {
+        ...current,
+        filters: { ...current.filters },
+        visibleColumns: [...current.visibleColumns],
+        sort: current.sort ? { ...current.sort } : undefined,
+        dateRange: current.dateRange ? { ...current.dateRange } : undefined,
+      }
+      mutator(next)
+      draft.settings.listPreferences[LIST_ID] = next
+    })
+  }
+
+  function requestAdd() {
+    if (onRequestAdd) onRequestAdd()
+    else setCreateOpen(true)
+  }
+
+  useEffect(() => {
+    function keyboard(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLocaleLowerCase() !== 'n') return
+      const target = event.target as HTMLElement | null
+      if (target?.matches('input, textarea, [contenteditable="true"]')) return
+      event.preventDefault()
+      requestAdd()
+    }
+    window.addEventListener('keydown', keyboard)
+    return () => window.removeEventListener('keydown', keyboard)
+  })
+
+  function patchAssignment(id: string, patch: Partial<ClassAssignment>) {
+    update((draft) => {
+      const target = draft.academics.classCenter.assignments.find((item) => item.id === id)
+      if (target) Object.assign(target, patch, { updatedAt: Date.now() })
+    })
+  }
+
+  function complete(assignment: ClassAssignment, checked: boolean) {
+    const previous = assignment.status
+    const next: ClassAssignmentStatus = checked ? 'submitted' : 'not-started'
+    patchAssignment(assignment.id, { status: next })
+    toast({
+      title: checked ? 'Assignment completed' : 'Assignment reopened',
+      onUndo: () => patchAssignment(assignment.id, { status: previous }),
+    })
+  }
+
+  function reschedule(assignment: ClassAssignment, dueDate: string) {
+    const previous = assignment.dueDate
+    if (previous?.slice(0, 10) === dueDate) return
+    patchAssignment(assignment.id, { dueDate })
+    toast({
+      title: 'Assignment rescheduled',
+      description: `${assignment.title} moved to ${exactDue(dueDate)}.`,
+      onUndo: () => patchAssignment(assignment.id, { dueDate: previous }),
+    })
+  }
+
+  function duplicate(assignment: ClassAssignment) {
+    const copy: ClassAssignment = {
+      ...structuredClone(assignment),
+      id: uid(),
+      title: `${assignment.title} copy`,
+      status: 'not-started',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      order: nextOrder(assignments),
+    }
+    update((draft) => { draft.academics.classCenter.assignments.push(copy) })
+    toast({
+      title: 'Assignment duplicated',
+      onUndo: () => update((draft) => {
+        draft.academics.classCenter.assignments = draft.academics.classCenter.assignments.filter((item) => item.id !== copy.id)
+      }),
+    })
+  }
+
+  function remove(assignment: ClassAssignment) {
+    update((draft) => {
+      draft.academics.classCenter.assignments = draft.academics.classCenter.assignments.filter((item) => item.id !== assignment.id)
+    })
+    toast({
+      title: 'Assignment removed',
+      onUndo: () => update((draft) => {
+        if (!draft.academics.classCenter.assignments.some((item) => item.id === assignment.id)) {
+          draft.academics.classCenter.assignments.push(assignment)
+        }
+      }),
+    })
+  }
+
+  function exportCsv() {
+    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`
+    const rows = linked.map((item) => [
+      item.title,
+      courseLabel(item.courseId, courses),
+      item.type,
+      item.dueDate ?? '',
+      item.status,
+      item.weight ?? '',
+      item.pointsPossible ?? '',
+      item.important ? 'yes' : 'no',
+    ].map(escape).join(','))
+    const csv = [['Title', 'Course', 'Type', 'Due date', 'Status', 'Weight', 'Points possible', 'Important'].map(escape).join(','), ...rows].join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'premed-hq-assignments.csv'
+    anchor.click()
+    URL.revokeObjectURL(url)
+    toast({ title: 'Assignments exported', description: `${linked.length} course-linked records included.` })
+  }
+
+  if (state !== 'ready') return <CollectionState state={state} errorMessage={errorMessage} onRetry={onRetry} />
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold">Active assignments</h3>
-        <Button size="sm" variant="outline" onClick={() => addTask()}><Plus className="size-4" /> Add task</Button>
+      <div className="card-soft flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 lg:flex-row lg:items-center">
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(value) => value && setPreference((next) => { next.view = value })}
+          variant="outline"
+          aria-label="Assignment view"
+          className="rounded-xl"
+        >
+          <ToggleGroupItem value="agenda" aria-label="Agenda view"><List className="size-4" /> Agenda</ToggleGroupItem>
+          <ToggleGroupItem value="weekly" aria-label="Weekly view"><ClipboardList className="size-4" /> Weekly</ToggleGroupItem>
+          <ToggleGroupItem value="calendar" aria-label="Calendar view"><CalendarDays className="size-4" /> Calendar</ToggleGroupItem>
+        </ToggleGroup>
+        <Select value={courseFilter} onValueChange={setCourseFilter}>
+          <SelectTrigger className="w-full lg:w-44" aria-label="Filter by class"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All classes</SelectItem>
+            {courses.map((course) => <SelectItem key={course.id} value={course.id}>{course.code}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="relative min-w-52 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Search assignments…" />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label="Assignment options"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setTableOpen(true)}><TableProperties className="size-4" /> Edit as table</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => {
+              const courseId = courseFilter !== 'all' ? courseFilter : courses[0]?.id
+              if (courseId) navigate(`/academics/classes/${courseId}`)
+            }}><FileUp className="size-4" /> Import syllabus</DropdownMenuItem>
+            <DropdownMenuCheckboxItem
+              checked={showCompleted}
+              onCheckedChange={(checked) => setPreference((next) => { next.filters.showCompleted = Boolean(checked) })}
+            >
+              Show completed
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={exportCsv}><Download className="size-4" /> Export CSV</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <TrackerTable
-        collection="tasks"
-        listId="assignments.active"
-        rows={active}
-        columns={columns}
-        checkKey="archived"
-        empty={<EmptyState icon={CalendarDays} title="No active assignments" hint="Add anything with a deadline. Check it off to clear it from the table; its date shows on the calendar below." action={<Button size="sm" onClick={() => addTask()}><Plus className="size-4" /> Add task</Button>} />}
+
+      <AnimatePresence mode="wait" initial={false}>
+        <m.div
+          key={view}
+          initial={reduceMotion ? false : { opacity: 0, y: MOTION_DISTANCE.small }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_DISTANCE.small }}
+          transition={reduceMotion ? MOTION_TRANSITION.instant : MOTION_TRANSITION.standard}
+        >
+          {view === 'agenda' && (
+            <AgendaView
+              assignments={filtered}
+              courses={courses}
+              topics={topics}
+              collapsed={collapsed}
+              expandedBuckets={expandedBuckets}
+              showCompleted={showCompleted}
+              onToggleBucket={(id) => setPreference((next) => {
+                const values = new Set(Array.isArray(next.filters.collapsedBuckets) ? next.filters.collapsedBuckets as string[] : ['completed'])
+                if (values.has(id)) values.delete(id)
+                else values.add(id)
+                next.filters.collapsedBuckets = [...values]
+              })}
+              onExpand={(id) => setExpandedBuckets((current) => new Set(current).add(id))}
+              onComplete={complete}
+              onEdit={setEditing}
+              onDuplicate={duplicate}
+              onImportant={(assignment) => patchAssignment(assignment.id, { important: !assignment.important })}
+              onDelete={remove}
+              onAdd={requestAdd}
+            />
+          )}
+          {view === 'weekly' && (
+            <WeeklyView
+              assignments={filtered.filter((item) => !COMPLETED.has(item.status))}
+              courses={courses}
+              cursor={weekCursor}
+              onCursor={setWeekCursor}
+              onReschedule={reschedule}
+              onEdit={setEditing}
+              onAdd={requestAdd}
+            />
+          )}
+          {view === 'calendar' && (
+            <AssignmentCalendar
+              assignments={filtered.filter((item) => !COMPLETED.has(item.status))}
+              courses={courses}
+              cursor={calendarCursor}
+              selectedDay={selectedDay}
+              onCursor={setCalendarCursor}
+              onSelectDay={setSelectedDay}
+              onEdit={setEditing}
+              onAdd={requestAdd}
+            />
+          )}
+        </m.div>
+      </AnimatePresence>
+
+      <ProjectedWorkload
+        assignments={linked}
+        courses={courses}
+        collapsed={workloadCollapsed}
+        onToggle={() => setPreference((next) => { next.filters.workloadCollapsed = !workloadCollapsed })}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Calendar view
-            <InfoTip label="Synced to the table: assignment deadlines appear automatically on their due dates." />
-          </CardTitle>
-        </CardHeader>
-        <CardContent><MonthCalendar tasks={active} /></CardContent>
-      </Card>
+
+      <AssignmentCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <AssignmentCreateDialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)} assignment={editing} />
+      <Dialog open={tableOpen} onOpenChange={setTableOpen}>
+        <DialogContent className="max-h-[92svh] max-w-[min(96vw,86rem)] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit assignments as table</DialogTitle>
+            <DialogDescription>Bulk-entry and grade-update mode. Agenda remains the default assignments view.</DialogDescription>
+          </DialogHeader>
+          <AssignmentTable
+            assignments={linked}
+            courses={courses}
+            onPatch={(id, key, value) => patchAssignment(id, { [key]: value } as Partial<ClassAssignment>)}
+            onEdit={(assignment) => setEditing(assignment)}
+            onDelete={(id) => {
+              const assignment = linked.find((item) => item.id === id)
+              if (assignment) remove(assignment)
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function AcademicTagSelect({
-  kind, task, options, usedIds,
+function AgendaView({
+  assignments,
+  courses,
+  topics,
+  collapsed,
+  expandedBuckets,
+  showCompleted,
+  onToggleBucket,
+  onExpand,
+  onComplete,
+  onEdit,
+  onDuplicate,
+  onImportant,
+  onDelete,
+  onAdd,
 }: {
-  kind: TagKind
-  task: TaskItem
-  options: TagOption[]
-  usedIds: Set<string>
+  assignments: ClassAssignment[]
+  courses: Course[]
+  topics: Topic[]
+  collapsed: Set<string>
+  expandedBuckets: Set<BucketId>
+  showCompleted: boolean
+  onToggleBucket: (id: BucketId) => void
+  onExpand: (id: BucketId) => void
+  onComplete: (assignment: ClassAssignment, checked: boolean) => void
+  onEdit: (assignment: ClassAssignment) => void
+  onDuplicate: (assignment: ClassAssignment) => void
+  onImportant: (assignment: ClassAssignment) => void
+  onDelete: (assignment: ClassAssignment) => void
+  onAdd: () => void
 }) {
-  const update = useStore((s) => s.update)
-  const patchItem = useStore((s) => s.patchItem)
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const selectedId = kind === 'course' ? task.courseId : task.typeId
-  const legacy = kind === 'course' ? task.course : task.type
-  const selected = options.find((option) => option.id === selectedId)
-    ?? options.find((option) => normalize(option.name) === normalize(legacy))
-  const filtered = options.filter((option) => !option.archived && option.name.toLowerCase().includes(query.trim().toLowerCase()))
-  const exactMatch = options.some((option) => normalize(option.name) === normalize(query))
-  const canCreate = query.trim().length > 0 && !exactMatch
+  const grouped = useMemo(() => {
+    const result = new Map<BucketId, ClassAssignment[]>(BUCKETS.map((bucket) => [bucket.id, []]))
+    for (const assignment of assignments) result.get(assignmentBucket(assignment))?.push(assignment)
+    for (const values of result.values()) values.sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || a.order - b.order)
+    return result
+  }, [assignments])
+  const empty = assignments.length === 0
 
-  function selectOption(option: TagOption | null) {
-    if (kind === 'course') {
-      patchItem('tasks', task.id, {
-        courseId: option?.id ?? '',
-        course: option ? option.name : '',
-      } as Partial<TaskItem>)
-    } else {
-      patchItem('tasks', task.id, {
-        typeId: option?.id ?? '',
-        type: option ? option.name : '',
-      } as Partial<TaskItem>)
-    }
-    setOpen(false)
-    setQuery('')
-  }
-
-  function createOption() {
-    const name = query.trim()
-    if (!name) return
-    let created: TagOption | null = null
-    update((draft) => {
-      if (kind === 'course') {
-        created = {
-          id: uniqueOptionId(draft.academics.courseOptions, courseId(name)),
-          name,
-          color: nextTagColor(draft.academics.courseOptions.length),
-          archived: false,
-        }
-        draft.academics.courseOptions.push(created as AcademicCourseOption)
-      } else {
-        created = {
-          id: uniqueOptionId(draft.academics.assignmentTypeOptions, typeId(name)),
-          name,
-          color: nextTagColor(draft.academics.assignmentTypeOptions.length + 2),
-          archived: false,
-        }
-        draft.academics.assignmentTypeOptions.push(created as AcademicTypeOption)
-      }
-    })
-    if (created) selectOption(created)
-  }
-
-  function renameOption(option: TagOption, name: string) {
-    const next = name.trim()
-    if (!next) return
-    update((draft) => {
-      const list = kind === 'course' ? draft.academics.courseOptions : draft.academics.assignmentTypeOptions
-      const found = list.find((item) => item.id === option.id)
-      if (!found) return
-      found.name = next
-      for (const row of draft.tasks) {
-        if (kind === 'course' && row.courseId === option.id) row.course = next
-        if (kind === 'type' && row.typeId === option.id) row.type = next
-      }
-    })
-  }
-
-  function recolorOption(option: TagOption, color: AcademicTagColor) {
-    update((draft) => {
-      const list = kind === 'course' ? draft.academics.courseOptions : draft.academics.assignmentTypeOptions
-      const found = list.find((item) => item.id === option.id)
-      if (found) found.color = color
-    })
-  }
-
-  function removeOption(option: TagOption) {
-    update((draft) => {
-      const list = kind === 'course' ? draft.academics.courseOptions : draft.academics.assignmentTypeOptions
-      const index = list.findIndex((item) => item.id === option.id)
-      if (index < 0) return
-      if (usedIds.has(option.id)) list[index].archived = true
-      else list.splice(index, 1)
-    })
-    if (selected?.id === option.id && !usedIds.has(option.id)) selectOption(null)
-  }
-
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setActiveIndex((i) => Math.min(filtered.length - 1, i + 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActiveIndex((i) => Math.max(0, i - 1))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (filtered[activeIndex]) selectOption(filtered[activeIndex])
-      else if (canCreate) createOption()
-    } else if (e.key === 'Escape') {
-      setOpen(false)
-    }
+  if (empty) {
+    return (
+      <MascotNote
+        variant="empty-state"
+        title="No class deadlines yet"
+        actions={<Button size="sm" onClick={onAdd}><Plus className="size-4" /> Add your first assignment</Button>}
+      >
+        Add an assignment, exam, or important class date so the week has something honest to organize.
+      </MascotNote>
+    )
   }
 
   return (
-    <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) { setEditingId(null); setQuery('') } }}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex max-w-full items-center gap-1.5 rounded-full px-1 py-0.5 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
-          aria-label={`${kind === 'course' ? 'Course' : 'Assignment type'} selector`}
-        >
-          <TagPill option={selected} fallback={legacy} placeholder={kind === 'course' ? 'Select course' : 'Select type'} kind={kind} />
-          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[min(22rem,calc(100vw-2rem))] p-2" align="start">
-        <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5">
-          <Search className="size-3.5 text-muted-foreground" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setActiveIndex(0) }}
-            onKeyDown={onKeyDown}
-            placeholder={`Search or create ${kind === 'course' ? 'course' : 'type'}...`}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-        {selected && (
-          <button
-            type="button"
-            onClick={() => selectOption(null)}
-            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-3.5" /> Clear current value
-          </button>
-        )}
-        <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
-          {filtered.map((option, index) => (
-            <OptionRow
-              key={option.id}
-              option={option}
-              selected={selected?.id === option.id}
-              active={index === activeIndex}
-              used={usedIds.has(option.id)}
-              editing={editingId === option.id}
-              kind={kind}
-              onSelect={() => selectOption(option)}
-              onEdit={() => setEditingId(editingId === option.id ? null : option.id)}
-              onRename={(name) => renameOption(option, name)}
-              onColor={(color) => recolorOption(option, color)}
-              onRemove={() => removeOption(option)}
-            />
-          ))}
-          {canCreate && (
+    <div className="space-y-4">
+      {BUCKETS.map((bucket) => {
+        const rows = grouped.get(bucket.id) ?? []
+        if (!rows.length || (bucket.id === 'completed' && !showCompleted)) return null
+        const isCollapsed = collapsed.has(bucket.id)
+        const visible = bucket.capped && !expandedBuckets.has(bucket.id) ? rows.slice(0, 5) : rows
+        return (
+          <section key={bucket.id} className="card-soft overflow-hidden rounded-2xl border border-border bg-card">
             <button
               type="button"
-              onClick={createOption}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-bold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+              onClick={() => onToggleBucket(bucket.id)}
+              className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              aria-expanded={!isCollapsed}
             >
-              <Plus className="size-4" /> Create "{query.trim()}"
+              <ChevronDown className={cn('size-4 text-muted-foreground transition-transform motion-reduce:transition-none', isCollapsed && '-rotate-90')} />
+              <span className="font-display text-base font-extrabold">{bucket.label}</span>
+              <Badge variant={bucket.id === 'overdue' ? 'danger' : bucket.id === 'today' ? 'warning' : 'muted'}>{rows.length}</Badge>
             </button>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+            <AnimatePresence initial={false}>
+              {!isCollapsed && (
+                <m.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="border-t border-border"
+                >
+                  <div className="divide-y divide-border/70">
+                    {visible.map((assignment) => (
+                      <AssignmentRow
+                        key={assignment.id}
+                        assignment={assignment}
+                        courses={courses}
+                        topics={topics}
+                        onComplete={onComplete}
+                        onEdit={onEdit}
+                        onDuplicate={onDuplicate}
+                        onImportant={onImportant}
+                        onDelete={onDelete}
+                      />
+                    ))}
+                  </div>
+                  {visible.length < rows.length && (
+                    <button type="button" onClick={() => onExpand(bucket.id)} className="w-full border-t border-border px-4 py-2 text-left text-sm font-bold text-primary hover:bg-primary/5">
+                      +{rows.length - visible.length} more →
+                    </button>
+                  )}
+                </m.div>
+              )}
+            </AnimatePresence>
+          </section>
+        )
+      })}
+      <button
+        type="button"
+        onClick={onAdd}
+        className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/45 bg-primary/5 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none motion-reduce:transition-none"
+      >
+        <Plus className="size-4" /> Add an assignment, exam, or important date…
+      </button>
+    </div>
   )
 }
 
-function uniqueOptionId(options: { id: string }[], base: string) {
-  let id = base
-  let i = 2
-  while (options.some((option) => option.id === id)) {
-    id = `${base}-${i}`
-    i += 1
-  }
-  return id
-}
-
-function TagPill({ option, fallback, placeholder, kind = 'type' }: { option?: TagOption | null; fallback?: string; placeholder: string; kind?: TagKind }) {
-  const fullLabel = optionLabel(option) || fallback || ''
-  const compact = kind === 'course'
-  const label = compact ? compactCourseLabel(fullLabel) : titleCaseLabel(fullLabel)
-  if (!label) {
-    return <span className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs font-bold text-muted-foreground">{placeholder}</span>
-  }
-  const course = option && 'icon' in option ? option as AcademicCourseOption : null
-  return (
-    <span className={cn(
-      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-extrabold leading-none',
-      compact ? 'max-w-[6.75rem]' : 'max-w-[10rem]',
-      option ? TAG_COLOR_CLASS[option.color] : TAG_COLOR_CLASS.gray
-    )}
-      title={fullLabel}
-    >
-      {course?.icon && <span aria-hidden="true">{course.icon}</span>}
-      <span className="truncate">{label}</span>
-    </span>
-  )
-}
-
-function OptionRow({
-  option, selected, active, used, editing, kind, onSelect, onEdit, onRename, onColor, onRemove,
+function AssignmentRow({
+  assignment,
+  courses,
+  topics,
+  onComplete,
+  onEdit,
+  onDuplicate,
+  onImportant,
+  onDelete,
 }: {
-  option: TagOption
-  selected: boolean
-  active: boolean
-  used: boolean
-  editing: boolean
-  kind: TagKind
-  onSelect: () => void
-  onEdit: () => void
-  onRename: (name: string) => void
-  onColor: (color: AcademicTagColor) => void
-  onRemove: () => void
+  assignment: ClassAssignment
+  courses: Course[]
+  topics: Topic[]
+  onComplete: (assignment: ClassAssignment, checked: boolean) => void
+  onEdit: (assignment: ClassAssignment) => void
+  onDuplicate: (assignment: ClassAssignment) => void
+  onImportant: (assignment: ClassAssignment) => void
+  onDelete: (assignment: ClassAssignment) => void
 }) {
-  const [draft, setDraft] = useState(option.name)
+  const complete = COMPLETED.has(assignment.status)
+  const due = relativeDue(assignment.dueDate)
+  const color = courseColor(assignment.courseId, courses)
+  const covered = assignment.coveredTopicIds ?? assignment.linkedTopicIds
+  const ready = topics.filter((topic) => covered.includes(topic.id) && topic.status === 'ready').length
+
+  const visibleActions = (
+    <>
+      <Button size="icon" variant="ghost" className="size-8" onClick={() => onImportant(assignment)} aria-label={assignment.important ? 'Remove important' : 'Mark important'}>
+        <Star className={cn('size-4', assignment.important && 'fill-warning text-warning')} />
+      </Button>
+      <Button size="icon" variant="ghost" className="size-8" onClick={() => onEdit(assignment)} aria-label="Edit assignment"><Pencil className="size-4" /></Button>
+    </>
+  )
 
   return (
-    <div className={cn('rounded-lg border border-transparent p-1 transition', active && 'bg-muted/60', editing && 'border-border bg-card')}>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onSelect}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1.5 text-left transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <m.article
+          layout
+          className={cn(
+            'group relative flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center',
+            assignment.important && 'border-l-4 border-l-warning bg-gradient-to-r from-warning/10 to-transparent',
+            complete && 'opacity-65',
+          )}
         >
-          <TagPill option={option} placeholder="Option" kind={kind} />
-          {kind === 'course' && 'title' in option && option.title && <span className="min-w-0 truncate text-xs text-muted-foreground">{option.title}</span>}
-          {selected && <Check className="ml-auto size-4 shrink-0 text-primary" />}
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          aria-label={`Edit ${option.name}`}
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
-      </div>
-      {editing && (
-        <div className="space-y-2 px-1 pb-1 pt-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => onRename(draft)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                onRename(draft)
-              }
-            }}
-            className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring/35"
-            aria-label={`Rename ${option.name}`}
-          />
-          <div className="flex flex-wrap gap-1">
-            {TAG_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => onColor(color)}
-                className={cn('h-6 rounded-full border px-2 text-[10px] font-bold capitalize transition hover:scale-[1.03]', TAG_COLOR_CLASS[color], option.color === color && 'ring-2 ring-ring/45')}
-              >
-                {color}
-              </button>
-            ))}
+          <Checkbox checked={complete} onCheckedChange={(checked) => onComplete(assignment, Boolean(checked))} aria-label={`Complete ${assignment.title}`} />
+          <div className="min-w-0 flex-1">
+            <p className={cn('font-bold text-foreground', complete && 'line-through')}>{assignment.title}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <Badge variant="outline" style={{ borderColor: `${color}88`, backgroundColor: `${color}1f` }}>{courseLabel(assignment.courseId, courses)}</Badge>
+              <Badge variant="muted" className="capitalize">{assignment.type}</Badge>
+              {assignment.type === 'exam' && <Badge variant="outline">{ready} of {covered.length} topics ready</Badge>}
+              {assignment.weight != null && <Badge variant="outline">{assignment.weight}%</Badge>}
+              {assignment.pointsPossible != null && <Badge variant="outline">{assignment.pointsPossible} pts</Badge>}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <Badge variant={due.variant}>{due.label}</Badge>
+            <span className="min-w-16 text-right text-xs font-semibold tabular-nums text-muted-foreground">{exactDue(assignment.dueDate)}</span>
+            {visibleActions}
+          </div>
+        </m.article>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => onComplete(assignment, !complete)}><Check className="size-4" /> {complete ? 'Reopen' : 'Mark submitted'}</ContextMenuItem>
+        <ContextMenuItem onSelect={() => onImportant(assignment)}><Star className="size-4" /> {assignment.important ? 'Remove important' : 'Mark important'}</ContextMenuItem>
+        <ContextMenuItem onSelect={() => onEdit(assignment)}><Pencil className="size-4" /> Edit</ContextMenuItem>
+        <ContextMenuItem onSelect={() => onDuplicate(assignment)}><Copy className="size-4" /> Duplicate</ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem variant="destructive" onSelect={() => onDelete(assignment)}><Trash2 className="size-4" /> Delete</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+function WeeklyView({
+  assignments,
+  courses,
+  cursor,
+  onCursor,
+  onReschedule,
+  onEdit,
+  onAdd,
+}: {
+  assignments: ClassAssignment[]
+  courses: Course[]
+  cursor: Date
+  onCursor: (date: Date) => void
+  onReschedule: (assignment: ClassAssignment, date: string) => void
+  onEdit: (assignment: ClassAssignment) => void
+  onAdd: () => void
+}) {
+  const days = Array.from({ length: 7 }, (_, index) => addDays(cursor, index))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  )
+  const byDay = new Map(days.map((day) => [isoDate(day), assignments.filter((item) => item.dueDate?.slice(0, 10) === isoDate(day))]))
+
+  function dragEnd(event: DragEndEvent) {
+    if (!event.over) return
+    const assignment = assignments.find((item) => item.id === event.active.id)
+    if (assignment) onReschedule(assignment, String(event.over.id))
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card p-2">
+        <Button variant="ghost" size="icon" onClick={() => onCursor(addDays(cursor, -7))} aria-label="Previous week"><ChevronLeft className="size-4" /></Button>
+        <p className="font-bold tabular-nums">Week of {cursor.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+        <Button variant="ghost" size="icon" onClick={() => onCursor(addDays(cursor, 7))} aria-label="Next week"><ChevronRight className="size-4" /></Button>
+      </div>
+      <DndContext sensors={sensors} onDragEnd={dragEnd}>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+          {days.map((day) => <WeekDay key={isoDate(day)} day={day} assignments={byDay.get(isoDate(day)) ?? []} courses={courses} onEdit={onEdit} />)}
+        </div>
+      </DndContext>
+      <button type="button" onClick={onAdd} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/45 bg-primary/5 font-bold text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <Plus className="size-4" /> Add an assignment, exam, or important date…
+      </button>
+    </div>
+  )
+}
+
+function WeekDay({ day, assignments, courses, onEdit }: { day: Date; assignments: ClassAssignment[]; courses: Course[]; onEdit: (assignment: ClassAssignment) => void }) {
+  const id = isoDate(day)
+  const { setNodeRef, isOver } = useDroppable({ id })
+  const total = assignments.reduce((sum, item) => sum + (item.weight ?? 0), 0)
+  return (
+    <section ref={setNodeRef} className={cn('card-soft min-h-48 rounded-2xl border border-border bg-card p-2.5 transition-colors', isOver && 'border-primary bg-primary/10')}>
+      <div className="mb-2 flex items-start justify-between gap-1">
+        <div><p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{day.toLocaleDateString(undefined, { weekday: 'short' })}</p><p className="font-display text-xl font-extrabold tabular-nums">{day.getDate()}</p></div>
+        <Badge variant={workloadLabel(total) === 'Heavy' ? 'danger' : workloadLabel(total) === 'Busy' ? 'warning' : workloadLabel(total) === 'Light' ? 'success' : 'muted'}>{workloadLabel(total)}</Badge>
+      </div>
+      <div className="space-y-2">
+        {assignments.map((assignment) => <WeekCard key={assignment.id} assignment={assignment} courses={courses} onEdit={onEdit} />)}
+        {!assignments.length && <p className="py-8 text-center text-xs text-muted-foreground">Nothing due</p>}
+      </div>
+    </section>
+  )
+}
+
+function WeekCard({ assignment, courses, onEdit }: { assignment: ClassAssignment; courses: Course[]; onEdit: (assignment: ClassAssignment) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: assignment.id })
+  return (
+    <button
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), borderLeftColor: courseColor(assignment.courseId, courses) }}
+      {...listeners}
+      {...attributes}
+      type="button"
+      onDoubleClick={() => onEdit(assignment)}
+      className={cn('w-full rounded-xl border border-border border-l-4 bg-background p-2 text-left shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', isDragging && 'z-20 opacity-70 shadow-xl')}
+    >
+      <span className="block text-xs font-bold">{assignment.title}</span>
+      <span className="mt-1 block text-[11px] text-muted-foreground">{courseLabel(assignment.courseId, courses)}{assignment.weight != null ? ` · ${assignment.weight}%` : ''}</span>
+    </button>
+  )
+}
+
+function AssignmentCalendar({
+  assignments,
+  courses,
+  cursor,
+  selectedDay,
+  onCursor,
+  onSelectDay,
+  onEdit,
+  onAdd,
+}: {
+  assignments: ClassAssignment[]
+  courses: Course[]
+  cursor: Date
+  selectedDay: Date
+  onCursor: (date: Date) => void
+  onSelectDay: (date: Date) => void
+  onEdit: (assignment: ClassAssignment) => void
+  onAdd: () => void
+}) {
+  const selected = assignments.filter((item) => item.dueDate?.slice(0, 10) === isoDate(selectedDay))
+  function AssignmentDayButton(props: ComponentProps<typeof CalendarDayButton>) {
+    const items = assignments.filter((item) => item.dueDate?.slice(0, 10) === isoDate(props.day.date))
+    const total = items.reduce((sum, item) => sum + (item.weight ?? 0), 0)
+    return (
+      <CalendarDayButton
+        {...props}
+        className={cn(
+          'min-h-24 items-stretch justify-start gap-1 overflow-hidden rounded-xl border border-border p-1.5 text-left',
+          total > 30 && 'bg-destructive/10',
+        )}
+      >
+        <span className="self-start text-xs font-bold tabular-nums">{props.day.date.getDate()}</span>
+        {items.slice(0, 3).map((item) => (
+          <span
+            key={item.id}
+            className="block w-full truncate rounded bg-muted px-1 py-0.5 text-[10px] font-semibold"
+            style={{ borderLeft: `3px solid ${courseColor(item.courseId, courses)}` }}
           >
-            {used ? <Archive className="size-3.5" /> : <Trash2 className="size-3.5" />}
-            {used ? 'Archive option' : 'Delete option'}
-          </button>
+            {item.title}
+          </span>
+        ))}
+        {items.length > 3 && <span className="block text-[10px] text-muted-foreground">+{items.length - 3} more</span>}
+      </CalendarDayButton>
+    )
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <section className="card-soft rounded-2xl border border-border bg-card p-3">
+        <Calendar
+          mode="single"
+          month={cursor}
+          onMonthChange={onCursor}
+          selected={selectedDay}
+          onSelect={(date) => date && onSelectDay(date)}
+          className="w-full bg-transparent p-0 [--cell-size:6rem]"
+          classNames={{ month: 'w-full', month_grid: 'w-full', day: 'h-24 w-full p-0' }}
+          components={{ DayButton: AssignmentDayButton }}
+        />
+      </section>
+      <aside className="card-soft rounded-2xl border border-border bg-card p-4">
+        <p className="font-display text-lg font-extrabold">{selectedDay.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        <div className="mt-3 space-y-2">
+          {selected.map((assignment) => (
+            <button key={assignment.id} type="button" onClick={() => onEdit(assignment)} className="w-full rounded-xl border border-border bg-background p-3 text-left hover:border-primary/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span className="block font-bold">{assignment.title}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{courseLabel(assignment.courseId, courses)} · {assignment.type}</span>
+            </button>
+          ))}
+          {!selected.length && <p className="py-8 text-center text-sm text-muted-foreground">Nothing due this day.</p>}
+        </div>
+        <Button variant="outline" className="mt-3 w-full" onClick={onAdd}><Plus className="size-4" /> Add assignment</Button>
+      </aside>
+      <button type="button" onClick={onAdd} className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/45 bg-primary/5 font-bold text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:col-span-2">
+        <Plus className="size-4" /> Add an assignment, exam, or important date…
+      </button>
+    </div>
+  )
+}
+
+function ProjectedWorkload({
+  assignments,
+  courses,
+  collapsed,
+  onToggle,
+}: {
+  assignments: ClassAssignment[]
+  courses: Course[]
+  collapsed: boolean
+  onToggle: () => void
+}) {
+  const start = startOfWeek(new Date())
+  const weeks = Array.from({ length: 6 }, (_, index) => {
+    const weekStart = addDays(start, index * 7)
+    const weekEnd = addDays(weekStart, 7)
+    const items = assignments.filter((item) => {
+      const due = localDate(item.dueDate)
+      return due && !COMPLETED.has(item.status) && due >= weekStart && due < weekEnd && item.weight != null
+    })
+    const byCourse = courses.map((course) => ({
+      course,
+      total: items.filter((item) => item.courseId === course.id).reduce((sum, item) => sum + (item.weight ?? 0), 0),
+    })).filter((item) => item.total > 0)
+    return { weekStart, byCourse, total: byCourse.reduce((sum, item) => sum + item.total, 0) }
+  })
+  const weighted = assignments.filter((item) => item.weight != null && !COMPLETED.has(item.status))
+  const relevantCourseIds = new Set(assignments.map((item) => item.courseId))
+  const relevantCourses = courses.filter((course) => relevantCourseIds.has(course.id))
+  const heavy = weeks.filter((week) => week.total > 30)
+  const recommendation = weighted.length === 0
+    ? 'Not enough graded work yet.'
+    : heavy.length >= 2
+      ? `${heavy.length} heavy weeks are ahead. Start the largest later assignment during the lightest week.`
+      : heavy.length === 1
+        ? `One heavy week is ahead around ${heavy[0].weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}. Start its largest item early.`
+        : 'Your weighted deadlines are currently spread without a heavy week.'
+
+  return (
+    <section className="card-soft overflow-hidden rounded-2xl border border-border bg-card">
+      <button type="button" onClick={onToggle} className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" aria-expanded={!collapsed}>
+        <ChevronDown className={cn('size-4 text-muted-foreground transition-transform motion-reduce:transition-none', collapsed && '-rotate-90')} />
+        <span className="font-display text-lg font-extrabold">Projected workload</span>
+        <span className="ml-auto text-xs font-semibold text-muted-foreground">Next 6 weeks</span>
+      </button>
+      {!collapsed && (
+        <div className="space-y-4 border-t border-border p-4">
+          {weeks.map((week) => (
+            <div key={isoDate(week.weekStart)} className="grid items-center gap-2 sm:grid-cols-[7rem_4rem_1fr_3rem]">
+              <span className="text-sm font-bold tabular-nums">{week.weekStart === start ? 'This week' : week.weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+              <Badge variant={workloadLabel(week.total) === 'Heavy' ? 'danger' : workloadLabel(week.total) === 'Busy' ? 'warning' : workloadLabel(week.total) === 'Light' ? 'success' : 'muted'}>{workloadLabel(week.total)}</Badge>
+              <div className="relative h-7 overflow-hidden rounded-full border border-border bg-muted">
+                <div className="flex h-full">
+                  {week.byCourse.map(({ course, total }) => (
+                    <div
+                      key={course.id}
+                      className="grid min-w-fit place-items-center px-2 text-[10px] font-extrabold text-slate-950"
+                      style={{ width: `${Math.min(100, total)}%`, backgroundColor: courseColor(course.id, courses) }}
+                    >
+                      {course.code} {total}%
+                    </div>
+                  ))}
+                </div>
+                <Progress value={Math.min(100, week.total)} className="sr-only" aria-label={`${week.total}% of course grade due`} />
+              </div>
+              <span className="text-right text-sm font-extrabold tabular-nums">{week.total}%</span>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-3 border-t border-border pt-3 text-xs font-semibold text-muted-foreground">
+            {relevantCourses.map((course) => <span key={course.id} className="inline-flex items-center gap-1.5"><i className="size-2.5 rounded-full" style={{ backgroundColor: courseColor(course.id, courses) }} />{course.code}</span>)}
+          </div>
+          <PaceProjectionLine id="academics.assignments.workload" insufficientLabel={recommendation} />
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
-/** Month calendar that places task deadlines on their day. */
-export function MonthCalendar({ tasks }: { tasks: TaskItem[] }) {
-  const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
-  const year = cursor.getFullYear()
-  const month = cursor.getMonth()
-
-  const byDay = useMemo(() => {
-    const map = new Map<string, TaskItem[]>()
-    for (const t of tasks) {
-      if (!t.deadline) continue
-      const key = new Date(t.deadline).toDateString()
-      const arr = map.get(key) ?? []; arr.push(t); map.set(key, arr)
-    }
-    return map
-  }, [tasks])
-
-  const first = new Date(year, month, 1)
-  const startPad = first.getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const cells: (Date | null)[] = [
-    ...Array.from({ length: startPad }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
+function AssignmentTable({
+  assignments,
+  courses,
+  onPatch,
+  onEdit,
+  onDelete,
+}: {
+  assignments: ClassAssignment[]
+  courses: Course[]
+  onPatch: (id: string, key: string, value: unknown) => void
+  onEdit: (assignment: ClassAssignment) => void
+  onDelete: (id: string) => void
+}) {
+  const columns: ColumnDef[] = [
+    { key: 'title', header: 'Assignment', type: 'text', width: '240px', validate: (value) => String(value ?? '').trim() ? undefined : 'Title is required.' },
+    {
+      key: 'courseId',
+      header: 'Class',
+      type: 'custom',
+      width: '140px',
+      render: ({ value, onChange }) => (
+        <Select value={String(value ?? '')} onValueChange={onChange}>
+          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+          <SelectContent>{courses.map((course) => <SelectItem key={course.id} value={course.id}>{course.code}</SelectItem>)}</SelectContent>
+        </Select>
+      ),
+    },
+    { key: 'type', header: 'Type', type: 'select', width: '120px', options: ASSIGNMENT_TYPES },
+    { key: 'dueDate', header: 'Due', type: 'date', width: '140px' },
+    { key: 'status', header: 'Status', type: 'select', width: '130px', options: ['not-started', 'in-progress', 'submitted', 'graded', 'dropped'] },
+    { key: 'weight', header: 'Weight %', type: 'number', width: '100px', align: 'right' },
+    { key: 'pointsPossible', header: 'Points', type: 'number', width: '90px', align: 'right' },
+    { key: 'important', header: 'Important', type: 'toggle', width: '100px', toggleLabels: ['No', 'Starred'] },
   ]
-  const today = new Date().toDateString()
-
   return (
-    <div>
-      <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-lg font-semibold">{cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</span>
-        <div className="flex gap-1">
-          <Button size="icon" variant="ghost" className="size-8" onClick={() => setCursor(new Date(year, month - 1, 1))}><ChevronLeft className="size-4" /></Button>
-          <Button size="icon" variant="ghost" className="size-8" onClick={() => setCursor(new Date(year, month + 1, 1))}><ChevronRight className="size-4" /></Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => <div key={d} className="py-1">{d}</div>)}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((date, i) => {
-          const items = date ? byDay.get(date.toDateString()) ?? [] : []
-          const isToday = date?.toDateString() === today
-          return (
-            <div key={i} className={cn('min-h-16 rounded-lg border p-1 text-left', date ? 'border-border bg-card' : 'border-transparent', isToday && 'ring-2 ring-primary/40')}>
-              {date && <div className={cn('mb-0.5 text-[11px] font-semibold', isToday ? 'text-primary' : 'text-muted-foreground')}>{date.getDate()}</div>}
-              <div className="space-y-0.5">
-                {items.slice(0, 3).map((t) => (
-                  <div key={t.id} className="truncate rounded bg-secondary px-1 py-0.5 text-[10px] font-medium text-secondary-foreground" title={t.title}>{t.title || 'Untitled'}</div>
-                ))}
-                {items.length > 3 && <div className="text-[10px] text-muted-foreground">+{items.length - 3}</div>}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <TrackerTable
+      rows={assignments}
+      columns={columns}
+      listId="academics.assignments.table"
+      onPatch={onPatch}
+      onOpen={(id) => {
+        const assignment = assignments.find((item) => item.id === id)
+        if (assignment) onEdit(assignment)
+      }}
+      onDelete={onDelete}
+      reorder={false}
+    />
   )
 }

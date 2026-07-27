@@ -49,7 +49,7 @@ describe('foundation entity collections', () => {
     store.removeItem('organizations', first.id)
 
     const updated = useStore.getState()
-    expect(updated.persons[0]).toMatchObject({
+    expect(updated.persons.find((item) => item.id === person.id)).toMatchObject({
       id: person.id,
       organizationId: first.id,
       title: 'Medical director',
