@@ -50,7 +50,7 @@ export const PILLAR_SCENES: Record<SceneKey, PillarScene> = {
   home: warm('rgba(75,156,211,0.20)', 'var(--primary)'),
 
   // Foundation
-  academics: warm('rgba(75,156,211,0.22)', 'var(--cat-gpa)'),
+  academics: warm('rgba(75,156,211,0.22)', 'var(--cat-gpa)', { overlay: 0 }),
   mcat: warm('rgba(140,123,212,0.24)', 'var(--cat-mcat)'),
   letters: warm('rgba(213,155,106,0.22)', 'var(--cat-letters)'),
 

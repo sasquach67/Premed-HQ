@@ -26,11 +26,11 @@ function Card({ className, variant, ...props }: React.HTMLAttributes<HTMLDivElem
 }
 
 function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col gap-1 p-5 pb-3', className)} {...props} />
+  return <div data-slot="card-header" className={cn('flex flex-col gap-1 p-5 pb-3', className)} {...props} />
 }
 
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('font-display text-base font-bold tracking-tight', className)} {...props} />
+  return <div data-slot="card-title" className={cn('font-display text-base font-bold tracking-tight', className)} {...props} />
 }
 
 function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -38,7 +38,7 @@ function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 }
 
 function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5 pt-0', className)} {...props} />
+  return <div data-slot="card-content" className={cn('p-5 pt-0', className)} {...props} />
 }
 
 function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
