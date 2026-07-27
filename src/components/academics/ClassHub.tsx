@@ -104,11 +104,7 @@ export function ClassHub({ course, workspace, data, persons }: ClassHubProps) {
   }
 
   function startReview() {
-    changeTab('topics')
-    toast({
-      title: 'Review queue opened',
-      description: 'Choose Quiz me on the topic you want to recall first.',
-    })
+    navigate(`/academics/review/${course.id}`)
   }
 
   const counts = {
@@ -232,7 +228,7 @@ export function ClassHubPeek({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild><Link to={`/academics/classes/${course.id}?classTab=topics`}>Start review</Link></Button>
+          <Button asChild><Link to={`/academics/review/${course.id}`}>Start review</Link></Button>
           <Button variant="outline" onClick={onOpen}>Open full hub</Button>
         </div>
       </div>
@@ -595,11 +591,11 @@ function TopicRow({ topic, data }: { topic: Topic; data: ClassCenterData }) {
           <Badge className={cn('justify-self-start', STATUS_TONE[topic.status])}>{STATUS_LABELS[topic.status]}</Badge>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button size="sm" variant="outline"><Brain className="size-4" /> Quiz me</Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end"><DropdownMenuItem>Recall this topic</DropdownMenuItem><DropdownMenuItem>Open linked notes</DropdownMenuItem></DropdownMenuContent>
+            <DropdownMenuContent align="end"><DropdownMenuItem asChild><Link to={`/academics/review/${topic.courseId}?topicId=${topic.id}`}>Recall this topic</Link></DropdownMenuItem><DropdownMenuItem>Open linked notes</DropdownMenuItem></DropdownMenuContent>
           </DropdownMenu>
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent><ContextMenuItem><Brain className="size-4" /> Quiz me</ContextMenuItem><ContextMenuItem><NotebookText className="size-4" /> Open context</ContextMenuItem></ContextMenuContent>
+      <ContextMenuContent><ContextMenuItem asChild><Link to={`/academics/review/${topic.courseId}?topicId=${topic.id}`}><Brain className="size-4" /> Quiz me</Link></ContextMenuItem><ContextMenuItem><NotebookText className="size-4" /> Open context</ContextMenuItem></ContextMenuContent>
     </ContextMenu>
   )
 }

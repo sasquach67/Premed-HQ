@@ -806,7 +806,9 @@ function ReviewQueuePanel({
       actions={(
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" disabled={!first}>Plan 90 min</Button>
-          <Button size="sm" disabled={!first} onClick={() => first && onOpenClass(first.courseId)}><Play className="size-4" /> Start</Button>
+          <Button size="sm" disabled={!first} asChild={Boolean(first)}>
+            {first ? <Link to={`/academics/review/${first.courseId}`}><Play className="size-4" /> Start</Link> : <span><Play className="size-4" /> Start</span>}
+          </Button>
         </div>
       )}
     >
@@ -923,7 +925,7 @@ function WeakTopicsPanel({
           })}
           <div className="flex items-center justify-between pt-1 text-xs font-bold text-muted-foreground">
             <span>{readyInScope} of {totalInScope} exam-ready</span>
-            <Button variant="link" size="sm" className="h-auto p-0" onClick={() => topics[0] && onOpenClass(topics[0].courseId)}>Review these →</Button>
+            {topics[0] ? <Button asChild variant="link" size="sm" className="h-auto p-0"><Link to={`/academics/review/${topics[0].courseId}?topicId=${topics[0].id}`}>Review these →</Link></Button> : null}
           </div>
         </div>
       )}

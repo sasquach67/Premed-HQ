@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
    needs them). Pages use named exports, hence the .then() shims. */
 const Home = lazy(() => import('@/pages/Home').then((m) => ({ default: m.Home })))
 const Academics = lazy(() => import('@/pages/Academics').then((m) => ({ default: m.Academics })))
+const AcademicRecallSession = lazy(() => import('@/pages/AcademicRecallSession').then((m) => ({ default: m.AcademicRecallSession })))
 const Mcat = lazy(() => import('@/pages/Mcat').then((m) => ({ default: m.Mcat })))
 const McatFocusSession = lazy(() => import('@/pages/McatFocusSession').then((m) => ({ default: m.McatFocusSession })))
 const Letters = lazy(() => import('@/pages/Letters').then((m) => ({ default: m.Letters })))
@@ -37,6 +38,7 @@ function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="mcat/session" element={<McatFocusSession />} />
+          <Route path="academics/review/:courseId" element={<AcademicRecallSession />} />
           <Route element={<AppShell />}>
             <Route index element={<Home />} />
             <Route path="northstar" element={<Navigate to="/?guide=open" replace />} />
