@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createDemoData } from './demoSeed'
 import {
-  activeStorageKey, DEMO_MODE_FLAG, DEMO_STORAGE_KEY, REAL_STORAGE_KEY,
+  activeStorageKey, clearUnstampedDemoNamespace, DEMO_MODE_FLAG, DEMO_STAMP_KEY,
+  DEMO_STAMP_VALUE, DEMO_STORAGE_KEY, REAL_STORAGE_KEY, stampDemoNamespace,
 } from '@/lib/demoMode'
 import { academicsNextActions } from '@/lib/intelligence/recommendations'
 
@@ -13,6 +14,23 @@ describe('site-wide demo data', () => {
     localStorage.setItem(DEMO_MODE_FLAG, 'on')
     expect(activeStorageKey()).toBe(DEMO_STORAGE_KEY)
     expect(localStorage.getItem(REAL_STORAGE_KEY)).toBe('real-user-sentinel')
+  })
+
+  it('discards a demo blob it did not seed, and never reads the real namespace', () => {
+    localStorage.setItem(REAL_STORAGE_KEY, 'real-user-sentinel')
+    // A blob carrying the user's own profile, left in the demo namespace.
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ state: { profile: { name: 'Andy Quach' } } }))
+    clearUnstampedDemoNamespace()
+    expect(localStorage.getItem(DEMO_STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(REAL_STORAGE_KEY)).toBe('real-user-sentinel')
+  })
+
+  it('keeps demo edits once the namespace is stamped', () => {
+    localStorage.setItem(DEMO_STORAGE_KEY, 'edited-demo-state')
+    stampDemoNamespace()
+    expect(localStorage.getItem(DEMO_STAMP_KEY)).toBe(DEMO_STAMP_VALUE)
+    clearUnstampedDemoNamespace()
+    expect(localStorage.getItem(DEMO_STORAGE_KEY)).toBe('edited-demo-state')
   })
 
   it('is deterministic for the same seed time', () => {

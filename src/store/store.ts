@@ -15,7 +15,8 @@ import type {
 import { createSeedData } from '@/data/seed'
 import { createDemoData } from '@/data/demoSeed'
 import {
-  activeStorageKey, isDemoMode, LEGACY_STORAGE_KEY, REAL_STORAGE_KEY,
+  activeStorageKey, clearUnstampedDemoNamespace, isDemoMode,
+  LEGACY_STORAGE_KEY, REAL_STORAGE_KEY, stampDemoNamespace,
 } from '@/lib/demoMode'
 import { uid } from '@/lib/id'
 import { isMutableSeverity } from '@/lib/intelligence/recommendations'
@@ -34,11 +35,18 @@ if (!DEMO_MODE && typeof localStorage !== 'undefined' && !localStorage.getItem(R
   if (legacy) localStorage.setItem(REAL_STORAGE_KEY, legacy)
 }
 
+// Discard any demo blob we did not seed, so the "Demo data" badge can never sit
+// above real-looking data. Only ever touches the demo namespace.
+if (DEMO_MODE) clearUnstampedDemoNamespace()
+
 export const STORAGE_KEY = activeStorageKey()
 const SEED_VERSION = 7
 
 function createInitialData() {
-  return DEMO_MODE ? createDemoData() : structuredClone(createSeedData())
+  if (!DEMO_MODE) return structuredClone(createSeedData())
+  const demo = createDemoData()
+  stampDemoNamespace()
+  return demo
 }
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
