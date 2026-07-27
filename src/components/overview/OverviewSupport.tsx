@@ -6,11 +6,13 @@ import {
   RotateCcw,
   Stethoscope,
   Target,
+  X,
 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { CenterPeek, type RecordOpenMode } from '@/components/common/CenterPeek'
 import { MascotNote } from '@/components/common/MascotNote'
+import { useToast } from '@/components/common/useToast'
 import { McatSessionSetupDialog } from '@/components/mcat/McatSessionSetupDialog'
 import { AnimatedFileUpload, NumberFlow } from '@/components/motion'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { fmtTimeAgo } from '@/lib/date'
 import { uid } from '@/lib/id'
 import { bestMcat, gpaStats, hourTotals, percent } from '@/lib/selectors'
-import type { Goals } from '@/lib/types'
+import type { ActivityEvent, CaptureRecord, Goals } from '@/lib/types'
 import { latestExperienceLabel } from '@/lib/overview'
 import { useStore } from '@/store/store'
 
@@ -189,6 +191,10 @@ export function ActivityAndCapture() {
   const captures = useStore((state) => state.captures)
   const addItem = useStore((state) => state.addItem)
   const logActivity = useStore((state) => state.logActivity)
+  const softDeleteItems = useStore((state) => state.softDeleteItems)
+  const undoRecovery = useStore((state) => state.undoRecovery)
+  const update = useStore((state) => state.update)
+  const toast = useToast()
   const [value, setValue] = useState('')
 
   const unsorted = useMemo(() => captures.filter((capture) => !capture.triagedAt).length, [captures])
@@ -221,6 +227,34 @@ export function ActivityAndCapture() {
     setValue('')
   }
 
+  function captureForActivity(entry: ActivityEvent) {
+    const matches = captures.filter((capture) => entry.label === `Captured ${capture.kind}: ${capture.content}`)
+    return matches.sort((a, b) => Math.abs(a.createdAt - entry.at) - Math.abs(b.createdAt - entry.at))[0]
+  }
+
+  function deleteCapture(entry: ActivityEvent, capture: CaptureRecord) {
+    const recoveryId = softDeleteItems('captures', [capture.id], `Deleted captured ${capture.kind}`)
+    update((draft) => {
+      draft.meta.activity = draft.meta.activity.filter((candidate) => candidate.id !== entry.id)
+    })
+    toast({
+      title: 'Capture moved to Trash',
+      description: capture.content,
+      onUndo: recoveryId
+        ? () => {
+            undoRecovery(recoveryId)
+            update((draft) => {
+              if (!draft.meta.activity.some((candidate) => candidate.id === entry.id)) {
+                draft.meta.activity.push(entry)
+                draft.meta.activity.sort((a, b) => b.at - a.at)
+                draft.meta.activity = draft.meta.activity.slice(0, 30)
+              }
+            })
+          }
+        : undefined,
+    })
+  }
+
   return (
     <Card id="quick-capture" className="h-full scroll-mt-24" role="region" aria-labelledby="activity-capture-heading">
       <CardHeader className="flex-row items-center justify-between">
@@ -239,13 +273,33 @@ export function ActivityAndCapture() {
               Add a thought, source, or file below and your latest work will appear here.
             </MascotNote>
           )}
-          {activity.map((entry) => (
-            <div key={entry.id} className="flex items-center gap-2 rounded-lg px-1 py-1.5 text-xs">
-              <span className="size-2 rounded-full bg-primary" />
-              <span className="min-w-0 flex-1 truncate font-bold">{entry.label}</span>
-              <span className="shrink-0 text-muted-foreground">{fmtTimeAgo(entry.at)}</span>
-            </div>
-          ))}
+          {activity.map((entry) => {
+            const capture = captureForActivity(entry)
+            return (
+              <div key={entry.id} className="group flex items-center gap-2 rounded-lg px-1 py-1.5 text-xs transition-colors hover:bg-muted/40">
+                <span className="size-2 rounded-full bg-primary" />
+                <span className="min-w-0 flex-1 truncate font-bold">{entry.label}</span>
+                <span className="relative flex min-w-16 shrink-0 justify-end">
+                  <span className={capture ? 'transition-opacity group-hover:opacity-0 group-focus-within:opacity-0' : ''}>
+                    {fmtTimeAgo(entry.at)}
+                  </span>
+                  {capture && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteCapture(entry, capture)}
+                      aria-label={`Delete captured ${capture.kind}: ${capture.content}`}
+                      title="Delete capture"
+                      className="pointer-events-none absolute right-0 top-1/2 size-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </div>
         <form onSubmit={submit} className="space-y-2 border-t border-border pt-3">
           <div className="flex items-center justify-between gap-2">
