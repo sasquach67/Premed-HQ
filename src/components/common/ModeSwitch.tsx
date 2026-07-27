@@ -12,11 +12,13 @@ export function ModeSwitch<T extends string>({
   options,
   onChange,
   label = 'Page mode',
+  className,
 }: {
   value: T
   options: ModeSwitchOption<T>[]
   onChange: (value: T) => void
   label?: string
+  className?: string
 }) {
   const left = options[0]
   const right = options[1]
@@ -40,18 +42,21 @@ export function ModeSwitch<T extends string>({
       onKeyDown={onKeyDown}
       whileTap={{ scale: 0.985 }}
       transition={MOTION_TRANSITION.micro}
-      className="relative inline-grid h-10 min-w-56 grid-cols-2 items-stretch rounded-full border border-border bg-muted p-1 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+      className={cn(
+        'relative inline-grid min-w-56 grid-cols-2 items-stretch gap-1 rounded-full border border-white/15 bg-slate-950/50 p-1 shadow-sm backdrop-blur-md transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+        className,
+      )}
     >
       <m.span
         aria-hidden
-        className="pointer-events-none absolute bottom-1 left-1 top-1 w-[calc(50%-0.25rem)] rounded-full bg-primary shadow-sm"
+        className="pointer-events-none absolute bottom-1 left-1 top-1 w-[calc(50%-0.25rem)] rounded-full bg-white"
         animate={{ x: checked ? '100%' : '0%' }}
         transition={MOTION_TRANSITION.standard}
       />
-      <span className={cn('relative z-10 flex min-w-20 items-center justify-center px-4 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-muted-foreground' : 'text-primary-foreground')}>
+      <span className={cn('relative z-10 flex min-w-20 items-center justify-center rounded-full px-5 py-2 font-display text-sm font-bold text-white/75 transition-colors duration-150 ease-out motion-reduce:transition-none', !checked && 'font-extrabold text-slate-900')}>
         {left.label}
       </span>
-      <span className={cn('relative z-10 flex min-w-20 items-center justify-center px-4 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none', checked ? 'text-primary-foreground' : 'text-muted-foreground')}>
+      <span className={cn('relative z-10 flex min-w-20 items-center justify-center rounded-full px-5 py-2 font-display text-sm font-bold text-white/75 transition-colors duration-150 ease-out motion-reduce:transition-none', checked && 'font-extrabold text-slate-900')}>
         {right.label}
       </span>
     </m.button>

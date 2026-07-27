@@ -500,8 +500,8 @@ function ExamScope({ exam, topics, allTopics }: { exam: ClassAssignment; topics:
   return (
     <div className="space-y-3">
       <div className="flex h-3 overflow-hidden rounded-full bg-muted" aria-label={`${counts.ready} ready, ${counts.reviewing} reviewing, ${counts.weak} weak`}>
-        <span className="bg-emerald-500" style={{ width: `${counts.ready / denominator * 100}%` }} />
-        <span className="bg-amber-400" style={{ width: `${counts.reviewing / denominator * 100}%` }} />
+        <span className="bg-success" style={{ width: `${counts.ready / denominator * 100}%` }} />
+        <span className="bg-warning" style={{ width: `${counts.reviewing / denominator * 100}%` }} />
         <span className="bg-destructive" style={{ width: `${counts.weak / denominator * 100}%` }} />
       </div>
       <div className="grid grid-cols-3 gap-2 text-xs font-bold">

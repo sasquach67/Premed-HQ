@@ -51,6 +51,7 @@ export function Academics() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { courseId } = useParams()
   const courses = useStore((s) => s.courses)
+  const requirements = useStore((s) => s.requirements)
   const classCenter = useStore((s) => s.academics.classCenter)
   const currentTerm = useStore((s) => s.profile.startTerm)
   const addItem = useStore((s) => s.addItem)
@@ -112,6 +113,17 @@ export function Academics() {
     && assignment.status !== 'dropped'
   ).length
   const reviewStreak = consecutiveDayStreak(classCenter.reviewEvents.map((event) => event.timestamp))
+  const tabCounts = {
+    classes: currentTermCourses.length,
+    assignments: classCenter.assignments.filter((assignment) =>
+      assignment.status !== 'graded'
+      && assignment.status !== 'submitted'
+      && assignment.status !== 'dropped'
+    ).length,
+    courses: courses.length,
+    requirements: requirements.filter((requirement) => !requirement.done).length,
+    archive: courses.filter((course) => course.status === 'completed').length,
+  }
 
   useEffect(() => {
     if (storedMode === mode) return
@@ -119,7 +131,7 @@ export function Academics() {
   }, [mode, storedMode, update])
 
   if (courseId) {
-    return <ClassCenter />
+    return <div className="academics-surface"><ClassCenter /></div>
   }
 
   function changeMode(nextMode: 'daily' | 'planning') {
@@ -127,7 +139,7 @@ export function Academics() {
   }
 
   return (
-    <div>
+    <div className="academics-surface">
       <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ mode, tab })}>
         <PageHeader
           title={route.label}
@@ -142,10 +154,12 @@ export function Academics() {
               )}
               <Button
                 variant="ghost"
-                className="text-[#f4ede0] hover:bg-white/10 hover:text-white"
+                aria-label="How to study"
+                className="text-white/90 hover:bg-white/10 hover:text-white"
                 onClick={() => setStudyGuideOpen(true)}
               >
-                <Library className="size-4" /> How to study
+                <Library className="size-4" />
+                <span className="hidden sm:inline">How to study</span>
               </Button>
             </div>
           )}
@@ -153,14 +167,14 @@ export function Academics() {
             <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-0 bg-transparent p-0">
               {mode === 'daily' ? (
                 <>
-                  <AcademicsTab value="class-center" icon={GraduationCap}>Class Center</AcademicsTab>
-                  <AcademicsTab value="assignments" icon={CalendarDays}>Assignments</AcademicsTab>
+                  <AcademicsTab value="class-center" icon={GraduationCap} count={tabCounts.classes}>Class center</AcademicsTab>
+                  <AcademicsTab value="assignments" icon={CalendarDays} count={tabCounts.assignments}>Assignments</AcademicsTab>
                 </>
               ) : (
                 <>
-                  <AcademicsTab value="planner" icon={Calculator}>Planner</AcademicsTab>
-                  <AcademicsTab value="tracker" icon={ListChecks}>Tar Heel Tracker</AcademicsTab>
-                  <AcademicsTab value="archive" icon={Archive}>Grades &amp; Archive</AcademicsTab>
+                  <AcademicsTab value="planner" icon={Calculator} count={tabCounts.courses}>Planner</AcademicsTab>
+                  <AcademicsTab value="tracker" icon={ListChecks} count={tabCounts.requirements}>Tar Heel tracker</AcademicsTab>
+                  <AcademicsTab value="archive" icon={Archive} count={tabCounts.archive}>Grades &amp; archive</AcademicsTab>
                 </>
               )}
             </TabsList>
@@ -173,9 +187,8 @@ export function Academics() {
               options={[{ id: 'daily', label: 'Daily' }, { id: 'planning', label: 'Planning' }]}
               onChange={changeMode}
               label="Academics mode"
-              className="border-white/15 bg-black/30"
             />
-            <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/25 p-1 text-[#f4ede0] sm:grid-cols-4">
+            <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-white/15 bg-slate-950/50 text-white shadow-sm backdrop-blur-md sm:grid-cols-4">
               <BannerStat
                 label="Term GPA"
                 value={fmtGpa(currentTermGpa.cum)}
@@ -292,18 +305,23 @@ export function Academics() {
 function AcademicsTab({
   value,
   icon: Icon,
+  count,
   children,
 }: {
   value: string
   icon: typeof GraduationCap
+  count: number
   children: React.ReactNode
 }) {
   return (
     <TabsTrigger
       value={value}
-      className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 font-bold text-foreground/65 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+      className="academics-banner-tab"
     >
       <Icon className="size-4" /> {children}
+      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-xs font-bold tabular-nums">
+        {count}
+      </span>
     </TabsTrigger>
   )
 }
@@ -321,9 +339,9 @@ function BannerStat({
 }) {
   const Direction = change == null ? null : change >= 0 ? ArrowUpRight : ArrowDownRight
   return (
-    <div className="min-w-24 rounded-lg px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-[#e7dccb]/65">{label}</p>
-      <p className="mt-0.5 flex items-center gap-1 font-display text-lg font-bold tabular-nums">
+    <div className="min-w-20 border-r border-white/10 px-4 py-2 last:border-r-0">
+      <p className="text-xs font-bold text-white/70">{label}</p>
+      <p className="flex items-center gap-1 font-display text-lg font-extrabold leading-tight text-white tabular-nums">
         {icon}{value}
         {Direction && <Direction className={cn('size-3.5', change! >= 0 ? 'text-emerald-300' : 'text-rose-300')} aria-hidden="true" />}
       </p>
@@ -559,6 +577,7 @@ function TarHeelTracker() {
   }, [visibleRequirements])
 
   const reqStatus = useMemo(() => new Map(visibleRequirements.map((req) => [req.id, requirementStatus(req, courses)])), [visibleRequirements, courses])
+  const unplacedRequirements = visibleRequirements.filter((req) => reqStatus.get(req.id) === 'missing')
   const genEdReqs = visibleRequirements.filter(isGenEdRequirement)
   const majorReqs = visibleRequirements.filter(isMajorRequirement)
   const premedReqs = visibleRequirements.filter(isPremedRequirement)
@@ -579,8 +598,16 @@ function TarHeelTracker() {
     for (const year of TERM_PLAN) {
       for (const term of year.terms) {
         const credits = termCredits(courses.filter((course) => course.term === term))
+        const termCourses = courses.filter((course) => course.term === term)
+        const bcpmCredits = termCredits(termCourses.filter((course) => course.bcpm))
         if (credits > 18) out.push(`${term} is overloaded at ${credits} credits`)
         if (credits > 0 && credits < 12 && !/Summer/i.test(term)) out.push(`${term} is below full-time load`)
+        if (credits >= 12 && bcpmCredits / credits >= 0.75) out.push(`${term} is BCPM-heavy (${bcpmCredits} of ${credits} credits)`)
+      }
+    }
+    for (const course of courses) {
+      if (/spring-only/i.test(course.notes ?? '') && !/Spring/i.test(course.term)) {
+        out.push(`${course.code} is marked spring-only but placed in ${course.term}`)
       }
     }
     const seen = new Map<string, number>()
@@ -768,6 +795,23 @@ function TarHeelTracker() {
             {warnings.length > 0 && <ul className="mt-3 space-y-1 text-sm text-muted-foreground">{warnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>}
           </div>
 
+          <section className="rounded-2xl border border-dashed border-border bg-card/70 p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h4 className="font-display text-lg font-bold">Unplaced requirements</h4>
+                <p className="text-xs text-muted-foreground">Missing requirements with no completed or planned course attached yet.</p>
+              </div>
+              <Badge variant={unplacedRequirements.length ? 'warning' : 'success'}>{unplacedRequirements.length}</Badge>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {unplacedRequirements.slice(0, 6).map((requirement) => (
+                <span key={requirement.id} className="rounded-full border border-border bg-muted/45 px-3 py-1 text-xs font-bold">{requirement.label}</span>
+              ))}
+              {unplacedRequirements.length > 6 && <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">+{unplacedRequirements.length - 6} more</span>}
+              {!unplacedRequirements.length && <span className="text-sm font-semibold text-muted-foreground">Everything has a course placement.</span>}
+            </div>
+          </section>
+
           {TERM_PLAN.map((year) => {
             const yearCourses = courses.filter((course) => year.terms.includes(course.term))
             return (
@@ -881,6 +925,7 @@ function RequirementMini({ item, status }: { item: RequirementItem; status: Requ
       <div className="min-w-0">
         <p className={cn('font-semibold leading-snug', status === 'completed' && 'text-muted-foreground line-through')}>{item.label}</p>
         <p className={cn('text-[10px] font-bold uppercase tracking-wide', statusTone(status))}>{statusLabel(status)}</p>
+        {item.verificationStatus === 'needs-verification' && <p className="text-[10px] font-extrabold text-warning-foreground">◑ not yet verified</p>}
       </div>
     </div>
   )
@@ -951,6 +996,7 @@ function CoursePlanCard({ course, requirements, allTerms, onMove, onRemove }: { 
       <div className="mt-2 flex flex-wrap gap-1">
         <StatusBadge status={course.status} />
         {PREMED_TAGS[prefix] && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-200">{PREMED_TAGS[prefix]}</span>}
+        {/spring-only/i.test(course.notes ?? '') && <span className="rounded-full bg-sky-500/12 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-200">❄ spring only</span>}
         {tags.slice(0, 2).map((tag) => <span key={tag} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{tag}</span>)}
       </div>
       <div className="mt-2 flex items-center gap-2">

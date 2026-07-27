@@ -617,20 +617,21 @@ function ClassCard({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={cn(
-        'group/class relative cursor-pointer overflow-hidden border-border bg-card transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none',
-        !actionHovered && ['hover:-translate-y-1 hover:shadow-lg', accent.border, accent.glow],
+        'academics-class-card group/class relative cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none',
+        !actionHovered && [accent.border, accent.glow],
+        actionHovered && 'action-hovered',
         compact && 'min-h-0',
         dragging && 'scale-[0.98] opacity-55',
         dragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
       )}
     >
       <span className={cn(
-        'absolute inset-y-0 left-0 w-1 origin-left scale-x-0 transition-transform duration-200 motion-reduce:transition-none',
+        'absolute inset-y-0 left-0 w-1 origin-left scale-x-0 transition-transform duration-150 ease-[cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none',
         accent.bar,
         !actionHovered && 'group-hover/class:scale-x-100',
       )} aria-hidden="true" />
       <CardContent className={cn(
-        'space-y-3 p-4',
+        'space-y-3 p-3',
         compact && 'grid items-center gap-4 space-y-0 md:grid-cols-[minmax(0,1.2fr)_auto_minmax(160px,.7fr)_auto]',
       )}>
         <div className="min-w-0">
@@ -2474,7 +2475,7 @@ function InlineGauge({ value, meta, muted }: { value: number; meta: string; mute
 function ProgressLine({ value, muted }: { value: number; muted?: boolean }) {
   return (
     <div className="h-2 overflow-hidden rounded-full bg-muted">
-      <div className={cn('h-full rounded-full transition-all', muted ? 'bg-muted-foreground/30' : 'bg-primary')} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+      <div className={cn('h-full rounded-full transition-[width] motion-reduce:transition-none', muted ? 'bg-muted-foreground/30' : 'bg-primary')} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
     </div>
   )
 }
@@ -2538,7 +2539,7 @@ function BannerField({ value, onChange }: { value: string; onChange: (value: str
 function InlineInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
   return (
     <input
-      className="w-full rounded-md bg-transparent px-1.5 py-1 text-sm font-semibold outline-none transition hover:bg-muted/45 focus:bg-card focus:ring-2 focus:ring-ring/35"
+      className="w-full rounded-md bg-transparent px-1.5 py-1 text-sm font-semibold outline-none transition hover:bg-muted/45 focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-ring/35"
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
