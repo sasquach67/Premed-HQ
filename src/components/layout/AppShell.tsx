@@ -77,7 +77,7 @@ export function AppShell() {
             <div className="mx-auto w-full max-w-[84rem] px-4 py-6 md:px-8 md:py-8">
               <AnimatePresence mode="wait" initial={false}>
                 <m.div
-                  key={`${location.pathname}${location.search}`}
+                  key={location.pathname}
                   variants={crossfade}
                   initial="hidden"
                   animate="visible"

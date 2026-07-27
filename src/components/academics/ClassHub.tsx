@@ -267,6 +267,7 @@ function Overview({
   const graded = assignments.filter(hasGrade)
   const categories = categoryStats(assignments)
   const weightSum = assignments.reduce((sum, item) => sum + (item.weight ?? 0), 0)
+  const gradedWeight = assignments.filter(hasGrade).reduce((sum, item) => sum + (item.weight ?? 0), 0)
 
   return (
     <div className="grid grid-cols-12 gap-4">
@@ -324,6 +325,7 @@ function Overview({
       <Panel className="col-span-12 lg:col-span-4" title="Grade breakdown">
         {categories.length ? (
           <div className="space-y-3">
+            <p className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm font-extrabold tabular-nums">{formatNumber(gradedWeight)}% of the course grade is in</p>
             {categories.map((item) => <CategoryBar key={item.name} item={item} />)}
             <Separator />
             <p className={cn('text-sm font-extrabold', Math.abs(weightSum - 100) < 0.01 ? 'text-emerald-600' : 'text-amber-700 dark:text-amber-200')}>

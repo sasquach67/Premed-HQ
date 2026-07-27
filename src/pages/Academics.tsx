@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ComponentType } from 'react'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Archive,
   AlertTriangle, ArrowDownRight, ArrowUpRight, Calculator, CalendarDays, CheckCircle2, ChevronDown,
-  Clock, Flame, FlaskConical, GraduationCap, Library, ListChecks, MoreHorizontal, Plus,
+  Clock, Flame, FlaskConical, GraduationCap, Library, MoreHorizontal, Plus,
   Search, ShieldCheck, Sparkles, Trash2, X,
 } from 'lucide-react'
 import { useStore } from '@/store/store'
@@ -88,9 +88,9 @@ export function Academics() {
     })
   }
 
-  const mode = searchParams.get('mode') === 'planning' || searchParams.get('mode') === 'daily'
-    ? searchParams.get('mode') as 'daily' | 'planning'
-    : storedMode ?? 'daily'
+  // Store is the single source of truth for the mode — synchronous and always
+  // re-renders, so the Daily/Planning toggle can't desync under rapid clicks.
+  const mode: 'daily' | 'planning' = storedMode === 'planning' ? 'planning' : 'daily'
   const tabsByMode = {
     daily: ['class-center', 'assignments'],
     planning: ['planner', 'tracker', 'archive'],
@@ -126,22 +126,34 @@ export function Academics() {
     archive: courses.filter((course) => course.status === 'completed').length,
   }
 
+  // Adopt an incoming ?mode= deep-link (from other pages) into the store, then
+  // strip it from the URL so it can't linger and fight the toggle or re-fire.
   useEffect(() => {
-    if (storedMode === mode) return
-    update((draft) => { draft.settings.academicsMode = mode })
-  }, [mode, storedMode, update])
+    const urlMode = searchParams.get('mode')
+    if (urlMode !== 'daily' && urlMode !== 'planning') return
+    if (urlMode !== storedMode) update((draft) => { draft.settings.academicsMode = urlMode })
+    const next = new URLSearchParams(searchParams)
+    next.delete('mode')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, storedMode, update, setSearchParams])
 
   if (courseId) {
     return <div className="academics-surface"><ClassCenter /></div>
   }
 
   function changeMode(nextMode: 'daily' | 'planning') {
-    setSearchParams({ mode: nextMode, tab: tabsByMode[nextMode][0] })
+    update((draft) => { draft.settings.academicsMode = nextMode })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('mode')
+      next.set('tab', tabsByMode[nextMode][0])
+      return next
+    }, { replace: true })
   }
 
   return (
     <div className="academics-surface">
-      <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ mode, tab })}>
+      <Tabs value={activeTab} onValueChange={(tab) => setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('mode'); next.set('tab', tab); return next }, { replace: true })}>
         <PageHeader
           title={route.label}
           actions={(
@@ -174,7 +186,7 @@ export function Academics() {
               ) : (
                 <>
                   <AcademicsTab value="planner" icon={Calculator} count={tabCounts.courses}>Planner</AcademicsTab>
-                  <AcademicsTab value="tracker" icon={ListChecks} count={tabCounts.requirements}>Tar Heel tracker</AcademicsTab>
+                  <AcademicsTab value="tracker" icon={NcMark} count={tabCounts.requirements}>Tar Heel tracker</AcademicsTab>
                   <AcademicsTab value="archive" icon={Archive} count={tabCounts.archive}>Grades &amp; archive</AcademicsTab>
                 </>
               )}
@@ -206,7 +218,7 @@ export function Academics() {
           </div>
         </PageHeader>
         <AcademicMigrationReview />
-        <AnimatePresence mode="wait" initial={false} custom={mode === 'planning' ? 1 : -1}>
+        <AnimatePresence mode="popLayout" initial={false} custom={mode === 'planning' ? 1 : -1}>
           <m.div
             key={mode}
             custom={mode === 'planning' ? 1 : -1}
@@ -303,6 +315,23 @@ export function Academics() {
   )
 }
 
+/** "NC" lettermark for the Tar Heel tracker tab — the two letters in the app's
+ *  rounded display face, inheriting the icon color (reads white on the dark
+ *  Academics surface). A simple monogram, not the trademarked athletic logo. */
+function NcMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <text
+        x="12" y="13" textAnchor="middle" dominantBaseline="central"
+        fontFamily="'Baloo 2', system-ui, sans-serif" fontWeight={800} fontSize={12.5}
+        letterSpacing={-1} fill="currentColor"
+      >
+        NC
+      </text>
+    </svg>
+  )
+}
+
 function AcademicsTab({
   value,
   icon: Icon,
@@ -310,7 +339,7 @@ function AcademicsTab({
   children,
 }: {
   value: string
-  icon: typeof GraduationCap
+  icon: ComponentType<{ className?: string }>
   count: number
   children: React.ReactNode
 }) {

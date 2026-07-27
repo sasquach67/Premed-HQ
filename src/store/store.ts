@@ -13,6 +13,10 @@ import type {
   AppData, ClassCenterData, CollectionKey, ActivityEvent, RequirementItem, RecoveryEntry,
 } from '@/lib/types'
 import { createSeedData } from '@/data/seed'
+import { createDemoData } from '@/data/demoSeed'
+import {
+  activeStorageKey, isDemoMode, LEGACY_STORAGE_KEY, REAL_STORAGE_KEY,
+} from '@/lib/demoMode'
 import { uid } from '@/lib/id'
 import { isMutableSeverity } from '@/lib/intelligence/recommendations'
 import { INTELLIGENCE_THRESHOLDS, type Severity } from '@/lib/intelligence/types'
@@ -21,8 +25,21 @@ import { migrateAcademicsV5 } from '@/store/migrations/academicsV5'
 import { migrateAcademicsV6 } from '@/store/migrations/academicsV6'
 import { migrateAcademicsV7 } from '@/store/migrations/academicsV7'
 
-export const STORAGE_KEY = 'premed_hq_v1'
+const DEMO_MODE = isDemoMode()
+
+// One-time, non-destructive namespace upgrade. Never inspect the real or
+// legacy namespace while demo mode is active.
+if (!DEMO_MODE && typeof localStorage !== 'undefined' && !localStorage.getItem(REAL_STORAGE_KEY)) {
+  const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+  if (legacy) localStorage.setItem(REAL_STORAGE_KEY, legacy)
+}
+
+export const STORAGE_KEY = activeStorageKey()
 const SEED_VERSION = 7
+
+function createInitialData() {
+  return DEMO_MODE ? createDemoData() : structuredClone(createSeedData())
+}
 
 type AnyRow = { id: string; order: number; archived?: boolean; deletedAt?: number; [key: string]: unknown }
 
@@ -207,17 +224,20 @@ export function migrateAcademicTags(data: AppData): AppData {
 
   // Keep the older additive safeguards available to direct migration callers.
   // The v4 reconciliation immediately follows this function during hydration.
-  for (const topic of data.academics.classCenter.topics ?? []) {
-    topic.confidence = Math.max(1, Math.min(3, Number(topic.confidence) || 1)) as typeof topic.confidence
-    if ((topic.status as string) === 'mastered') topic.status = 'ready'
-    if ((topic.status as string) === 'cards-made') topic.status = 'notes-made'
-    topic.linkedNoteIds ??= []
-    topic.linkedAssignmentIds ??= []
-    topic.linkedFileIds ??= []
-  }
-  for (const area of data.academics.classCenter.weakAreas ?? []) {
-    area.severity = Math.max(1, Math.min(3, Number(area.severity) || 1)) as typeof area.severity
-  }
+  data.academics.classCenter.topics = (data.academics.classCenter.topics ?? []).map((topic) => ({
+    ...topic,
+    confidence: Math.max(1, Math.min(3, Number(topic.confidence) || 1)) as typeof topic.confidence,
+    status: (topic.status as string) === 'mastered'
+      ? 'ready'
+      : (topic.status as string) === 'cards-made' ? 'notes-made' : topic.status,
+    linkedNoteIds: topic.linkedNoteIds ?? [],
+    linkedAssignmentIds: topic.linkedAssignmentIds ?? [],
+    linkedFileIds: topic.linkedFileIds ?? [],
+  }))
+  data.academics.classCenter.weakAreas = (data.academics.classCenter.weakAreas ?? []).map((area) => ({
+    ...area,
+    severity: Math.max(1, Math.min(3, Number(area.severity) || 1)) as typeof area.severity,
+  }))
 
   // A non-enumerable compatibility view lets old callers detect that the
   // container exists without serializing duplicate course/workspace data.
@@ -427,7 +447,7 @@ function pushRecovery(
 export const useStore = create<Store>()(
   persist(
     immer((set) => ({
-      ...createSeedData(),
+      ...migrateAll(createInitialData()),
 
       update: (mutator) => set((s) => {
         mutator(s as unknown as AppData)
@@ -628,10 +648,10 @@ export const useStore = create<Store>()(
         }),
 
       replaceAll: (data) => set(() => ({
-        ...migrateAll({ ...createSeedData(), ...data } as AppData),
+        ...migrateAll({ ...createInitialData(), ...data } as AppData),
       })),
 
-      resetToSeed: () => set(() => ({ ...migrateAll(structuredClone(createSeedData())) })),
+      resetToSeed: () => set(() => ({ ...migrateAll(createInitialData()) })),
     })),
     {
       name: STORAGE_KEY,

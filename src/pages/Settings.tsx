@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { TimeField } from '@/components/common/DateField'
 import { TrashRecovery } from '@/components/common/TrashRecovery'
 import { mutedRecommendationRules } from '@/lib/intelligence'
+import { isDemoMode, setDemoMode } from '@/lib/demoMode'
 
 export function Settings() {
   const route = ROUTE_MAP.settings
@@ -44,6 +45,7 @@ export function Settings() {
   const isHostedOrigin = window.location.protocol === 'https:' && !isLocalOrigin
   const originOk = !isFileOrigin && (window.location.protocol === 'https:' || isLocalOrigin)
   const backupReady = backup.enabled && backup.configured && backup.connected && Boolean(backup.lastBackupAt)
+  const demoActive = isDemoMode()
 
   useEffect(() => {
     if (archiveRequested) archiveRef.current?.scrollIntoView({ block: 'start' })
@@ -76,6 +78,37 @@ export function Settings() {
       {msg && <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary px-3 py-2 text-sm"><Check className="size-4 text-primary" /> {msg}</div>}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card className={cn(demoActive && 'border-primary/35 bg-primary/7')}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between gap-3">
+              <span>Demo data</span>
+              <Badge variant={demoActive ? 'default' : 'muted'}>{demoActive ? 'Active' : 'Off'}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label className="normal-case">Use the fictional UNC student</Label>
+                <p className="mt-1 text-sm text-muted-foreground">Switches to a fully separate local namespace. Your real data is not read, merged, or changed.</p>
+              </div>
+              <Switch checked={demoActive} onCheckedChange={setDemoMode} aria-label="Demo data" />
+            </div>
+            {demoActive && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm('Reset only the demo namespace to its fresh relative-date state?')) {
+                    resetToSeed()
+                    setMsg('Demo data reset to a fresh state.')
+                  }
+                }}
+              >
+                <RotateCcw className="size-4" /> Reset to fresh demo
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader><CardTitle>Local data</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -203,12 +236,12 @@ export function Settings() {
         <Card className="border-destructive/30">
           <CardHeader><CardTitle className="text-destructive">Danger zone</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">Reset everything back to the seeded UNC plan. Export first if you want a copy.</p>
+            <p className="text-sm text-muted-foreground">{demoActive ? 'Reset only the isolated demo namespace.' : 'Reset everything back to the seeded UNC plan. Export first if you want a copy.'}</p>
             <Button
               variant="destructive"
-              onClick={() => { if (confirm('Reset all data to the seeded plan? This cannot be undone.')) { resetToSeed(); setMsg('Reset to the seeded plan.') } }}
+              onClick={() => { if (confirm(demoActive ? 'Reset the demo namespace to a fresh state?' : 'Reset all data to the seeded plan? This cannot be undone.')) { resetToSeed(); setMsg(demoActive ? 'Demo data reset.' : 'Reset to the seeded plan.') } }}
             >
-              <RotateCcw className="size-4" /> Reset to seed
+              <RotateCcw className="size-4" /> {demoActive ? 'Reset demo' : 'Reset to seed'}
             </Button>
           </CardContent>
         </Card>

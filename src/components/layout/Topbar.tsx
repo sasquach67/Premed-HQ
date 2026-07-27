@@ -15,6 +15,7 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
+import { isDemoMode } from '@/lib/demoMode'
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
   const location = useLocation()
@@ -71,6 +72,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
         </Breadcrumb>
         <CommandSearch />
         <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
+          {isDemoMode() && <span className="inline-flex h-8 shrink-0 items-center rounded-full border border-primary/30 bg-primary/12 px-2.5 text-xs font-extrabold text-primary shadow-sm">Demo data</span>}
           <LiveStatusChip label={status.label} tone={status.tone} />
           <Button variant="default" size="sm" className="h-8 rounded-full px-2.5 sm:px-3" onClick={() => openQuickAdd()} aria-label="Quick Add"><Plus className="size-4" /><span className="hidden sm:inline">Add</span></Button>
           <AttentionBell />
